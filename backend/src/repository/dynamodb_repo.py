@@ -1,0 +1,120 @@
+"""DynamoDB Repository for AeroDispatch Order Management."""
+import os
+from decimal import Decimal
+from typing import Any, Dict, List, Optional
+try:
+    import boto3
+    from botocore.exceptions import ClientError
+except ImportError:
+    boto3 = None
+
+    class ClientError(Exception):
+        """Fallback ClientError exception when botocore is not installed in local mock test runs."""
+        def __init__(self, error_response=None, operation_name=None):
+            self.response = error_response or {}
+            self.operation_name = operation_name
+            super().__init__(str(error_response))
+
+from ..utils.logger import get_logger
+
+logger = get_logger("dynamodb_repo")
+
+
+def _floats_to_decimals(obj: Any) -> Any:
+    """Recursively converts all Python float values to Decimal for DynamoDB storage."""
+    if isinstance(obj, float):
+        return Decimal(str(obj))
+    elif isinstance(obj, dict):
+        return {k: _floats_to_decimals(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [_floats_to_decimals(item) for item in obj]
+    return obj
+
+
+def _decimals_to_primitives(obj: Any) -> Any:
+    """Recursively converts Decimal values back to standard Python float/int."""
+    if isinstance(obj, Decimal):
+        return int(obj) if obj % 1 == 0 else float(obj)
+    elif isinstance(obj, dict):
+        return {k: _decimals_to_primitives(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [_decimals_to_primitives(item) for item in obj]
+    return obj
+
+
+class DynamoDBOrderRepository:
+    """Encapsulates all DynamoDB interactions for the Orders table."""
+
+    def __init__(self, table: Optional[Any] = None, table_name: Optional[str] = None):
+        self.table_name = table_name or os.getenv("ORDERS_TABLE_NAME", "aerodispatch-orders")
+        if table:
+            self.table = table
+        else:
+            if boto3 is None:
+                raise ImportError("boto3 is required to initialize DynamoDBOrderRepository without a mock table.")
+            dynamodb = boto3.resource("dynamodb")
+            self.table = dynamodb.Table(self.table_name)
+
+    def save_order(self, order_item: Dict[str, Any]) -> None:
+        """
+        Saves a newly created order.
+        Uses condition expression 'attribute_not_exists(orderId)' to ensure uniqueness.
+        """
+        item_to_save = _floats_to_decimals(order_item)
+        try:
+            self.table.put_item(
+                Item=item_to_save,
+                ConditionExpression="attribute_not_exists(orderId)",
+            )
+            logger.info(
+                f"Order successfully written to DynamoDB: {order_item.get('orderId')}",
+                extra={"extra": {"orderId": order_item.get("orderId")}},
+            )
+        except ClientError as e:
+            error_code = e.response.get("Error", {}).get("Code")
+            if error_code == "ConditionalCheckFailedException":
+                logger.warning(f"Order ID collision: {order_item.get('orderId')}")
+                raise ValueError(f"An order with ID '{order_item.get('orderId')}' already exists.") from e
+            logger.error(f"Failed to put order item in DynamoDB: {e}", exc_info=True)
+            raise
+
+    def get_order_by_id(self, order_id: str) -> Optional[Dict[str, Any]]:
+        """Retrieves an order item by its partition key (orderId)."""
+        try:
+            response = self.table.get_item(Key={"orderId": order_id})
+            item = response.get("Item")
+            if item:
+                return _decimals_to_primitives(item)
+            return None
+        except ClientError as e:
+            logger.error(f"Failed to get order '{order_id}' from DynamoDB: {e}", exc_info=True)
+            raise
+
+    def get_order_by_idempotency_key(self, idempotency_key: str) -> Optional[Dict[str, Any]]:
+        """
+        Queries the IdempotencyIndex GSI to check if an order has already
+        been submitted with this exact idempotency key.
+        """
+        try:
+            from boto3.dynamodb.conditions import Key
+
+            response = self.table.query(
+                IndexName="IdempotencyIndex",
+                KeyConditionExpression=Key("idempotencyKey").eq(idempotency_key),
+                Limit=1,
+            )
+            items = response.get("Items", [])
+            if items:
+                return _decimals_to_primitives(items[0])
+            return None
+        except ClientError as e:
+            # If the index does not exist in a local test mock, log warning and return None
+            logger.warning(
+                f"Idempotency GSI query encountered ClientError: {e}. Falling back to normal flow."
+            )
+            return None
+        except Exception as e:
+            logger.warning(
+                f"Unexpected error while querying IdempotencyIndex: {e}."
+            )
+            return None

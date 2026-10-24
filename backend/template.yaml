@@ -1,0 +1,114 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  AeroDispatch Backend - Serverless Order Ingestion & Logistics Tracking API
+  Phase 2 Foundation: API Gateway HTTP API, Python 3.12 Lambda, and Amazon DynamoDB.
+
+Globals:
+  Function:
+    Timeout: 15
+    MemorySize: 256
+    Runtime: python3.12
+    Architectures:
+      - x86_64
+    Environment:
+      Variables:
+        ORDERS_TABLE_NAME: !Ref OrdersTable
+        LOG_LEVEL: INFO
+        POWERTOOLS_SERVICE_NAME: aerodispatch-orders
+
+Resources:
+  # ==============================================================================
+  # API Gateway HTTP API (Low latency, cost-effective, built-in CORS)
+  # ==============================================================================
+  AeroDispatchHttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowOrigins:
+          - "*"
+        AllowMethods:
+          - GET
+          - POST
+          - OPTIONS
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+          - X-Idempotency-Key
+        MaxAge: 600
+
+  # ==============================================================================
+  # Order Creation Lambda Function
+  # ==============================================================================
+  CreateOrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: handlers.create_order.lambda_handler
+      Description: Validates shipment input, generates unique AWB, and records order in DynamoDB.
+      Policies:
+        # Least-privilege IAM policy scoped strictly to the Orders table and its GSI
+        - Statement:
+            - Sid: DynamoDBCrudAccess
+              Effect: Allow
+              Action:
+                - dynamodb:PutItem
+                - dynamodb:GetItem
+                - dynamodb:Query
+              Resource:
+                - !GetAtt OrdersTable.Arn
+                - !Sub "${OrdersTable.Arn}/index/*"
+      Events:
+        CreateOrder:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref AeroDispatchHttpApi
+            Path: /api/v1/orders
+            Method: post
+
+  # ==============================================================================
+  # DynamoDB Orders Table (On-Demand billing - zero idle cost)
+  # ==============================================================================
+  OrdersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: aerodispatch-orders
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: orderId
+          AttributeType: S
+        - AttributeName: idempotencyKey
+          AttributeType: S
+      KeySchema:
+        - AttributeName: orderId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: IdempotencyIndex
+          KeySchema:
+            - AttributeName: idempotencyKey
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+      Tags:
+        - Key: Project
+          Value: AeroDispatch
+        - Key: Environment
+          Value: Development
+
+Outputs:
+  HttpApiUrl:
+    Description: Base URL for AeroDispatch HTTP API
+    Value: !Sub "https://${AeroDispatchHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+  CreateOrderEndpoint:
+    Description: Full endpoint URL for Consignment / Order Creation
+    Value: !Sub "https://${AeroDispatchHttpApi}.execute-api.${AWS::Region}.amazonaws.com/api/v1/orders"
+  CreateOrderFunctionArn:
+    Description: Create Order Lambda Function ARN
+    Value: !GetAtt CreateOrderFunction.Arn
+  OrdersTableName:
+    Description: DynamoDB Orders Table Name
+    Value: !Ref OrdersTable

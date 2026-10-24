@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <rect width="48" height="48" rx="12" fill="#0B132B"/>
+  <path d="M10 26L38 14L28 34L22 28L10 26Z" fill="url(#aerograd)" stroke="#00F0FF" stroke-width="1.5" stroke-linejoin="round"/>
+  <path d="M22 28L38 14" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round"/>
+  <circle cx="38" cy="14" r="3" fill="#00F0FF"/>
+  <defs>
+    <linearGradient id="aerograd" x1="10" y1="14" x2="38" y2="34" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00F0FF"/>
+      <stop offset="1" stop-color="#4F46E5"/>
+    </linearGradient>
+  </defs>
+</svg>
