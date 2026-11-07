@@ -1,7 +1,7 @@
 import React from 'react';
-import { CheckCircle2, Clock, MapPin, Truck, AlertCircle, PackageCheck, Send } from 'lucide-react';
+import { Clock, AlertCircle, PackageCheck, Truck, Send, MapPin } from 'lucide-react';
 
-export default function TrackingTimeline({ events = [], currentStatus = 'BOOKED' }) {
+export default function TrackingTimeline({ events = [] }) {
   if (!events || events.length === 0) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
@@ -11,20 +11,20 @@ export default function TrackingTimeline({ events = [], currentStatus = 'BOOKED'
   }
 
   // Helper to pick appropriate status icon
-  const getIcon = (status, isLatest) => {
+  const getIcon = (status) => {
     switch (status) {
       case 'DELIVERED':
-        return <PackageCheck size={14} color="#070B14" />;
+        return <PackageCheck size={14} color="currentColor" />;
       case 'OUT_FOR_DELIVERY':
       case 'IN_TRANSIT':
-        return <Truck size={14} color="#070B14" />;
+        return <Truck size={14} color="currentColor" />;
       case 'PICKED_UP':
       case 'HUB_INBOUND':
-        return <Send size={14} color="#070B14" />;
+        return <Send size={14} color="currentColor" />;
       case 'FAILED_ATTEMPT':
-        return <AlertCircle size={14} color="#FFFFFF" />;
+        return <AlertCircle size={14} color="currentColor" />;
       default:
-        return <Clock size={14} color="#070B14" />;
+        return <Clock size={14} color="currentColor" />;
     }
   };
 
@@ -48,7 +48,7 @@ export default function TrackingTimeline({ events = [], currentStatus = 'BOOKED'
         return (
           <div key={ev.id || index} className={`timeline-step ${stepClass}`}>
             <div className="timeline-marker">
-              {getIcon(ev.status, isLatest)}
+              {getIcon(ev.status)}
             </div>
 
             <div className="timeline-content">

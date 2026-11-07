@@ -1,22 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import StatusBadge from '../components/StatusBadge';
 import TrackingTimeline from '../components/TrackingTimeline';
+import MyMap from '../components/MyMap';
+import CopyButton from '../components/CopyButton';
+import { SkeletonBlock, SkeletonMap } from '../components/SkeletonLoading';
+import { apiGetOrderTracking, createTrackingWebSocket, resolvePhotoUrl } from '../services/api';
 import { 
   Search, 
   MapPin, 
   Truck, 
   Package, 
-  Calendar, 
   Clock, 
-  User, 
-  Phone, 
   CheckCircle2, 
   AlertTriangle,
-  ArrowRight,
+  Wifi,
+  RefreshCw,
+  Copy,
+  Check,
   ExternalLink,
   ShieldCheck,
-  Share2
+  X
 } from 'lucide-react';
 
 export default function TrackingPage() {
@@ -25,41 +29,146 @@ export default function TrackingPage() {
     selectedAwb, 
     setSelectedAwb, 
     trackingQuery, 
-    setTrackingQuery, 
-    setActiveTab, 
-    addToast 
+    isBackendOnline,
+    theme,
+    addToast,
+    openChatbox
   } = useApp();
 
-  const [inputVal, setInputVal] = useState(trackingQuery || selectedAwb || 'AD-8849-2041');
+  const initialAwb = (trackingQuery || selectedAwb || '').trim();
+  const [inputVal, setInputVal] = useState(initialAwb);
+  const [activeShipment, setActiveShipment] = useState(() => {
+    return shipments.find(s => s.awbNumber.toLowerCase() === initialAwb.toLowerCase()) || shipments[0];
+  });
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState('');
+  const [wsConnected, setWsConnected] = useState(false);
+  const [copiedAwb, setCopiedAwb] = useState(false);
+  const [enlargedPhotoUrl, setEnlargedPhotoUrl] = useState(null);
+
+  // Service Skeleton Shimmer Loading - strictly 1.0s as requested
+  const [isTrackingLoading, setIsTrackingLoading] = useState(true);
 
   useEffect(() => {
-    if (trackingQuery) {
-      setInputVal(trackingQuery);
-    }
-  }, [trackingQuery]);
+    const timer = setTimeout(() => {
+      setIsTrackingLoading(false);
+    }, 1000); // 1.0s service skeleton loading
+    return () => clearTimeout(timer);
+  }, []);
 
-  const activeShipment = shipments.find(s => 
-    s.awbNumber.toLowerCase() === inputVal.trim().toLowerCase()
-  ) || shipments[0];
+  const lastLoadedAwbRef = useRef(initialAwb.toUpperCase());
+
+  const performSearch = useCallback(async (targetQuery, shouldToast = false) => {
+    const query = (targetQuery || '').trim();
+    if (!query) {
+      if (shouldToast) addToast('Please enter an Air Waybill (AWB) number.', 'warning');
+      return;
+    }
+
+    setIsSearching(true);
+    setIsTrackingLoading(true);
+    setSearchError('');
+    lastLoadedAwbRef.current = query.toUpperCase();
+
+    const minDelay = new Promise(resolve => setTimeout(resolve, 1000)); // strictly 1.0s service loading
+
+    try {
+      if (isBackendOnline) {
+        const res = await apiGetOrderTracking(query);
+        if (res && res.data) {
+          await minDelay;
+          setActiveShipment(res.data);
+          setSelectedAwb(res.data.awbNumber);
+          if (shouldToast) {
+            addToast(`Found shipment ${res.data.awbNumber}!`, 'success');
+          }
+          setIsSearching(false);
+          setIsTrackingLoading(false);
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn("Backend lookup notice:", e.message);
+    }
+
+    await minDelay;
+    // Local state fallback
+    const found = shipments.find(s => s.awbNumber.toLowerCase() === query.toLowerCase());
+    if (found) {
+      setActiveShipment(found);
+      setSelectedAwb(found.awbNumber);
+      if (shouldToast) {
+        addToast(`Found shipment: ${found.awbNumber}`, 'success');
+      }
+    } else {
+      setSearchError(`Shipment "${query}" not found. Please verify the AWB number.`);
+      if (shouldToast) {
+        addToast(`AWB "${query}" not found. Please check the consignment number and try again.`, 'warning');
+      }
+    }
+    setIsSearching(false);
+    setIsTrackingLoading(false);
+  }, [isBackendOnline, shipments, setSelectedAwb, addToast]);
+
+  // Sync when trackingQuery or selectedAwb changes externally
+  useEffect(() => {
+    const target = (trackingQuery || selectedAwb || '').trim();
+    if (target && target.toUpperCase() !== lastLoadedAwbRef.current) {
+      setInputVal(target);
+      performSearch(target, false);
+    }
+  }, [trackingQuery, selectedAwb, performSearch]);
+
+  // Connect live WebSocket stream for active shipment
+  useEffect(() => {
+    const targetAwb = activeShipment?.awbNumber;
+    if (!targetAwb || !isBackendOnline) {
+      setWsConnected(prev => (prev ? false : prev));
+      return;
+    }
+
+    let ws = null;
+    try {
+      ws = createTrackingWebSocket(
+        targetAwb,
+        (msg) => {
+          if (msg.type === 'TRACKING_UPDATE' && msg.data) {
+            setActiveShipment(msg.data);
+            addToast(`Update: Shipment ${msg.awbNumber} is now ${msg.status}!`, 'info');
+          }
+        },
+        () => setWsConnected(false)
+      );
+      if (ws) setWsConnected(true);
+    } catch {
+      setWsConnected(false);
+    }
+
+    return () => {
+      if (ws) {
+        ws.close();
+      }
+      setWsConnected(false);
+    };
+  }, [activeShipment?.awbNumber, isBackendOnline, addToast]);
+
+  const handleCopyAwb = () => {
+    if (!activeShipment?.awbNumber) return;
+    navigator.clipboard.writeText(activeShipment.awbNumber);
+    setCopiedAwb(true);
+    addToast(`Copied AWB ${activeShipment.awbNumber} to clipboard`, 'info');
+    setTimeout(() => setCopiedAwb(false), 2000);
+  };
 
   const handleSearch = (e) => {
     e.preventDefault();
-    const query = inputVal.trim();
-    if (!query) {
-      addToast('Please enter an AWB number', 'warning');
+    if (!inputVal.trim()) {
+      addToast('Please enter an Air Waybill (AWB) number.', 'warning');
       return;
     }
-    const found = shipments.find(s => s.awbNumber.toLowerCase() === query.toLowerCase());
-    if (found) {
-      setSelectedAwb(found.awbNumber);
-      setTrackingQuery(found.awbNumber);
-      addToast(`Located consignment: ${found.awbNumber}`, 'success');
-    } else {
-      addToast(`AWB "${query}" not found in current mock database. Try sample: AD-8849-2041`, 'warning');
-    }
+    performSearch(inputVal.trim(), true);
   };
 
-  // Horizontal milestone stages calculation
   const getStageIndex = (status) => {
     switch (status) {
       case 'BOOKED': return 0;
@@ -69,7 +178,8 @@ export default function TrackingPage() {
       case 'OUT_FOR_DELIVERY': return 4;
       case 'DELIVERED': return 5;
       case 'FAILED_ATTEMPT': return 4;
-      default: return 0;
+      case 'CANCELLED': return 0;
+      default: return 1;
     }
   };
 
@@ -77,286 +187,434 @@ export default function TrackingPage() {
   const stages = [
     { label: 'Booked', icon: Package },
     { label: 'Picked Up', icon: Clock },
-    { label: 'At Hub', icon: MapPin },
-    { label: 'In Transit', icon: Truck },
-    { label: 'Out for Delivery', icon: Truck },
+    { label: 'Hub Inbound', icon: MapPin },
+    { label: 'Linehaul Transit', icon: Truck },
+    { label: 'Out for Delivery', icon: CheckCircle2 },
     { label: 'Delivered', icon: CheckCircle2 }
   ];
 
   return (
-    <div style={{ maxWidth: '1050px', margin: '1rem auto 4rem' }}>
+    <div style={{ maxWidth: '1100px', margin: '1rem auto 4rem' }}>
       {/* Search Header */}
-      <div className="card" style={{ marginBottom: '2rem', padding: '1.25rem 1.5rem', background: 'rgba(13, 21, 39, 0.9)', borderColor: 'var(--border-accent)' }}>
-        <form onSubmit={handleSearch} style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          <div style={{ flex: '1 1 340px', position: 'relative' }}>
-            <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
+      <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+        <h1 style={{ fontSize: '2.25rem', marginBottom: '0.5rem', letterSpacing: '-0.02em' }}>
+          Track Shipment
+        </h1>
+        <p style={{ color: 'var(--text-muted)', maxWidth: '640px', margin: '0 auto 1.5rem', fontSize: '0.95rem' }}>
+          Track delivery milestones, shipment status, and proof of delivery.
+        </p>
+
+        {/* Search Bar Input */}
+        <form onSubmit={handleSearch} style={{ maxWidth: '640px', margin: '0 auto', display: 'flex', gap: '0.75rem' }}>
+          <div style={{ position: 'relative', flex: 1 }}>
+            <Search 
+              size={18} 
+              style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} 
+            />
             <input 
-              type="text" 
-              placeholder="Track by Air Waybill (e.g. AD-8849-2041)..." 
+              type="text"
+              className="form-input mono"
+              style={{ paddingLeft: '2.75rem', fontSize: '1rem', letterSpacing: '0.05em' }}
+              placeholder="Enter AWB (e.g. AD-8849-2041, AD-2910-4491)..."
               value={inputVal}
               onChange={(e) => setInputVal(e.target.value)}
-              className="mono form-input"
-              style={{ paddingLeft: '2.75rem', fontSize: '1rem' }}
+              aria-label="Track Air Waybill Number"
             />
           </div>
-          <button type="submit" className="btn btn-primary" style={{ padding: '0.75rem 1.5rem' }}>
-            <span>Search AWB</span>
-            <ArrowRight size={16} />
+          <button 
+            type="submit" 
+            className="btn btn-primary"
+            style={{ padding: '0.75rem 1.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+            disabled={isSearching}
+          >
+            {isSearching ? <RefreshCw size={18} className="pulse" /> : <Search size={18} />}
+            <span>{isSearching ? 'Querying...' : 'Track'}</span>
           </button>
         </form>
-
-        {/* Quick Click Samples */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Sample AWBs:</span>
-          {shipments.map(s => (
-            <button
-              key={s.awbNumber}
-              onClick={() => {
-                setInputVal(s.awbNumber);
-                setSelectedAwb(s.awbNumber);
-                setTrackingQuery(s.awbNumber);
-              }}
-              style={{
-                background: s.awbNumber === activeShipment?.awbNumber ? 'rgba(0, 240, 255, 0.15)' : 'rgba(255, 255, 255, 0.04)',
-                border: s.awbNumber === activeShipment?.awbNumber ? '1px solid var(--primary)' : '1px solid var(--border-subtle)',
-                color: s.awbNumber === activeShipment?.awbNumber ? 'var(--primary)' : 'var(--text-muted)',
-                borderRadius: 'var(--radius-sm)',
-                padding: '2px 8px',
-                fontSize: '0.75rem',
-                fontFamily: 'var(--font-mono)',
-                cursor: 'pointer'
-              }}
-            >
-              {s.awbNumber} ({s.currentStatus})
-            </button>
-          ))}
-        </div>
       </div>
 
-      {activeShipment ? (
+      {(isSearching || isTrackingLoading) ? (
+        <div className="card" style={{ padding: '2rem', marginBottom: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '40%' }}>
+              <SkeletonBlock width="65%" height="28px" />
+              <SkeletonBlock width="45%" height="14px" />
+            </div>
+            <SkeletonBlock width="130px" height="32px" borderRadius="9999px" />
+          </div>
+          <div style={{ display: 'flex', gap: '1rem', margin: '0.5rem 0' }}>
+            <SkeletonBlock width="20%" height="16px" />
+            <SkeletonBlock width="20%" height="16px" />
+            <SkeletonBlock width="20%" height="16px" />
+            <SkeletonBlock width="20%" height="16px" />
+          </div>
+          <SkeletonMap />
+        </div>
+      ) : searchError && !activeShipment ? (
+        <div className="card" style={{ textAlign: 'center', padding: '3rem', borderColor: 'var(--accent-amber)' }}>
+          <AlertTriangle size={36} color="var(--accent-amber)" style={{ margin: '0 auto 1rem' }} />
+          <h3>Shipment Not Found</h3>
+          <p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>{searchError}</p>
+        </div>
+      ) : activeShipment ? (
         <>
-          {/* Shipment Header Banner */}
-          <div className="card" style={{ marginBottom: '1.5rem', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ 
-              position: 'absolute', 
-              top: 0, 
-              right: 0, 
-              width: '180px', 
-              height: '180px', 
-              background: 'radial-gradient(circle, rgba(0, 240, 255, 0.08) 0%, transparent 70%)',
-              pointerEvents: 'none' 
-            }} />
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.25rem', marginBottom: '1.5rem' }}>
+          {/* Main Hero Status Card */}
+          <div className="card" style={{ marginBottom: '2rem', borderColor: 'var(--border-accent)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.5rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '1.5rem', marginBottom: '1.5rem' }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.4rem' }}>
-                  <h1 className="mono" style={{ fontSize: '1.85rem', color: 'var(--primary)', letterSpacing: '-0.02em' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                  <h2 className="mono" style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)' }}>
                     {activeShipment.awbNumber}
-                  </h1>
+                  </h2>
+                  <CopyButton text={activeShipment.awbNumber} />
                   <StatusBadge status={activeShipment.currentStatus} />
-                </div>
-                <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                  Service: <strong>{activeShipment.serviceTier}</strong> • Category: <strong>{activeShipment.category}</strong>
-                </div>
-              </div>
-
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>
-                  {activeShipment.currentStatus === 'DELIVERED' ? 'Delivered On' : 'Estimated Delivery'}
-                </div>
-                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'flex-end', marginTop: '2px' }}>
-                  <Calendar size={18} color="var(--primary)" />
-                  <span>
-                    {new Date(activeShipment.estimatedDelivery).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  <span style={{ 
+                    fontSize: '0.75rem', 
+                    fontWeight: 700, 
+                    padding: '2px 8px', 
+                    borderRadius: 'var(--radius-sm)',
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    color: 'var(--text-muted)'
+                  }}>
+                    {activeShipment.serviceTier}
                   </span>
                 </div>
-              </div>
-            </div>
-
-            {/* Delhivery-style Horizontal Step Ribbon */}
-            <div className="horizontal-steps">
-              {stages.map((stg, i) => {
-                const Icon = stg.icon;
-                const isCompleted = i < currentStageIndex;
-                const isActive = i === currentStageIndex;
-
-                let cls = '';
-                if (isActive) cls = 'active';
-                else if (isCompleted) cls = 'completed';
-
-                return (
-                  <div key={stg.label} className={`h-step ${cls}`}>
-                    <div className="h-marker">
-                      <Icon size={16} />
-                    </div>
-                    <span className="h-label">{stg.label}</span>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Quick Route Summary */}
-            <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: '1fr auto 1fr', 
-              alignItems: 'center', 
-              gap: '1rem', 
-              background: 'rgba(255, 255, 255, 0.02)', 
-              padding: '1rem 1.25rem', 
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--border-subtle)',
-              marginTop: '1rem'
-            }}>
-              <div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Origin Consignor</div>
-                <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{activeShipment.sender.city}</div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{activeShipment.sender.facility}</div>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)' }}>
-                <span style={{ height: '1px', width: '40px', background: 'var(--border-accent)' }}></span>
-                <Truck size={18} />
-                <span style={{ height: '1px', width: '40px', background: 'var(--border-accent)' }}></span>
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '0.45rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <span>Current Location: <strong>{activeShipment.currentLocation}</strong></span>
+                </div>
               </div>
 
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Destination Consignee</div>
-                <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{activeShipment.recipient.city}</div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{activeShipment.recipient.name} ({activeShipment.recipient.pinCode})</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Estimated Delivery SLA</div>
+                <div style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--primary)', marginTop: '0.2rem' }}>
+                  {new Date(activeShipment.estimatedDelivery).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </div>
               </div>
             </div>
+
+            {/* Stepper Progress Bar */}
+            <div style={{ padding: '1rem 0 1.5rem', overflowX: 'auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative', minWidth: '560px' }}>
+                <div style={{ 
+                  position: 'absolute', 
+                  top: '16px', 
+                  left: '20px', 
+                  right: '20px', 
+                  height: '3px', 
+                  background: 'rgba(255, 255, 255, 0.1)', 
+                  zIndex: 1 
+                }}>
+                  <div style={{ 
+                    width: `${(currentStageIndex / (stages.length - 1)) * 100}%`, 
+                    height: '100%', 
+                    background: activeShipment.currentStatus === 'FAILED_ATTEMPT' ? 'var(--accent-rose)' : 'var(--primary)', 
+                    transition: 'width 0.4s ease' 
+                  }}></div>
+                </div>
+
+                {stages.map((stage, idx) => {
+                  const isCompleted = idx < currentStageIndex || (idx === currentStageIndex && activeShipment.currentStatus === 'DELIVERED');
+                  const isCurrent = idx === currentStageIndex;
+                  const isFailed = isCurrent && activeShipment.currentStatus === 'FAILED_ATTEMPT';
+                  const Icon = stage.icon;
+
+                  let nodeBg = 'var(--bg-elevated)';
+                  let nodeBorder = 'rgba(255, 255, 255, 0.2)';
+                  let nodeColor = 'var(--text-dim)';
+
+                  if (isFailed) {
+                    nodeBg = 'var(--accent-rose)';
+                    nodeBorder = 'var(--accent-rose)';
+                    nodeColor = '#FFFFFF';
+                  } else if (isCompleted) {
+                    nodeBg = 'var(--accent-emerald)';
+                    nodeBorder = 'var(--accent-emerald)';
+                    nodeColor = '#070B14';
+                  } else if (isCurrent) {
+                    nodeBg = 'var(--primary)';
+                    nodeBorder = 'var(--primary)';
+                    nodeColor = '#070B14';
+                  }
+
+                  return (
+                    <div key={idx} style={{ position: 'relative', zIndex: 2, textAlign: 'center', width: '85px' }}>
+                      <div style={{ 
+                        width: '36px', 
+                        height: '36px', 
+                        borderRadius: '50%', 
+                        background: nodeBg, 
+                        border: `2px solid ${nodeBorder}`,
+                        color: nodeColor,
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        margin: '0 auto 0.5rem',
+                        boxShadow: isCurrent ? (isFailed ? '0 0 15px rgba(244, 63, 94, 0.5)' : '0 0 15px var(--primary-glow)') : 'none',
+                        transition: 'all 0.3s ease'
+                      }}>
+                        <Icon size={16} />
+                      </div>
+                      <span style={{ 
+                        fontSize: '0.72rem', 
+                        fontWeight: isCurrent ? 800 : 500, 
+                        color: isFailed ? 'var(--accent-rose)' : isCompleted || isCurrent ? 'var(--text-main)' : 'var(--text-dim)',
+                        display: 'block'
+                      }}>
+                        {stage.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Interactive Vector Route Map Section */}
+            <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <MapPin size={16} color="var(--primary)" />
+                  <span style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                    Route Map
+                  </span>
+                </div>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
+                  Active Segment: <strong>{activeShipment.sender?.city || 'Origin'}</strong> ➔ <strong>{activeShipment.recipient?.city || 'Destination'}</strong>
+                </span>
+              </div>
+
+              {/* Vector Map */}
+              <MyMap shipment={activeShipment} />
+            </div>
+
+            {/* Proof of Delivery Card if completed */}
+            {activeShipment.proofOfDelivery && (
+              <div style={{ 
+                marginTop: '1rem', 
+                padding: '1.25rem', 
+                background: 'rgba(16, 185, 129, 0.08)', 
+                border: '1px solid rgba(16, 185, 129, 0.3)', 
+                borderRadius: 'var(--radius-md)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '1rem'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{ 
+                    width: '42px', 
+                    height: '42px', 
+                    borderRadius: '50%', 
+                    background: 'rgba(16, 185, 129, 0.2)', 
+                    color: 'var(--accent-emerald)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <CheckCircle2 size={22} />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '0.95rem' }}>
+                      Delivery Handover Complete
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                      Accepted by <strong>{activeShipment.proofOfDelivery.deliveredTo}</strong> at {activeShipment.proofOfDelivery.timestamp} • <em>{activeShipment.proofOfDelivery.verificationMethod}</em>
+                    </div>
+                  </div>
+                </div>
+
+                {activeShipment.proofOfDelivery.photoUrl && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <button
+                      type="button"
+                      onClick={() => setEnlargedPhotoUrl(resolvePhotoUrl(activeShipment.proofOfDelivery.photoUrl))}
+                      style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer' }}
+                      title="Enlarge proof photo"
+                    >
+                      <img 
+                        src={resolvePhotoUrl(activeShipment.proofOfDelivery.photoUrl)} 
+                        alt="Handover photo preview" 
+                        style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '4px', border: '1px solid rgba(16, 185, 129, 0.4)' }}
+                        onError={(e) => {
+                          e.target.src = 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=500&q=80';
+                        }}
+                      />
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-secondary"
+                      onClick={() => setEnlargedPhotoUrl(resolvePhotoUrl(activeShipment.proofOfDelivery.photoUrl))}
+                      style={{ fontSize: '0.75rem' }}
+                    >
+                      <span>Inspect Photo</span>
+                      <ExternalLink size={12} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.5rem' }}>
-            {/* Left: Detailed Delhivery-style Milestone Timeline */}
-            <div className="card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                <h3 style={{ fontSize: '1.15rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Clock size={18} color="var(--primary)" />
-                  <span>Activity &amp; Milestone History</span>
+          {/* Details & Event Log Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
+            {/* Left: Origin, Destination & Package Specs */}
+            <div>
+              <div className="card" style={{ marginBottom: '1.5rem' }}>
+                <h3 style={{ fontSize: '1.05rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <MapPin size={18} color="var(--primary)" />
+                  <span>Logistics Route &amp; Locations</span>
                 </h3>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Newest on top</span>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
+                  {/* Sender */}
+                  <div style={{ background: 'var(--bg-secondary)', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Sender (Origin)</div>
+                    <div style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: '0.95rem' }}>{activeShipment.sender?.name}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>{activeShipment.sender?.city}, {activeShipment.sender?.pinCode}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '0.4rem' }}>{activeShipment.sender?.address}</div>
+                  </div>
+
+                  {/* Recipient */}
+                  <div style={{ background: 'var(--bg-secondary)', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Recipient (Destination)</div>
+                    <div style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: '0.95rem' }}>{activeShipment.recipient?.name}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>{activeShipment.recipient?.city}, {activeShipment.recipient?.pinCode}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '0.4rem' }}>{activeShipment.recipient?.address}</div>
+                  </div>
+                </div>
+
+                {/* Assigned Driver Card */}
+                {activeShipment.assignedDriver && (
+                  <div style={{ marginTop: '1.25rem', padding: '1rem', background: 'rgba(16, 185, 129, 0.08)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10B981' }}>
+                          <Truck size={18} />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#10B981', fontWeight: 800 }}>
+                            Assigned Courier Associate
+                          </div>
+                          <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                            {activeShipment.assignedDriver.name}
+                          </div>
+                          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                            Phone: <strong>{activeShipment.assignedDriver.phone || '+91 90043 58469'}</strong> • Vehicle: {activeShipment.assignedDriver.vehicleNumber}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <a
+                          href={`tel:${activeShipment.assignedDriver.phone || '+919004358469'}`}
+                          className="btn btn-sm btn-secondary"
+                          style={{ padding: '0.4rem 0.75rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.76rem' }}
+                        >
+                          <span>📞 Call Driver</span>
+                        </a>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-primary"
+                          onClick={openChatbox}
+                          style={{ padding: '0.4rem 0.75rem', fontSize: '0.76rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                        >
+                          <span>💬 Chat with Driver</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-
-              <TrackingTimeline events={activeShipment.events} currentStatus={activeShipment.currentStatus} />
-            </div>
-
-            {/* Right: Driver Information & Consignment Attributes */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              {/* Delivery Associate Card */}
-              {activeShipment.assignedDriver && (
-                <div className="card" style={{ borderColor: 'var(--border-accent)' }}>
-                  <h4 style={{ fontSize: '0.95rem', color: 'var(--primary)', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <Truck size={16} />
-                    <span>Delivery Associate</span>
-                  </h4>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
-                    <div style={{ 
-                      width: '40px', 
-                      height: '40px', 
-                      borderRadius: '50%', 
-                      background: 'rgba(0, 240, 255, 0.1)', 
-                      color: 'var(--primary)', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center',
-                      fontWeight: 800
-                    }}>
-                      {activeShipment.assignedDriver.name.charAt(0)}
-                    </div>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{activeShipment.assignedDriver.name}</div>
-                      <div className="mono" style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
-                        Vehicle: {activeShipment.assignedDriver.vehicleNumber}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <Phone size={13} color="var(--primary)" />
-                    <span>{activeShipment.assignedDriver.phone}</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Proof of Delivery Details (if delivered) */}
-              {activeShipment.proofOfDelivery && (
-                <div className="card" style={{ borderColor: 'rgba(16, 185, 129, 0.4)', background: 'rgba(16, 185, 129, 0.04)' }}>
-                  <h4 style={{ fontSize: '0.95rem', color: 'var(--accent-emerald)', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <CheckCircle2 size={16} />
-                    <span>Proof of Delivery (POD)</span>
-                  </h4>
-
-                  <div style={{ fontSize: '0.825rem', marginBottom: '0.5rem' }}>
-                    <div><strong>Received By:</strong> {activeShipment.proofOfDelivery.deliveredTo}</div>
-                    <div><strong>Handover Time:</strong> {activeShipment.proofOfDelivery.timestamp}</div>
-                    <div style={{ color: 'var(--text-dim)' }}>{activeShipment.proofOfDelivery.verificationMethod}</div>
-                  </div>
-
-                  {activeShipment.proofOfDelivery.photoUrl && (
-                    <div style={{ marginTop: '0.5rem' }}>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginBottom: '0.25rem' }}>
-                        POD Photo (S3 Private Presigned Asset Simulation):
-                      </div>
-                      <img 
-                        src={activeShipment.proofOfDelivery.photoUrl} 
-                        alt="Proof" 
-                        style={{ width: '100%', height: '110px', objectFit: 'cover', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-medium)' }} 
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
 
               {/* Package Specs */}
               <div className="card">
-                <h4 style={{ fontSize: '0.95rem', marginBottom: '0.75rem', color: '#FFFFFF' }}>Consignment Specs</h4>
+                <h3 style={{ fontSize: '1.05rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Package size={18} color="var(--primary)" />
+                  <span>Package Specifications</span>
+                </h3>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.825rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.35rem' }}>
-                    <span style={{ color: 'var(--text-dim)' }}>Weight</span>
-                    <span className="mono" style={{ fontWeight: 600 }}>{activeShipment.weightKg} kg</span>
-                  </div>
+                <div className="table-container">
+                  <table className="logistics-table">
+                    <tbody>
+                      <tr>
+                        <td style={{ color: 'var(--text-dim)', width: '40%' }}>Declared Dead Weight</td>
+                        <td className="mono" style={{ fontWeight: 700 }}>{activeShipment.weightKg} kg</td>
+                      </tr>
+                      <tr>
+                        <td style={{ color: 'var(--text-dim)' }}>Volumetric Dimensions</td>
+                        <td className="mono">{activeShipment.dimensions || '25 x 18 x 10 cm'}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ color: 'var(--text-dim)' }}>Declared Value &amp; Mode</td>
+                        <td className="mono">₹{activeShipment.declaredValue?.toLocaleString()} ({activeShipment.paymentMode})</td>
+                      </tr>
+                      <tr>
+                        <td style={{ color: 'var(--text-dim)' }}>Package Category</td>
+                        <td>{activeShipment.category}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.35rem' }}>
-                    <span style={{ color: 'var(--text-dim)' }}>Dimensions</span>
-                    <span className="mono" style={{ fontWeight: 600 }}>{activeShipment.dimensions}</span>
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.35rem' }}>
-                    <span style={{ color: 'var(--text-dim)' }}>Payment</span>
-                    <span style={{ fontWeight: 600 }}>{activeShipment.paymentMode} (₹{activeShipment.declaredValue})</span>
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-dim)' }}>Current Hub</span>
-                    <span style={{ fontWeight: 600, color: 'var(--primary)' }}>{activeShipment.currentLocation}</span>
-                  </div>
+            {/* Right: Real-Time Event Audit Timeline */}
+            <div>
+              <div className="card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <h3 style={{ fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Clock size={18} color="var(--primary)" />
+                    <span>Shipment Progress History</span>
+                  </h3>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
+                    {activeShipment.events?.length || 0} Milestones Logged
+                  </span>
                 </div>
 
-                <button
-                  className="btn btn-secondary btn-sm"
-                  style={{ width: '100%', marginTop: '1.25rem' }}
-                  onClick={() => {
-                    setSelectedAwb(activeShipment.awbNumber);
-                    setActiveTab('order-details');
-                  }}
-                >
-                  <ExternalLink size={14} />
-                  <span>Inspect Full Consignment Audit</span>
-                </button>
+                <TrackingTimeline events={activeShipment.events || []} currentStatus={activeShipment.currentStatus} />
               </div>
             </div>
           </div>
         </>
-      ) : (
-        <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
-          <AlertTriangle size={36} color="var(--accent-amber)" style={{ margin: '0 auto 1rem' }} />
-          <h3>Shipment Not Found</h3>
-          <p style={{ color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-            No shipment with AWB "{inputVal}" exists in the current Phase 1 mock store.
-          </p>
+      ) : null}
+
+      {/* Enlarged Proof Photo Modal */}
+      {enlargedPhotoUrl && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="photo-modal-title">
+          <div className="modal-dialog" style={{ maxWidth: '520px', textAlign: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3 id="photo-modal-title" style={{ fontSize: '1.1rem', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <ShieldCheck size={18} color="var(--accent-emerald)" />
+                <span>Proof of Delivery Dossier</span>
+              </h3>
+              <button 
+                type="button" 
+                onClick={() => setEnlargedPhotoUrl(null)}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}
+                aria-label="Close dialog"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <img 
+              src={enlargedPhotoUrl} 
+              alt="Full size proof of delivery" 
+              style={{ width: '100%', maxHeight: '420px', objectFit: 'contain', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-medium)', marginBottom: '1rem' }} 
+            />
+
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
+              Photographic proof recorded at doorstep handover for Air Waybill <strong>{activeShipment?.awbNumber}</strong>.
+            </div>
+
+            <button 
+              type="button" 
+              className="btn btn-secondary btn-sm"
+              onClick={() => setEnlargedPhotoUrl(null)}
+            >
+              Close Preview
+            </button>
+          </div>
         </div>
       )}
     </div>

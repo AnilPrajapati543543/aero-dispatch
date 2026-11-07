@@ -1,7 +1,7 @@
 import React from 'react';
 
 const STATUS_CONFIG = {
-  BOOKED: { label: 'Booked / Manifested', className: 'booked', pulse: false },
+  BOOKED: { label: 'Booked', className: 'booked', pulse: false },
   PICKED_UP: { label: 'Picked Up', className: 'picked_up', pulse: true },
   HUB_INBOUND: { label: 'At Hub Sorting', className: 'hub_inbound', pulse: true },
   IN_TRANSIT: { label: 'In Transit', className: 'in_transit', pulse: true },

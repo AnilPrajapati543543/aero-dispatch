@@ -26,7 +26,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+/lib/
+!frontend/src/lib/
 lib64/
 parts/
 sdist/
@@ -64,6 +65,14 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# Local Development Storage & Uploads
+.data/
+.uploads/
+backend/.data/
+backend/.uploads/
+*.sqlite
+*.sqlite3
+
 # IDE & OS
 .vscode/
 !.vscode/extensions.json
@@ -73,3 +82,4 @@ pnpm-debug.log*
 *~
 .DS_Store
 Thumbs.db
+

@@ -43,6 +43,7 @@ def validate_order_payload(payload: Any) -> Tuple[bool, Optional[Dict[str, Any]]
         sender_address = _sanitize_string(sender_raw.get("address"))
         sender_state = _sanitize_string(sender_raw.get("state") or "")
         sender_facility = _sanitize_string(sender_raw.get("facility") or "Origin Distribution Hub")
+        sender_email = _sanitize_string(sender_raw.get("email") or payload.get("senderEmail") or payload.get("email"))
     else:
         # Check flat fields
         sender_name = _sanitize_string(payload.get("senderName"))
@@ -52,6 +53,7 @@ def validate_order_payload(payload: Any) -> Tuple[bool, Optional[Dict[str, Any]]
         sender_address = _sanitize_string(payload.get("senderAddress"))
         sender_state = _sanitize_string(payload.get("senderState") or "")
         sender_facility = _sanitize_string(payload.get("senderFacility") or "Origin Distribution Hub")
+        sender_email = _sanitize_string(payload.get("senderEmail") or payload.get("email"))
 
     if not sender_name or len(sender_name) < 2 or len(sender_name) > 100:
         errors.append("sender.name is required and must be between 2 and 100 characters.")
@@ -73,6 +75,7 @@ def validate_order_payload(payload: Any) -> Tuple[bool, Optional[Dict[str, Any]]
         recipient_phone = _sanitize_string(recipient_raw.get("phone"))
         recipient_address = _sanitize_string(recipient_raw.get("address"))
         recipient_state = _sanitize_string(recipient_raw.get("state") or "")
+        recipient_email = _sanitize_string(recipient_raw.get("email") or payload.get("recipientEmail"))
     else:
         # Check flat fields
         recipient_name = _sanitize_string(payload.get("recipientName"))
@@ -81,6 +84,7 @@ def validate_order_payload(payload: Any) -> Tuple[bool, Optional[Dict[str, Any]]
         recipient_phone = _sanitize_string(payload.get("recipientPhone"))
         recipient_address = _sanitize_string(payload.get("recipientAddress"))
         recipient_state = _sanitize_string(payload.get("recipientState") or "")
+        recipient_email = _sanitize_string(payload.get("recipientEmail"))
 
     if not recipient_name or len(recipient_name) < 2 or len(recipient_name) > 100:
         errors.append("recipient.name is required and must be between 2 and 100 characters.")
@@ -154,24 +158,34 @@ def validate_order_payload(payload: Any) -> Tuple[bool, Optional[Dict[str, Any]]
     if errors:
         return False, None, errors
 
+    customer_email = _sanitize_string(payload.get("customerEmail")) or sender_email
+
+    sender_data = {
+        "name": sender_name,
+        "facility": sender_facility,
+        "city": sender_city,
+        "state": sender_state,
+        "pinCode": sender_pin,
+        "phone": sender_phone,
+        "address": sender_address,
+    }
+    if sender_email:
+        sender_data["email"] = sender_email.lower()
+
+    recipient_data = {
+        "name": recipient_name,
+        "city": recipient_city,
+        "state": recipient_state,
+        "pinCode": recipient_pin,
+        "phone": recipient_phone,
+        "address": recipient_address,
+    }
+    if recipient_email:
+        recipient_data["email"] = recipient_email.lower()
+
     normalized: Dict[str, Any] = {
-        "sender": {
-            "name": sender_name,
-            "facility": sender_facility,
-            "city": sender_city,
-            "state": sender_state,
-            "pinCode": sender_pin,
-            "phone": sender_phone,
-            "address": sender_address,
-        },
-        "recipient": {
-            "name": recipient_name,
-            "city": recipient_city,
-            "state": recipient_state,
-            "pinCode": recipient_pin,
-            "phone": recipient_phone,
-            "address": recipient_address,
-        },
+        "sender": sender_data,
+        "recipient": recipient_data,
         "weightKg": round(weight_kg, 2),
         "dimensions": dimensions_str,
         "category": category,
@@ -180,5 +194,7 @@ def validate_order_payload(payload: Any) -> Tuple[bool, Optional[Dict[str, Any]]
         "serviceTier": service_tier,
         "idempotencyKey": idempotency_key or None,
     }
+    if customer_email:
+        normalized["customerEmail"] = customer_email.lower()
 
     return True, normalized, []

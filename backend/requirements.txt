@@ -1,4 +1,11 @@
-# AWS Lambda Python Runtime Dependencies
-# Note: boto3 is pre-installed in AWS Lambda Python 3.12 runtime,
-# but specified here for local development and IDE autocompletion.
+# Production Dependencies for AeroDispatch Backend
+fastapi>=0.110.0,<1.0.0
+uvicorn[standard]>=0.28.0,<1.0.0
+gunicorn>=21.2.0,<22.0.0
+python-multipart>=0.0.9
+websockets>=12.0,<13.0
+pyjwt>=2.8.0,<3.0.0
+argon2-cffi>=23.1.0
 boto3>=1.34.0,<2.0.0
+pydantic>=2.6.0,<3.0.0
+requests>=2.31.0

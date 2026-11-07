@@ -42,11 +42,13 @@ def _decimals_to_primitives(obj: Any) -> Any:
     return obj
 
 
-class DynamoDBOrderRepository:
+from ..interfaces import OrderRepositoryInterface
+
+class DynamoDBOrderRepository(OrderRepositoryInterface):
     """Encapsulates all DynamoDB interactions for the Orders table."""
 
     def __init__(self, table: Optional[Any] = None, table_name: Optional[str] = None):
-        self.table_name = table_name or os.getenv("ORDERS_TABLE_NAME", "aerodispatch-orders")
+        self.table_name = table_name or os.getenv("ORDERS_TABLE_NAME", os.getenv("DYNAMODB_TABLE_NAME", "AeroDispatch-DDB-Orders"))
         if table:
             self.table = table
         else:
@@ -55,17 +57,20 @@ class DynamoDBOrderRepository:
             dynamodb = boto3.resource("dynamodb")
             self.table = dynamodb.Table(self.table_name)
 
-    def save_order(self, order_item: Dict[str, Any]) -> None:
+    def save_order(self, order_item: Dict[str, Any], is_new: bool = True) -> None:
         """
-        Saves a newly created order.
-        Uses condition expression 'attribute_not_exists(orderId)' to ensure uniqueness.
+        Saves an order item to DynamoDB.
+        Uses condition expression 'attribute_not_exists(orderId)' on initial creation to prevent collisions.
         """
         item_to_save = _floats_to_decimals(order_item)
         try:
-            self.table.put_item(
-                Item=item_to_save,
-                ConditionExpression="attribute_not_exists(orderId)",
-            )
+            if is_new:
+                self.table.put_item(
+                    Item=item_to_save,
+                    ConditionExpression="attribute_not_exists(orderId)",
+                )
+            else:
+                self.table.put_item(Item=item_to_save)
             logger.info(
                 f"Order successfully written to DynamoDB: {order_item.get('orderId')}",
                 extra={"extra": {"orderId": order_item.get("orderId")}},
@@ -79,16 +84,32 @@ class DynamoDBOrderRepository:
             raise
 
     def get_order_by_id(self, order_id: str) -> Optional[Dict[str, Any]]:
-        """Retrieves an order item by its partition key (orderId)."""
+        """Retrieves an order item by its partition key (orderId) or awbNumber."""
+        if str(order_id).startswith("USER#"):
+            return None
         try:
             response = self.table.get_item(Key={"orderId": order_id})
             item = response.get("Item")
             if item:
                 return _decimals_to_primitives(item)
+            
+            # Fallback scan for awbNumber match if different from orderId
+            scan_res = self.table.scan(
+                FilterExpression="awbNumber = :awb",
+                ExpressionAttributeValues={":awb": order_id},
+                Limit=1
+            )
+            items = scan_res.get("Items", [])
+            if items:
+                return _decimals_to_primitives(items[0])
             return None
         except ClientError as e:
             logger.error(f"Failed to get order '{order_id}' from DynamoDB: {e}", exc_info=True)
             raise
+
+    def get_order(self, order_id: str) -> Optional[Dict[str, Any]]:
+        """Interface method alias for get_order_by_id."""
+        return self.get_order_by_id(order_id)
 
     def get_order_by_idempotency_key(self, idempotency_key: str) -> Optional[Dict[str, Any]]:
         """
@@ -108,7 +129,6 @@ class DynamoDBOrderRepository:
                 return _decimals_to_primitives(items[0])
             return None
         except ClientError as e:
-            # If the index does not exist in a local test mock, log warning and return None
             logger.warning(
                 f"Idempotency GSI query encountered ClientError: {e}. Falling back to normal flow."
             )
@@ -118,3 +138,66 @@ class DynamoDBOrderRepository:
                 f"Unexpected error while querying IdempotencyIndex: {e}."
             )
             return None
+
+    def update_order_status(
+        self,
+        order_id: str,
+        new_status: str,
+        event: Dict[str, Any],
+        proof_of_delivery: Optional[Dict[str, Any]] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """Updates status, appends event, and optionally adds proof of delivery."""
+        order = self.get_order(order_id)
+        if not order:
+            return None
+        order["currentStatus"] = new_status
+        if "events" not in order:
+            order["events"] = []
+        order["events"].append(event)
+        if proof_of_delivery:
+            order["proofOfDelivery"] = proof_of_delivery
+        self.save_order(_floats_to_decimals(order), is_new=False)
+        return order
+
+    def assign_driver(self, order_id: str, driver_info: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Assigns driver to order in DynamoDB."""
+        order = self.get_order(order_id)
+        if not order:
+            return None
+        order["assignedDriver"] = driver_info
+        self.save_order(_floats_to_decimals(order), is_new=False)
+        return order
+
+    def list_orders(
+        self,
+        status: Optional[str] = None,
+        driver_id: Optional[str] = None,
+        customer_email: Optional[str] = None,
+        limit: int = 50,
+    ) -> List[Dict[str, Any]]:
+        """Scans orders with optional filter (for dev/admin views)."""
+        try:
+            scan_kwargs: Dict[str, Any] = {"Limit": limit}
+            response = self.table.scan(**scan_kwargs)
+            items = [_decimals_to_primitives(item) for item in response.get("Items", [])]
+            items = [i for i in items if not str(i.get("orderId", "")).startswith("USER#")]
+            if status:
+                items = [i for i in items if i.get("currentStatus") == status]
+            if driver_id:
+                items = [
+                    i for i in items
+                    if i.get("assignedDriver") and i["assignedDriver"].get("driverId") == driver_id
+                ]
+            if customer_email:
+                c_norm = customer_email.strip().lower()
+                items = [
+                    i for i in items
+                    if (i.get("customerEmail") and i["customerEmail"].strip().lower() == c_norm)
+                    or (i.get("sender") and i["sender"].get("email") and i["sender"]["email"].strip().lower() == c_norm)
+                    or (i.get("recipient") and i["recipient"].get("email") and i["recipient"]["email"].strip().lower() == c_norm)
+                ]
+            return items
+        except Exception as e:
+            logger.warning(f"Error scanning DynamoDB table: {e}")
+            return []
+

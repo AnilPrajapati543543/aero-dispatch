@@ -6,6 +6,8 @@ from unittest.mock import MagicMock
 # Set test environment variables before any module loads
 os.environ["ORDERS_TABLE_NAME"] = "test-aerodispatch-orders"
 os.environ["AWS_DEFAULT_REGION"] = "ap-south-1"
+os.environ["AWS_EC2_METADATA_DISABLED"] = "true"
+os.environ["MOCK_AWS"] = "true"
 os.environ["LOG_LEVEL"] = "WARNING"
 
 
