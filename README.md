@@ -1,130 +1,162 @@
-# AeroDispatch — Cloud-Native Logistics & Telemetry Engine
+# AeroDispatch — Cloud-Native Logistics & Telemetry Platform
 
-AeroDispatch is a high-performance logistics dispatch and air consignment tracking platform engineered with a React 19 + Vite frontend and a local Python FastAPI backend (emulating AWS Lambda, DynamoDB Single-Table Design, Cognito JWT RBAC, and S3 Proof-of-Delivery).
+<p align="center">
+  <img src="https://img.shields.io/badge/React_19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React 19" />
+  <img src="https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI" />
+  <img src="https://img.shields.io/badge/Python_3.12-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.12" />
+  <img src="https://img.shields.io/badge/Amazon_AWS-232F3E?style=for-the-badge&logo=amazon-aws&logoColor=white" alt="AWS" />
+  <img src="https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" />
+  <img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="License MIT" />
+</p>
 
 ---
 
-## 🚀 Quick Start on Windows (Separate Terminals)
+## 🌐 Live Production Deployment
 
-Run the backend and frontend simultaneously in two separate PowerShell terminals.
+| Service | Environment | Endpoint URL | Status |
+| :--- | :--- | :--- | :--- |
+| **Frontend Web App** | AWS S3 Website Hosting | [AeroDispatch Live](http://aerodispatch-web-761112473042.s3-website.ap-northeast-2.amazonaws.com) | `🟢 Operational` |
+| **Backend API** | AWS Elastic Beanstalk (AL2023 / Python 3.12) | [API Base](http://aerodispatch-api-live.eba-phcug3cm.ap-northeast-2.elasticbeanstalk.com) | `🟢 Ready` |
+| **Interactive API Docs** | FastAPI Swagger UI | [Swagger OpenAPI](http://aerodispatch-api-live.eba-phcug3cm.ap-northeast-2.elasticbeanstalk.com/docs) | `🟢 Live` |
+| **Health Probe** | Elastic Beanstalk Health Check | [Health Endpoint](http://aerodispatch-api-live.eba-phcug3cm.ap-northeast-2.elasticbeanstalk.com/health) | `🟢 Healthy` |
 
-### Terminal 1: Start Python Backend (FastAPI / Uvicorn)
+---
 
-```powershell
-# 1. Navigate to the backend directory
-cd C:\Users\micro\.gemini\antigravity-ide\scratch\aero-dispatch\backend
+## 📌 Overview
 
-# 2. Run the FastAPI development server with live reload
-uv run uvicorn src.main:app --host 127.0.0.1 --port 8000 --reload
+**AeroDispatch** is an enterprise-grade, cloud-native logistics dispatch, consignment telemetry tracking, and fleet management platform. Designed for high throughput and sub-second response times, the platform combines a modern **React 19 Single Page Application (SPA)** with an asynchronous **Python FastAPI backend**, backed by an **AWS Serverless & Cloud Infrastructure** (DynamoDB Single-Table Design, Cognito User Pools, S3 Proof-of-Delivery, and Elastic Beanstalk).
+
+---
+
+## 🏗️ Architecture & Cloud Infrastructure
+
+```mermaid
+flowchart TD
+    subgraph ClientLayer ["Client Layer (Browser)"]
+        SPA["React 19 SPA (Vite / Tailwind)"]
+        SPA -->|HTTPS| CDN["AWS S3 Static Web Distribution"]
+    end
+
+    subgraph APILayer ["API & Compute Layer"]
+        CDN -.->|REST / WebSocket| EB["AWS Elastic Beanstalk (Python 3.12 / FastAPI)"]
+        EB --> MW["Security Middleware & JWT Verification"]
+    end
+
+    subgraph DataLayer ["AWS Cloud Data & Storage"]
+        MW --> DDB[("AWS DynamoDB (Single-Table Design)")]
+        MW --> COG["AWS Cognito (RBAC User Directory)"]
+        MW --> S3POD[("AWS S3 (Proof-of-Delivery & Avatars)")]
+        MW --> SNS["AWS SNS (Telemetry & Dispatch Alerts)"]
+    end
 ```
-* Backend URL: `http://127.0.0.1:8000`
-* Interactive API Docs (Swagger): `http://127.0.0.1:8000/docs`
-* Health Endpoint: `http://127.0.0.1:8000/health`
 
 ---
 
-### Terminal 2: Start React Frontend (Vite)
+## ✨ Core Features & Highlights
 
-```powershell
-# 1. Navigate to the frontend directory
-cd C:\Users\micro\.gemini\antigravity-ide\scratch\aero-dispatch\frontend
+### 1. Multi-Modal Consignment Booking & Dispatch
+- Dynamic service tier selector: **AeroExpress Air**, **Standard Surface Linehaul**, and **Same-Day Priority Courier**.
+- Automated volumetric weight and dimensional tare calculations with real-time tariff estimation.
+- Cryptographically idempotent order manifestation with dynamic digital Air Waybill (AWB) generation.
 
-# 2. (First-time only) Create local environment file from example
-if (!(Test-Path .env)) { Copy-Item .env.example .env }
+### 2. Live Telemetry & Timeline Tracking
+- Public tracking gateway supporting instant lookups by **Mobile Number**, **AWB Tracking ID**, or **Internal Order ID**.
+- Real-time consignment milestone progression: Booked ➔ Manifested ➔ In-Transit ➔ Out for Delivery ➔ Delivered with digital Proof of Delivery (PoD).
 
-# 3. Start the Vite development server
+### 3. Fleet & Driver Allocation Engine
+- Dispatch control tower with real-time driver availability, operational zone routing, and rating metrics.
+- Independent card scroll containment (`overscroll-behavior: contain`) allowing dispatchers to review detailed consignments without bubbling page scroll.
+- Direct driver consignment assignment and acceptance/decline telemetry tracking.
+
+### 4. WhatsApp-Grade Profile Avatar System
+- High-fidelity interactive profile modal with smooth zoom, rotate, download, and reset capabilities.
+- Intelligent client-side image compression converting uploaded photos to crisp, lightweight WebP/PNG formats without dark fills.
+- Integrated **"✨ Remove BG"** feature providing one-click background isolation and alpha feathering directly in the client.
+
+### 5. Multi-Tenant Role-Based Access Control (RBAC)
+- **Control Tower Admin**: Complete fleet oversight, system metrics, consignment dispatch, and service logs.
+- **Field Delivery Driver**: Assigned delivery manifests, navigation routing, and live delivery status updates.
+- **Enterprise Merchant / Customer**: Self-service booking, manifest management, and consignment analytics.
+- Instant 1-click demo role switching and secure credential authentication via AWS Cognito & Argon2id hashing.
+
+### 6. Adaptive High-Contrast UI
+- Seamless toggle between Dark Mode and Light Mode.
+- Adaptive dropdown components with soft elevation shadows, crisp typography, and high-visibility status indicators.
+
+---
+
+## 🛠️ Tech Stack
+
+| Domain | Technology |
+| :--- | :--- |
+| **Frontend** | React 19, Vite, Lucide Icons, Modern CSS3 with Custom Variables, HTML5 Canvas |
+| **Backend** | Python 3.12, FastAPI, Uvicorn, Pydantic v2, Argon2id, Boto3 |
+| **AWS Cloud Services** | Elastic Beanstalk, DynamoDB, S3, Cognito User Pools, SNS, CloudWatch |
+| **DevOps & Tooling** | AWS CLI, Git, Vite Rolldown, Pytest, Node.js |
+
+---
+
+## 🚀 Local Development Setup
+
+### Prerequisites
+- **Node.js**: v18.0 or higher
+- **Python**: v3.11 or v3.12
+- Git
+
+### 1. Clone the Repository
+```bash
+git clone https://github.com/AnilPrajapati543543/aero-dispatch.git
+cd aero-dispatch
+```
+
+### 2. Backend Setup (FastAPI)
+```bash
+cd backend
+
+# Create and activate virtual environment
+python -m venv .venv
+
+# Windows:
+.venv\Scripts\activate
+# macOS/Linux:
+# source .venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run development server with live reload
+uvicorn src.main:app --host 127.0.0.1 --port 8000 --reload
+```
+* **API Documentation**: `http://127.0.0.1:8000/docs`
+* **Health Check**: `http://127.0.0.1:8000/health`
+
+### 3. Frontend Setup (React 19 + Vite)
+In a separate terminal:
+```bash
+cd frontend
+
+# Install packages
+npm install
+
+# Start Vite dev server
 npm run dev
 ```
-* Frontend Web App: `http://localhost:5173`
+* **Web App URL**: `http://localhost:5173`
 
 ---
 
-## 🔑 Pre-Seeded Demo Role Credentials
+## 🔐 Credentials & Demo Access
 
-| Role | Email | Password | Assigned ID / Tier |
+The platform provides pre-configured credentials and 1-click quick-access buttons on the login portal:
+
+| Role | Email | Password | Access Scope |
 | :--- | :--- | :--- | :--- |
-| **Consignor / Customer** | `aditya.sharma@example.com` | `Customer@123` | Enterprise Merchant |
-| **Delivery Driver** | `ramesh.kumar@aerodispatch.internal` | `Driver@123` | Driver ID: `DRV-504` |
-| **Control Tower Admin** | `priya.nair@aerodispatch.internal` | `Admin@123` | National Operations Director |
-
-> **Note:** The frontend also features **1-Click Instant Demo Profiles** on the Authentication Portal for rapid role switching.
+| **Customer / Merchant** | `customer@aerodispatch.io` | `Customer@123` | Booking, consignment management & tracking |
+| **Courier Driver** | `driver@aerodispatch.io` | `Driver@123` | Assigned manifests, delivery acceptance |
+| **System Admin** | `admin@aerodispatch.io` | *Direct Admin Code* | Full fleet management & operations |
 
 ---
 
-## 🧪 Automated Testing & Quality Checks
+## 📄 License
 
-### Run All Backend Unit, API, E2E, and Phase 6 Security Tests (57/57 Passing)
-```powershell
-cd C:\Users\micro\.gemini\antigravity-ide\scratch\aero-dispatch
-uv run --directory backend pytest -v
-```
-
-To run individual phase test suites:
-```powershell
-# Phase 2: Lambda order creation & validation (11 tests)
-uv run --directory backend pytest tests/test_create_order.py -v
-
-# Phase 3: REST API, JWT RBAC, State Machine & Uploads (16 tests)
-uv run --directory backend pytest tests/test_phase3_api.py -v
-
-# Phase 5: End-to-End Application & Regression suite (18 tests)
-uv run --directory backend pytest tests/test_phase5_e2e.py -v
-
-# Phase 6: Security, IDOR/BOLA Authorization & Path Traversal (12 tests)
-uv run --directory backend pytest tests/test_phase6_security.py -v
-```
-
-### Run Frontend Build & Lint Checks
-```powershell
-cd C:\Users\micro\.gemini\antigravity-ide\scratch\aero-dispatch\frontend
-npm run lint
-npm run build
-```
-
----
-
-## 🔒 Security Posture & Architecture Review (Phase 6)
-
-### 1. Implemented & Tested Protections
-* **Authentication & RBAC**: JWT Bearer tokens signed with HS256 and 24-hour expiration. Strict role enforcement across `customer`, `driver`, and `admin` personas.
-* **Privilege Escalation Prevention**: Anonymous self-registration restricts roles to `customer`. Registering `driver` or `admin` accounts requires an authenticated admin token (403 Forbidden).
-* **IDOR / BOLA Prevention**: Once a consignment is assigned to a delivery associate (`driverId`), other drivers are prohibited from modifying delivery status or uploading proof of delivery (403 Forbidden).
-* **Consignment Ownership & Privacy**: Customer orders are attributed to the authenticated customer account (`customerEmail`) and isolated in customer queries.
-* **Path Traversal & Storage Sanitization**: Consignment IDs and file names are strictly validated against alphanumeric character rules. Destination paths are verified using `os.path.abspath` to stay within `.uploads/`.
-* **Bounded File Uploads & Binary Inspection**: Package photo uploads stream in 64KB chunks up to 5MB, avoiding memory exhaustion DoS. Binary magic bytes (`\xff\xd8\xff` for JPEG, `\x89PNG` for PNG, `RIFF/WEBP` for WebP) prevent renamed executables or scripts.
-* **State Machine Invariants**: Rejects illegal or out-of-order transitions. Terminal states (`DELIVERED`, `CANCELLED`) cannot be transitioned away from by drivers.
-* **WebSocket Teardown & Validation**: AWB parameters are validated by regex (`^[A-Za-z0-9\-]{4,32}$`). Non-existent consignments receive an error snapshot and terminate immediately with WS policy violation code.
-* **CORS Policy**: Configured with explicit browser origins (`http://localhost:5173`, etc.) compatible with credentialed requests (`Access-Control-Allow-Credentials: true`).
-
-### 2. Remaining Risks & Pre-Deployment Production Requirements
-* **Production Secret Management**: The local environment uses a development fallback secret (`JWT_SECRET`). Production deployment requires AWS Secrets Manager or Parameter Store integration.
-* **Token Invalidation / Revocation**: Stateless JWTs cannot be revoked prior to expiration without a distributed token blacklist (e.g., Redis or DynamoDB TTL table).
-* **Cloud Infrastructure (Phase 4)**: AWS Cognito User Pools, Amazon S3 Presigned URLs with KMS encryption, and Amazon EventBridge/SNS are emulated locally in Python services. They must be provisioned in AWS before production deployment.
-* **Rate Limiting**: Local endpoints currently lack IP-level rate limiting or WAF throttling. In production, AWS WAF or API Gateway usage plans must throttle public order creation and tracking lookups.
-
----
-
-## 🏗️ Architecture & Cloud-Emulated Local Services
-
-* **REST API & Telemetry:** FastAPI on port `8000` providing endpoints for order creation, consignment tracking, state machine status transitions, proof-of-delivery uploads, and driver dispatch assignment.
-* **WebSocket Streams:** `/ws/tracking/{awb}` broadcasting real-time milestone events directly to connected dispatchers and tracking screens.
-* **Authentication:** JWT Bearer tokens with Role-Based Access Control (`customer`, `driver`, `admin`).
-* **Storage & Persistence:** Local JSON persistence in `backend/.data/orders.json` and multi-part proof-of-delivery photo validation in `backend/.uploads/`.
-* **Zero Cloud Cost:** Fully functional in local development mode without deploying AWS resources.
-
----
-
-## 📋 Known Limitations & Local Mock Scope
-
-1. **Gateway Sorting Facilities & Hub Health**: Sorter load percentages and package capacities for the 4 regional sorting gateways (Delhi, Mumbai, Bengaluru, Kolkata) are displayed as telemetry simulations (`MOCK_HUBS`).
-2. **Driver Roster Directory**: The driver catalog (`MOCK_DRIVERS`) is pre-seeded locally in `backend/src/data_mock.py` and `frontend/src/data/mockShipments.js` for dispatch assignment.
-3. **Outbound Notification Delivery**: EventBridge / SNS customer SMS and email dispatches are emulated by the internal event dispatcher without external telecom gateway integration.
-4. **Cloud Infrastructure**: S3 direct presigned URLs, DynamoDB cloud tables, and AWS Cognito user pools are emulated locally in Python services to ensure zero cloud cost during local testing.
-
----
-
-## 🛠️ Local Troubleshooting
-
-* **Backend port conflict (8000 in use)**: Check active processes using `Get-NetTCPConnection -LocalPort 8000` in PowerShell and terminate the previous Uvicorn process.
-* **Frontend cannot connect to backend**: Verify backend is running on `http://127.0.0.1:8000` and `frontend/.env` has `VITE_API_BASE_URL=http://localhost:8000`. The frontend will automatically show a banner indicating local fallback mode if the backend is offline.
-
+This project is licensed under the [MIT License](LICENSE).
