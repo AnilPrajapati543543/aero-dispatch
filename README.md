@@ -15,7 +15,7 @@
 
 | Service | Environment | Endpoint URL | Status |
 | :--- | :--- | :--- | :--- |
-| **Frontend Web App** | AWS S3 Website Hosting | [AeroDispatch Live](http://aerodispatch-web-761112473042.s3-website.ap-northeast-2.amazonaws.com) | `🟢 Operational` |
+| **Frontend Web App** | AWS S3 Website Hosting | [AeroDispatch Live](http://aerodispatch.site) | `🟢 Operational` |
 | **Backend API** | AWS Elastic Beanstalk (AL2023 / Python 3.12) | [API Base](http://aerodispatch-api-live.eba-phcug3cm.ap-northeast-2.elasticbeanstalk.com) | `🟢 Ready` |
 | **Interactive API Docs** | FastAPI Swagger UI | [Swagger OpenAPI](http://aerodispatch-api-live.eba-phcug3cm.ap-northeast-2.elasticbeanstalk.com/docs) | `🟢 Live` |
 | **Health Probe** | Elastic Beanstalk Health Check | [Health Endpoint](http://aerodispatch-api-live.eba-phcug3cm.ap-northeast-2.elasticbeanstalk.com/health) | `🟢 Healthy` |
