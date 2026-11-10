@@ -88,10 +88,10 @@ export function getCleanDisplayName(user, role = null) {
   }
 
   // 3. Fallbacks based on role
-  if (effectiveRole === 'admin' || (email && email.toLowerCase().includes('admin'))) {
+  if (effectiveRole === 'admin') {
     return 'System Administrator';
   }
-  if (effectiveRole === 'driver' || (email && email.toLowerCase().includes('driver'))) {
+  if (effectiveRole === 'driver') {
     return 'Captain Rishabh Pandey';
   }
 

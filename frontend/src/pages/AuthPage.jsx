@@ -19,12 +19,20 @@ import {
 } from 'lucide-react';
 
 export default function AuthPage() {
-  const { loginUser, resetAccountPassword, addToast, setActiveTab } = useApp();
+  const { currentUser, loginUser, resetAccountPassword, addToast, setActiveTab } = useApp();
+
+  const initialMode = React.useMemo(() => {
+    const modeKey = localStorage.getItem('aerodispatch_auth_mode');
+    localStorage.removeItem('aerodispatch_auth_mode');
+    if (modeKey === 'register') return 'register';
+    if (modeKey === 'login') return 'login';
+    const p = localStorage.getItem('aerodispatch_prefill_phone');
+    return p ? 'register' : 'login';
+  }, []);
 
   const initialRole = React.useMemo(() => {
-    const roleKey = localStorage.getItem('aerodispatch_auth_role') || localStorage.getItem('aerodispatch_auth_mode');
+    const roleKey = localStorage.getItem('aerodispatch_auth_role');
     localStorage.removeItem('aerodispatch_auth_role');
-    localStorage.removeItem('aerodispatch_auth_mode');
     if (roleKey === 'driver') return 'driver';
     return 'customer';
   }, []);
@@ -36,7 +44,24 @@ export default function AuthPage() {
   }, []);
 
   const [authRole, setAuthRole] = useState(initialRole);
-  const [authMode, setAuthMode] = useState(prefilledPhone ? 'register' : 'login'); // 'login' | 'register' | 'verify-otp' | 'forgot'
+  const [authMode, setAuthMode] = useState(initialMode); // 'login' | 'register' | 'verify-otp' | 'forgot'
+
+  useEffect(() => {
+    const modeKey = localStorage.getItem('aerodispatch_auth_mode');
+    if (modeKey) {
+      localStorage.removeItem('aerodispatch_auth_mode');
+      if (modeKey === 'register' || modeKey === 'login') {
+        setAuthMode(modeKey);
+      }
+    }
+    const roleKey = localStorage.getItem('aerodispatch_auth_role');
+    if (roleKey) {
+      localStorage.removeItem('aerodispatch_auth_role');
+      if (roleKey === 'driver' || roleKey === 'customer') {
+        setAuthRole(roleKey);
+      }
+    }
+  }, []);
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState(prefilledPhone);
   const [password, setPassword] = useState('');
@@ -731,14 +756,20 @@ export default function AuthPage() {
       <div className="login-ambient-orb-1" />
       <div className="login-ambient-orb-2" />
 
-      {/* Return to Public Home Link */}
+      {/* Return to Public Home or Active Dashboard Link */}
       <button
         type="button"
         className="login-back-btn"
-        onClick={() => setActiveTab('landing')}
-        title="Return to AeroDispatch Homepage"
+        onClick={() => {
+          if (currentUser) {
+            setActiveTab(currentUser.role === 'admin' ? 'dashboard' : currentUser.role === 'driver' ? 'driver' : 'shipments');
+          } else {
+            setActiveTab('landing');
+          }
+        }}
+        title="Return to AeroDispatch Dashboard or Homepage"
       >
-        <span>← AeroDispatch Home</span>
+        <span>← {currentUser ? 'Return to Dashboard' : 'AeroDispatch Home'}</span>
       </button>
 
       {/* Glassmorphic Centered Card */}

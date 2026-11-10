@@ -1,32 +1,21 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { getCleanDisplayName } from '../utils/userUtils';
 import { 
   Check, 
   Plus, 
   UserCog, 
-  LogOut, 
-  ShieldCheck, 
-  Truck, 
-  Package, 
-  LogIn,
-  ChevronDown,
-  ChevronUp
+  LogOut 
 } from 'lucide-react';
 
 export default function AccountDropdown({ isOpen, onClose, triggerRef }) {
   const { 
     currentUser, 
     currentRole, 
-    switchRole, 
     setActiveTab, 
-    logoutUser,
-    loginWithAdminCode,
-    loginUser,
-    addToast 
+    logoutUser 
   } = useApp();
 
-  const [showPersonaPicker, setShowPersonaPicker] = useState(false);
   const dropdownRef = useRef(null);
 
   // Close when clicking outside or pressing Escape
@@ -70,22 +59,14 @@ export default function AccountDropdown({ isOpen, onClose, triggerRef }) {
         : 'customer@aerodispatch.io'
   );
 
-  const handleSwitchPersona = async (targetRole) => {
-    try {
-      if (targetRole === 'admin') {
-        loginWithAdminCode('8469');
-        addToast('Switched to System Administrator', 'success');
-      } else if (targetRole === 'driver') {
-        await loginUser('driver@aerodispatch.io', 'Driver@123', 'driver');
-      } else {
-        await loginUser('customer@aerodispatch.io', 'Customer@123', 'customer');
-      }
-    } catch (e) {
-      if (switchRole) {
-        switchRole(targetRole);
-      }
-    }
+  // When clicking "Add another account", directly route to the registration page 
+  // for a new account based on the active role dashboard (Driver -> Captain, Customer -> Merchant)
+  const handleAddAnotherAccount = () => {
     onClose();
+    const targetRole = currentRole === 'driver' ? 'driver' : 'customer';
+    localStorage.setItem('aerodispatch_auth_role', targetRole);
+    localStorage.setItem('aerodispatch_auth_mode', 'register');
+    setActiveTab('auth');
   };
 
   return (
@@ -144,7 +125,7 @@ export default function AccountDropdown({ isOpen, onClose, triggerRef }) {
         }
       `}</style>
 
-      {/* Header: Switch Accounts */}
+      {/* Header: Switch accounts */}
       <div style={{ 
         fontSize: '0.95rem', 
         fontWeight: 800, 
@@ -155,7 +136,7 @@ export default function AccountDropdown({ isOpen, onClose, triggerRef }) {
         Switch accounts
       </div>
 
-      {/* Active Account Item (Matching Image 2 with Avatar, Name, Email and Checkmark) */}
+      {/* Active Account Item (Matching Google/Canva Profile with Avatar, Name, Email and Checkmark) */}
       <div 
         className="account-popover-item"
         style={{
@@ -236,7 +217,7 @@ export default function AccountDropdown({ isOpen, onClose, triggerRef }) {
           </div>
         </div>
 
-        {/* Checkmark icon (✓) indicating active account (Matching Image 2) */}
+        {/* Checkmark icon (✓) indicating active account */}
         <Check 
           size={20} 
           color="var(--text-main)" 
@@ -244,7 +225,7 @@ export default function AccountDropdown({ isOpen, onClose, triggerRef }) {
         />
       </div>
 
-      {/* Subtle Hairline Divider (Matching Image 2) */}
+      {/* Subtle Hairline Divider */}
       <div 
         style={{ 
           height: '1px', 
@@ -253,81 +234,18 @@ export default function AccountDropdown({ isOpen, onClose, triggerRef }) {
         }} 
       />
 
-      {/* Action 1: Add another account (Matching Image 2) */}
+      {/* Action 1: Add another account (Directly throws to registration for active role) */}
       <button
         type="button"
         className="account-popover-item"
-        onClick={() => setShowPersonaPicker(prev => !prev)}
-        title="Add or switch to another account"
+        onClick={handleAddAnotherAccount}
+        title={`Register a new ${currentRole === 'driver' ? 'Delivery Captain' : 'Customer'} account`}
       >
         <Plus size={20} color="var(--text-main)" style={{ flexShrink: 0 }} />
-        <span style={{ flex: 1 }}>Add another account</span>
-        {showPersonaPicker ? <ChevronUp size={16} color="var(--text-muted)" /> : <ChevronDown size={16} color="var(--text-muted)" />}
+        <span>Add another account</span>
       </button>
 
-      {/* Expanded Persona Switcher */}
-      {showPersonaPicker && (
-        <div style={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          gap: '0.35rem', 
-          padding: '0.5rem 0.5rem 0.5rem 2.25rem',
-          background: 'var(--bg-secondary)',
-          borderRadius: '14px',
-          margin: '0.25rem 0 0.5rem 0'
-        }}>
-          {currentRole !== 'admin' && (
-            <button
-              type="button"
-              className="account-popover-item"
-              onClick={() => handleSwitchPersona('admin')}
-              style={{ padding: '0.45rem 0.6rem', fontSize: '0.84rem' }}
-            >
-              <ShieldCheck size={16} color="#EF4444" />
-              <span>System Administrator</span>
-            </button>
-          )}
-
-          {currentRole !== 'driver' && (
-            <button
-              type="button"
-              className="account-popover-item"
-              onClick={() => handleSwitchPersona('driver')}
-              style={{ padding: '0.45rem 0.6rem', fontSize: '0.84rem' }}
-            >
-              <Truck size={16} color="#F59E0B" />
-              <span>Delivery Captain</span>
-            </button>
-          )}
-
-          {currentRole !== 'customer' && (
-            <button
-              type="button"
-              className="account-popover-item"
-              onClick={() => handleSwitchPersona('customer')}
-              style={{ padding: '0.45rem 0.6rem', fontSize: '0.84rem' }}
-            >
-              <Package size={16} color="#10B981" />
-              <span>Customer Merchant</span>
-            </button>
-          )}
-
-          <button
-            type="button"
-            className="account-popover-item"
-            onClick={() => {
-              onClose();
-              setActiveTab('auth');
-            }}
-            style={{ padding: '0.45rem 0.6rem', fontSize: '0.84rem', color: 'var(--primary)' }}
-          >
-            <LogIn size={16} color="var(--primary)" />
-            <span>Sign in with different credentials ➔</span>
-          </button>
-        </div>
-      )}
-
-      {/* Action 2: Manage accounts (Matching Image 2 UserCog icon) */}
+      {/* Action 2: Manage accounts */}
       <button
         type="button"
         className="account-popover-item"
@@ -358,4 +276,3 @@ export default function AccountDropdown({ isOpen, onClose, triggerRef }) {
     </div>
   );
 }
-
