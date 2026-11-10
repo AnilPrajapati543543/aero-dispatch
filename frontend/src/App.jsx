@@ -126,10 +126,10 @@ export default function App() {
   return (
     <div className="app-container">
       {/* Primary Sticky Navigation Header */}
-      <Navbar />
+      {activeTab !== 'auth' && <Navbar />}
 
       {/* Main Content Area */}
-      <main className="main-content" style={{ overflow: activeTab === 'auth' ? 'hidden' : 'visible' }}>
+      <main className="main-content" style={{ overflow: activeTab === 'auth' ? 'auto' : 'visible' }}>
         {isDashboardView ? (
           <div className={`dashboard-layout ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
             <Sidebar />
@@ -138,7 +138,7 @@ export default function App() {
             </div>
           </div>
         ) : (
-          <div style={{ padding: activeTab === 'auth' ? '0' : '0 1.5rem', width: '100%', height: activeTab === 'auth' ? 'calc(100vh - 72px)' : 'auto', overflow: activeTab === 'auth' ? 'hidden' : 'visible' }}>
+          <div style={{ padding: activeTab === 'auth' ? '0' : '0 1.5rem', width: '100%', minHeight: activeTab === 'auth' ? '100vh' : 'auto', overflow: activeTab === 'auth' ? 'auto' : 'visible' }}>
             {renderContent()}
           </div>
         )}

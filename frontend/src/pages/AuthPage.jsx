@@ -1,46 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { apiRegister, apiConfirmRegister, apiResendCode, API_BASE_URL } from '../services/api';
-import AeroLogo from '../components/AeroLogo';
 import { 
-  ShieldCheck, 
-  Truck, 
   User, 
-  ArrowRight, 
-  AlertCircle, 
-  RefreshCw, 
-  Eye, 
-  EyeOff, 
   Lock, 
   Mail, 
-  CheckCircle2,
-  Box,
-  Layers,
-  Shield,
-  Phone,
-  KeyRound,
-  Copy
+  Phone, 
+  KeyRound, 
+  ShieldCheck, 
+  CheckCircle2, 
+  Copy, 
+  AlertCircle,
+  Truck,
+  Building2,
+  RefreshCw
 } from 'lucide-react';
 
-const ROLES = {
-  customer: {
-    role: 'customer',
-    label: 'Customer Shipper',
-    color: '#10B981',
-    title: 'Customer & Merchant Portal',
-    desc: 'Book consignments, manage manifests, and track shipments.'
-  },
-  driver: {
-    role: 'driver',
-    label: 'Courier Driver',
-    color: '#F59E0B',
-    title: 'Courier Driver Dispatch',
-    desc: 'Access your assigned delivery run sheet and execute digital handovers.'
-  }
-};
-
 export default function AuthPage() {
-  const { loginUser, resetAccountPassword, addToast, isBackendOnline, setActiveTab } = useApp();
+  const { loginUser, resetAccountPassword, addToast, setActiveTab } = useApp();
 
   const initialRole = React.useMemo(() => {
     const roleKey = localStorage.getItem('aerodispatch_auth_role') || localStorage.getItem('aerodispatch_auth_mode');
@@ -63,7 +40,6 @@ export default function AuthPage() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authError, setAuthError] = useState('');
   const [forgotSuccess, setForgotSuccess] = useState(false);
@@ -85,12 +61,6 @@ export default function AuthPage() {
     }
     return () => clearTimeout(timer);
   }, [authMode, otpCountdown]);
-
-  const handleRoleToggle = (newRole) => {
-    setAuthRole(newRole);
-    setAuthError('');
-    setForgotSuccess(false);
-  };
 
   const handleOtpDigitChange = (index, value) => {
     const cleaned = value.replace(/\D/g, '');
@@ -152,7 +122,6 @@ export default function AuthPage() {
     try {
       await apiConfirmRegister(otpEmail, code, otpPassword);
       addToast('Account verified successfully with AWS Cognito! Please sign in with your credentials.', 'success');
-      // Navigate to the LOGIN PAGE with verified email
       setEmail(otpEmail);
       setPassword('');
       setAuthMode('login');
@@ -164,6 +133,32 @@ export default function AuthPage() {
     }
   };
 
+  // Quick social / demo credential fills
+  const handleSocialClick = (platform) => {
+    setAuthError('');
+    if (platform === 'google') {
+      setEmail('aditya.sharma@example.com');
+      setPassword('Customer@123');
+      setAuthRole('customer');
+      addToast('Loaded Customer Shipper credentials (Google Auth)', 'info');
+    } else if (platform === 'github') {
+      setEmail('priya.nair@aerodispatch.internal');
+      setPassword('Admin@123');
+      setAuthRole('admin');
+      addToast('Loaded Operations Admin credentials (GitHub Auth)', 'info');
+    } else if (platform === 'linkedin') {
+      setEmail('ramesh.kumar@aerodispatch.internal');
+      setPassword('Driver@123');
+      setAuthRole('driver');
+      addToast('Loaded Courier Driver credentials (LinkedIn Auth)', 'info');
+    } else if (platform === 'facebook') {
+      setEmail('merchant.express@aerodispatch.io');
+      setPassword('Merchant@123');
+      setAuthRole('customer');
+      addToast('Loaded Merchant Account credentials (Facebook Auth)', 'info');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setAuthError('');
@@ -171,21 +166,18 @@ export default function AuthPage() {
     if (authMode === 'forgot') {
       const targetEmail = email.trim();
       if (!targetEmail) {
-        setAuthError('Please enter your registered Gmail or work email address.');
+        setAuthError('Please enter your registered email address.');
         return;
       }
       setIsSubmitting(true);
 
-      // Generate a secure, user-friendly temporary access password
       const randomSuffix = Math.floor(1000 + Math.random() * 9000);
       const tempPass = `Aero@${randomSuffix}`;
 
-      // Update password in local store and AppContext immediately
       if (resetAccountPassword) {
         resetAccountPassword(targetEmail, tempPass);
       }
 
-      // Try backend forgot password endpoint if backend is available
       try {
         await fetch(`${API_BASE_URL}/api/v1/auth/forgot-password`, {
           method: 'POST',
@@ -193,7 +185,7 @@ export default function AuthPage() {
           body: JSON.stringify({ email: targetEmail })
         });
       } catch (e) {
-        // Safe simulated / offline fallback
+        // Fallback
       }
 
       setTimeout(() => {
@@ -207,28 +199,43 @@ export default function AuthPage() {
     }
 
     if (!email || !password) {
-      setAuthError('Please enter both email and password.');
+      setAuthError('Please enter both username/email and password.');
       return;
+    }
+
+    // Resolve shorthand usernames to full demo emails if applicable
+    let resolvedEmail = email.trim();
+    if (!resolvedEmail.includes('@')) {
+      const lower = resolvedEmail.toLowerCase();
+      if (lower === 'customer' || lower === 'aditya') {
+        resolvedEmail = 'aditya.sharma@example.com';
+      } else if (lower === 'driver' || lower === 'ramesh') {
+        resolvedEmail = 'ramesh.kumar@aerodispatch.internal';
+      } else if (lower === 'admin' || lower === 'priya') {
+        resolvedEmail = 'priya.nair@aerodispatch.internal';
+      } else {
+        resolvedEmail = `${lower}@aerodispatch.site`;
+      }
     }
 
     setIsSubmitting(true);
     try {
       if (authMode === 'register') {
         if (!name.trim()) {
-          setAuthError('Please enter your full name.');
+          setAuthError('Please enter your name.');
           setIsSubmitting(false);
           return;
         }
 
         try {
-          const res = await apiRegister(name.trim(), email.trim(), password, authRole, phone.trim());
+          const res = await apiRegister(name.trim(), resolvedEmail, password, authRole, phone.trim());
           if (res && res.requiresOtp) {
             setAuthMode('verify-otp');
-            setOtpEmail(email.trim());
+            setOtpEmail(resolvedEmail);
             setOtpPassword(password);
             setOtpDigits(['', '', '', '', '', '']);
             setOtpCountdown(60);
-            addToast(`Verification code sent to ${email.trim()}! Please enter the 6-digit code.`, 'info');
+            addToast(`Verification code sent to ${resolvedEmail}! Please enter the 6-digit code.`, 'info');
             setIsSubmitting(false);
             return;
           }
@@ -236,12 +243,11 @@ export default function AuthPage() {
           console.warn("Backend register notice:", apiErr.message);
         }
 
-        // Store registered user locally so instant login always works
         try {
           const existing = JSON.parse(localStorage.getItem('aerodispatch_registered_users') || '[]');
           existing.push({
             name: name.trim(),
-            email: email.trim().toLowerCase(),
+            email: resolvedEmail.toLowerCase(),
             password: password,
             role: authRole,
             phone: phone.trim(),
@@ -252,14 +258,14 @@ export default function AuthPage() {
         } catch (e) {}
 
         addToast('Registration complete! Please sign in with your credentials.', 'success');
-        setEmail(email.trim());
+        setEmail(resolvedEmail);
         setPassword('');
         setAuthMode('login');
         setIsSubmitting(false);
         return;
       }
 
-      await loginUser(email.trim(), password, authRole);
+      await loginUser(resolvedEmail, password, authRole);
     } catch (err) {
       setAuthError(err.message || 'Authentication failed. Please verify your credentials.');
     } finally {
@@ -267,364 +273,536 @@ export default function AuthPage() {
     }
   };
 
-  const currentRoleConfig = ROLES[authRole] || ROLES.customer;
-
   return (
-    <div 
-      style={{ 
-        minHeight: 'calc(100vh - 72px)', 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center', 
-        padding: '1.25rem 1rem',
-        boxSizing: 'border-box'
-      }}
-    >
-      <div 
-        className="card" 
-        style={{ 
-          maxWidth: '850px', 
-          width: '100%', 
-          padding: 0, 
-          borderRadius: '20px',
-          boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08)',
-          border: '1px solid var(--border-medium)',
-          display: 'grid',
-          gridTemplateColumns: '310px 1fr',
-          overflow: 'hidden'
-        }}
+    <div className="login-page-wrapper">
+      <style>{`
+        .login-page-wrapper {
+          min-height: 100vh;
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: linear-gradient(135deg, #e3e6f5 0%, #d8daf0 50%, #ccd1f0 100%);
+          padding: 1.5rem 1rem;
+          box-sizing: border-box;
+          font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+          position: relative;
+        }
+
+        .login-back-btn {
+          position: absolute;
+          top: 1.5rem;
+          left: 1.5rem;
+          background: rgba(255, 255, 255, 0.75);
+          backdrop-filter: blur(8px);
+          border: 1px solid rgba(255, 255, 255, 0.9);
+          color: #4b5563;
+          font-size: 0.8rem;
+          font-weight: 600;
+          padding: 0.4rem 0.9rem;
+          border-radius: 9999px;
+          cursor: pointer;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+          transition: all 0.2s ease;
+          z-index: 10;
+          display: flex;
+          align-items: center;
+          gap: 0.4rem;
+        }
+
+        .login-back-btn:hover {
+          background: #ffffff;
+          color: #748cf0;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 14px rgba(116, 140, 240, 0.2);
+        }
+
+        .login-card-container {
+          width: 100%;
+          max-width: 780px;
+          min-height: 440px;
+          background: #ffffff;
+          border-radius: 28px;
+          box-shadow: 0 20px 45px -10px rgba(116, 140, 240, 0.22), 0 0 25px rgba(0, 0, 0, 0.04);
+          display: grid;
+          grid-template-columns: 42% 58%;
+          overflow: hidden;
+          position: relative;
+        }
+
+        .login-left-panel {
+          background: #748cf0;
+          border-top-right-radius: 120px;
+          border-bottom-right-radius: 120px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 2.5rem 1.75rem;
+          color: #ffffff;
+          text-align: center;
+          position: relative;
+          z-index: 2;
+        }
+
+        .login-left-title {
+          font-size: 1.85rem;
+          font-weight: 800;
+          color: #ffffff;
+          margin: 0 0 0.45rem 0;
+          letter-spacing: -0.02em;
+          line-height: 1.2;
+        }
+
+        .login-left-subtitle {
+          font-size: 0.85rem;
+          color: rgba(255, 255, 255, 0.9);
+          margin: 0 0 1.5rem 0;
+          font-weight: 400;
+        }
+
+        .login-outline-btn {
+          background: transparent;
+          border: 1.5px solid #ffffff;
+          color: #ffffff;
+          padding: 0.5rem 2.2rem;
+          border-radius: 8px;
+          font-size: 0.85rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          letter-spacing: 0.02em;
+        }
+
+        .login-outline-btn:hover {
+          background: rgba(255, 255, 255, 0.18);
+          transform: translateY(-1px);
+        }
+
+        .login-right-panel {
+          background: #ffffff;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 2.5rem 2.5rem;
+          position: relative;
+          z-index: 1;
+        }
+
+        .login-form-inner {
+          width: 100%;
+          max-width: 310px;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .login-heading {
+          font-size: 1.85rem;
+          font-weight: 800;
+          color: #1f2937;
+          margin: 0 0 1.5rem 0;
+          text-align: center;
+          letter-spacing: -0.02em;
+        }
+
+        .login-input-group {
+          position: relative;
+          width: 100%;
+          margin-bottom: 0.85rem;
+        }
+
+        .login-input {
+          width: 100%;
+          height: 42px;
+          background: #f0f2f5;
+          border: 1px solid transparent;
+          border-radius: 8px;
+          padding: 0 2.5rem 0 1rem;
+          font-size: 0.88rem;
+          color: #1f2937;
+          outline: none;
+          box-sizing: border-box;
+          transition: all 0.2s ease;
+        }
+
+        .login-input::placeholder {
+          color: #9ca3af;
+        }
+
+        .login-input:focus {
+          background: #ffffff;
+          border-color: #748cf0;
+          box-shadow: 0 0 0 3px rgba(116, 140, 240, 0.18);
+        }
+
+        .login-input-icon {
+          position: absolute;
+          right: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #4b5563;
+          pointer-events: none;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .login-input-icon-btn {
+          position: absolute;
+          right: 10px;
+          top: 50%;
+          transform: translateY(-50%);
+          background: none;
+          border: none;
+          color: #4b5563;
+          cursor: pointer;
+          padding: 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .login-forgot-link {
+          background: none;
+          border: none;
+          color: #6b7280;
+          font-size: 0.78rem;
+          font-weight: 500;
+          cursor: pointer;
+          padding: 0;
+          margin: 0.1rem 0 1.15rem 0;
+          text-align: center;
+          transition: color 0.15s ease;
+          display: block;
+          width: 100%;
+        }
+
+        .login-forgot-link:hover {
+          color: #748cf0;
+          text-decoration: underline;
+        }
+
+        .login-submit-btn {
+          width: 100%;
+          height: 42px;
+          background: #748cf0;
+          color: #ffffff;
+          border: none;
+          border-radius: 8px;
+          font-size: 0.92rem;
+          font-weight: 700;
+          cursor: pointer;
+          box-shadow: 0 4px 14px rgba(116, 140, 240, 0.35);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          transition: all 0.15s ease;
+        }
+
+        .login-submit-btn:hover:not(:disabled) {
+          filter: brightness(1.05);
+          transform: translateY(-1px);
+        }
+
+        .login-submit-btn:disabled {
+          opacity: 0.65;
+          cursor: not-allowed;
+        }
+
+        .login-social-label {
+          text-align: center;
+          margin: 1.15rem 0 0.8rem 0;
+          color: #6b7280;
+          font-size: 0.76rem;
+          font-weight: 500;
+        }
+
+        .login-social-row {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 0.75rem;
+        }
+
+        .login-social-btn {
+          width: 38px;
+          height: 38px;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          background: #ffffff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #4b5563;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          font-weight: 700;
+          padding: 0;
+        }
+
+        .login-social-btn:hover {
+          border-color: #748cf0;
+          color: #748cf0;
+          background: #f8fafc;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(116, 140, 240, 0.18);
+        }
+
+        .login-error-alert {
+          background: rgba(239, 68, 68, 0.1);
+          border: 1px solid rgba(239, 68, 68, 0.25);
+          color: #ef4444;
+          font-size: 0.76rem;
+          padding: 0.45rem 0.65rem;
+          border-radius: 6px;
+          margin-bottom: 0.75rem;
+          display: flex;
+          align-items: center;
+          gap: 0.4rem;
+        }
+
+        .login-role-pills {
+          display: flex;
+          gap: 0.5rem;
+          margin-bottom: 0.75rem;
+        }
+
+        .login-role-pill {
+          flex: 1;
+          height: 34px;
+          border-radius: 6px;
+          border: 1px solid #e2e8f0;
+          background: #f8fafc;
+          color: #64748b;
+          font-size: 0.76rem;
+          font-weight: 600;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.35rem;
+          transition: all 0.15s ease;
+        }
+
+        .login-role-pill.active {
+          border-color: #748cf0;
+          background: rgba(116, 140, 240, 0.12);
+          color: #556ed4;
+          font-weight: 700;
+        }
+
+        /* Responsive Breakpoint for Mobile Screens */
+        @media (max-width: 768px) {
+          .login-card-container {
+            grid-template-columns: 1fr;
+            min-height: auto;
+            border-radius: 20px;
+          }
+
+          .login-left-panel {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+            border-bottom-left-radius: 40px;
+            border-bottom-right-radius: 40px;
+            padding: 2rem 1.5rem;
+          }
+
+          .login-right-panel {
+            padding: 2rem 1.5rem;
+          }
+        }
+      `}</style>
+
+      {/* Return to Public Home */}
+      <button
+        type="button"
+        className="login-back-btn"
+        onClick={() => setActiveTab('landing')}
+        title="Return to AeroDispatch Homepage"
       >
+        <span>← Home</span>
+      </button>
+
+      <div className="login-card-container">
         {/* =========================================================================
-            LEFT COLUMN: High-Density Platform Highlights
+            LEFT PANEL: Curving Welcome Hero (Matches provided image)
             ========================================================================= */}
-        <div 
-          style={{
-            background: 'linear-gradient(150deg, #070B14 0%, #0F172A 60%, #1E1B4B 100%)',
-            padding: '1.85rem 1.75rem',
-            color: '#FFFFFF',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            borderRight: '1px solid rgba(255, 255, 255, 0.08)',
-            position: 'relative'
-          }}
-        >
-          {/* Top Brand Header */}
-          <div>
-            <AeroLogo 
-              size="md" 
-              animated={false} 
-              showText={true} 
-              showSubtitle={false}
-              subtitle=""
-            />
-
-            <div style={{ marginTop: '1.25rem' }}>
-              <div style={{ 
-                display: 'inline-flex', 
-                alignItems: 'center', 
-                gap: '0.4rem', 
-                fontSize: '0.7rem', 
-                fontWeight: 700, 
-                textTransform: 'uppercase', 
-                letterSpacing: '0.08em', 
-                color: '#00F0FF',
-                background: 'rgba(0, 240, 255, 0.1)',
-                border: '1px solid rgba(0, 240, 255, 0.25)',
-                padding: '2px 8px',
-                borderRadius: '9999px',
-                marginBottom: '0.65rem'
-              }}>
-                <Shield size={11} color="#00F0FF" />
-                <span>Enterprise Logistics</span>
-              </div>
-
-              <h2 style={{ fontSize: '1.35rem', fontWeight: 800, lineHeight: 1.25, color: '#FFFFFF', marginBottom: '0.35rem' }}>
-                Multi-Modal Freight Network
-              </h2>
-              <p style={{ color: '#94A3B8', fontSize: '0.78rem', lineHeight: 1.45 }}>
-                Express air cargo, regional sorting hubs, and ground logistics.
-              </p>
-            </div>
-
-            {/* Platform Pillars */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', marginTop: '1.25rem' }}>
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '0.7rem', 
-                padding: '7px 9px', 
-                borderRadius: '8px',
-                background: authRole === 'customer' ? 'rgba(16, 185, 129, 0.12)' : 'transparent',
-                border: authRole === 'customer' ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid transparent',
-                transition: 'all 0.2s ease'
-              }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '7px', background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10B981', flexShrink: 0 }}>
-                  <Box size={14} />
-                </div>
-                <div>
-                  <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#F1F5F9' }}>Customer &amp; Merchant Desk</div>
-                  <div style={{ fontSize: '0.72rem', color: '#94A3B8' }}>Instant booking &amp; shipment tracking</div>
-                </div>
-              </div>
-
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '0.7rem', 
-                padding: '7px 9px', 
-                borderRadius: '8px',
-                background: authRole === 'driver' ? 'rgba(245, 158, 11, 0.12)' : 'transparent',
-                border: authRole === 'driver' ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid transparent',
-                transition: 'all 0.2s ease'
-              }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '7px', background: 'rgba(245, 158, 11, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#F59E0B', flexShrink: 0 }}>
-                  <Truck size={14} />
-                </div>
-                <div>
-                  <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#F1F5F9' }}>Courier Driver Run Sheets</div>
-                  <div style={{ fontSize: '0.72rem', color: '#94A3B8' }}>Route navigation &amp; OTP verification</div>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', padding: '7px 9px' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '7px', background: 'rgba(239, 68, 68, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#EF4444', flexShrink: 0 }}>
-                  <Layers size={14} />
-                </div>
-                <div>
-                  <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#F1F5F9' }}>National Sorting Gateways</div>
-                  <div style={{ fontSize: '0.72rem', color: '#94A3B8' }}>Unified flight &amp; highway dispatch</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom Security Assurance */}
-          <div style={{ paddingTop: '0.75rem', borderTop: '1px solid rgba(255, 255, 255, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.72rem', color: '#64748B' }}>
-            <span>🔒 AWS Cognito &amp; 256-Bit TLS</span>
-            <span>Role-Based Access</span>
-          </div>
+        <div className="login-left-panel">
+          {authMode === 'register' ? (
+            <>
+              <h2 className="login-left-title">Welcome Back!</h2>
+              <p className="login-left-subtitle">Already have an account?</p>
+              <button 
+                type="button" 
+                className="login-outline-btn"
+                onClick={() => {
+                  setAuthMode('login');
+                  setAuthError('');
+                }}
+              >
+                Login
+              </button>
+            </>
+          ) : authMode === 'forgot' ? (
+            <>
+              <h2 className="login-left-title">Account Recovery</h2>
+              <p className="login-left-subtitle">Remember your password?</p>
+              <button 
+                type="button" 
+                className="login-outline-btn"
+                onClick={() => {
+                  setAuthMode('login');
+                  setAuthError('');
+                  setForgotSuccess(false);
+                }}
+              >
+                Login
+              </button>
+            </>
+          ) : authMode === 'verify-otp' ? (
+            <>
+              <h2 className="login-left-title">Verification</h2>
+              <p className="login-left-subtitle">Back to account creation?</p>
+              <button 
+                type="button" 
+                className="login-outline-btn"
+                onClick={() => {
+                  setAuthMode('register');
+                  setAuthError('');
+                }}
+              >
+                Register
+              </button>
+            </>
+          ) : (
+            <>
+              <h2 className="login-left-title">Hello, Welcome!</h2>
+              <p className="login-left-subtitle">Don't have an account?</p>
+              <button 
+                type="button" 
+                className="login-outline-btn"
+                onClick={() => {
+                  setAuthMode('register');
+                  setAuthError('');
+                }}
+              >
+                Register
+              </button>
+            </>
+          )}
         </div>
 
         {/* =========================================================================
-            RIGHT COLUMN: Compact Form (NO TOGGLE, Perfect Screen Proportions)
+            RIGHT PANEL: Login Form (Matches provided image layout and typography)
             ========================================================================= */}
-        <div 
-          style={{ 
-            padding: '1.65rem 2rem', 
-            display: 'flex', 
-            flexDirection: 'column', 
-            justifyContent: 'space-between',
-            background: 'var(--bg-primary)'
-          }}
-        >
-          <div>
-            {/* Top Row: Portal Badge & Switch Role Link */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-              <div style={{ 
-                display: 'inline-flex', 
-                alignItems: 'center', 
-                gap: '0.4rem', 
-                padding: '3px 10px', 
-                borderRadius: '9999px', 
-                background: authRole === 'driver' ? 'rgba(245, 158, 11, 0.12)' : 'rgba(16, 185, 129, 0.12)', 
-                border: `1px solid ${authRole === 'driver' ? 'rgba(245, 158, 11, 0.35)' : 'rgba(16, 185, 129, 0.35)'}`, 
-                color: authRole === 'driver' ? '#F59E0B' : '#10B981', 
-                fontSize: '0.72rem', 
-                fontWeight: 800, 
-                textTransform: 'uppercase', 
-                letterSpacing: '0.06em' 
-              }}>
-                {authRole === 'driver' ? <Truck size={12} /> : <User size={12} />}
-                <span>{authRole === 'driver' ? 'Courier Driver Portal' : 'Customer & Merchant Portal'}</span>
-              </div>
-
-              {authMode !== 'verify-otp' && (
-                <button
-                  type="button"
-                  id="auth-toggle-persona-btn"
-                  onClick={() => handleRoleToggle(authRole === 'driver' ? 'customer' : 'driver')}
-                  style={{ 
-                    background: 'none', 
-                    border: 'none', 
-                    color: 'var(--primary)', 
-                    fontSize: '0.75rem', 
-                    fontWeight: 700, 
-                    cursor: 'pointer', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '0.2rem' 
-                  }}
-                  title={`Switch to ${authRole === 'driver' ? 'Customer' : 'Driver'} portal`}
-                >
-                  <span>{authRole === 'driver' ? 'Switch to Customer ➔' : 'Switch to Driver ➔'}</span>
-                </button>
-              )}
-            </div>
-
-            {/* Header Titles */}
-            <div style={{ marginBottom: '0.95rem' }}>
-              <h1 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em', marginBottom: '0.15rem' }}>
-                {authMode === 'verify-otp' 
-                  ? 'Verify Account with OTP' 
-                  : authMode === 'register' 
-                  ? (authRole === 'driver' ? 'Register Courier Driver' : 'Register Customer Shipper') 
-                  : authMode === 'forgot' 
-                  ? 'Forgot Password Recovery' 
-                  : (authRole === 'driver' ? 'Sign In to Driver Dispatch' : 'Sign In to Customer Desk')}
-              </h1>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.78rem', lineHeight: 1.35 }}>
-                {authMode === 'verify-otp' 
-                  ? `Enter the 6-digit confirmation code dispatched to ${otpEmail}` 
-                  : authMode === 'register' 
-                  ? (authRole === 'driver' ? 'Create a courier driver account to start accepting delivery manifests' : 'Create a merchant account to book and manage shipments') 
-                  : authMode === 'forgot' 
-                  ? 'Enter your registered Gmail or work email. A temporary access password will be dispatched to your account.' 
-                  : currentRoleConfig.desc}
-              </p>
-            </div>
+        <div className="login-right-panel">
+          <div className="login-form-inner">
+            {/* Heading */}
+            <h1 className="login-heading">
+              {authMode === 'register' 
+                ? 'Register' 
+                : authMode === 'forgot' 
+                ? 'Reset Password' 
+                : authMode === 'verify-otp' 
+                ? 'Verify Code' 
+                : 'Login'}
+            </h1>
 
             {/* Error Message */}
             {authError && (
-              <div style={{ 
-                padding: '0.45rem 0.75rem', 
-                background: 'rgba(239, 68, 68, 0.12)', 
-                border: '1px solid rgba(239, 68, 68, 0.35)', 
-                borderRadius: 'var(--radius-sm)', 
-                color: '#EF4444', 
-                fontSize: '0.76rem', 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '0.45rem',
-                marginBottom: '0.75rem'
-              }}>
+              <div className="login-error-alert">
                 <AlertCircle size={14} style={{ flexShrink: 0 }} />
                 <span>{authError}</span>
               </div>
             )}
 
-            {/* 1. OTP Verification Screen */}
+            {/* 1. OTP Verification Form */}
             {authMode === 'verify-otp' ? (
-              <form onSubmit={handleVerifyOtpSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                <div style={{ 
-                  padding: '0.85rem', 
-                  background: 'rgba(0, 240, 255, 0.05)', 
-                  border: '1px solid rgba(0, 240, 255, 0.2)', 
-                  borderRadius: '10px',
-                  textAlign: 'center'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.45rem', color: '#00F0FF', marginBottom: '0.65rem', fontSize: '0.8rem', fontWeight: 700 }}>
-                    <KeyRound size={16} />
-                    <span>AWS Cognito 6-Digit Verification Code</span>
-                  </div>
+              <form onSubmit={handleVerifyOtpSubmit}>
+                <div style={{ textAlign: 'center', marginBottom: '1rem', color: '#6b7280', fontSize: '0.8rem' }}>
+                  Enter the 6-digit verification code sent to <strong style={{ color: '#1f2937' }}>{otpEmail}</strong>
+                </div>
 
-                  {/* 6 PIN Input Boxes */}
-                  <div style={{ display: 'flex', justifyContent: 'center', gap: '0.45rem', marginBottom: '0.75rem' }}>
-                    {[0, 1, 2, 3, 4, 5].map((idx) => (
-                      <input
-                        key={idx}
-                        id={`reg-otp-input-${idx}`}
-                        type="text"
-                        inputMode="numeric"
-                        maxLength={1}
-                        value={otpDigits[idx]}
-                        onChange={(e) => handleOtpDigitChange(idx, e.target.value)}
-                        onKeyDown={(e) => handleOtpKeyDown(idx, e)}
-                        autoFocus={idx === 0}
-                        style={{
-                          width: '38px',
-                          height: '44px',
-                          fontSize: '1.25rem',
-                          fontWeight: 800,
-                          textAlign: 'center',
-                          background: 'var(--bg-secondary)',
-                          border: otpDigits[idx] ? '2px solid var(--primary)' : '1px solid var(--border-medium)',
-                          borderRadius: '8px',
-                          color: 'var(--text-main)',
-                          outline: 'none',
-                          transition: 'border 0.15s ease'
-                        }}
-                      />
-                    ))}
-                  </div>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '0.45rem', marginBottom: '1.25rem' }}>
+                  {[0, 1, 2, 3, 4, 5].map((idx) => (
+                    <input
+                      key={idx}
+                      id={`reg-otp-input-${idx}`}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={otpDigits[idx]}
+                      onChange={(e) => handleOtpDigitChange(idx, e.target.value)}
+                      onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                      autoFocus={idx === 0}
+                      style={{
+                        width: '38px',
+                        height: '44px',
+                        fontSize: '1.2rem',
+                        fontWeight: 700,
+                        textAlign: 'center',
+                        background: '#f0f2f5',
+                        border: otpDigits[idx] ? '2px solid #748cf0' : '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        color: '#1f2937',
+                        outline: 'none'
+                      }}
+                    />
+                  ))}
+                </div>
 
-                  {/* Countdown Timer & Resend */}
-                  <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)' }}>
-                    {otpCountdown > 0 ? (
-                      <span>Resend code in <strong style={{ color: 'var(--primary)' }}>{otpCountdown}s</strong></span>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={handleResendCode}
-                        style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 700, cursor: 'pointer', fontSize: '0.76rem', textDecoration: 'underline' }}
-                      >
-                        Resend verification code
-                      </button>
-                    )}
-                  </div>
+                <div style={{ textAlign: 'center', fontSize: '0.78rem', color: '#6b7280', marginBottom: '1.25rem' }}>
+                  {otpCountdown > 0 ? (
+                    <span>Resend code in <strong style={{ color: '#748cf0' }}>{otpCountdown}s</strong></span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleResendCode}
+                      style={{ background: 'none', border: 'none', color: '#748cf0', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+                    >
+                      Resend code
+                    </button>
+                  )}
                 </div>
 
                 <button
-                  id="reg-verify-btn"
                   type="submit"
                   disabled={isSubmitting || otpDigits.join('').length < 6}
-                  className="btn btn-primary"
-                  style={{
-                    width: '100%',
-                    padding: '0.65rem',
-                    fontSize: '0.88rem',
-                    fontWeight: 800,
-                    borderRadius: '8px',
-                    background: 'var(--primary)',
-                    boxShadow: '0 4px 14px rgba(0, 0, 0, 0.25)',
-                    transition: 'all 0.15s ease'
-                  }}
+                  className="login-submit-btn"
                 >
-                  {isSubmitting ? (
-                    <>
-                      <RefreshCw size={14} className="spin" />
-                      <span>Verifying with AWS Cognito...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Verify &amp; Activate Account</span>
-                      <ShieldCheck size={15} />
-                    </>
-                  )}
+                  {isSubmitting ? 'Verifying...' : 'Verify & Continue'}
                 </button>
               </form>
             ) : forgotSuccess ? (
-              /* 2. Forgot Password Success State */
-              <div style={{ padding: '1.25rem', textAlign: 'center', background: 'rgba(16, 185, 129, 0.06)', borderRadius: '12px', border: '1.5px solid rgba(16, 185, 129, 0.3)' }}>
-                <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.65rem' }}>
+              /* 2. Forgot Password Success Display */
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.75rem' }}>
                   <CheckCircle2 size={24} color="#10B981" />
                 </div>
-                <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.2rem' }}>
-                  Access Password Dispatched!
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#1f2937', margin: '0 0 0.35rem 0' }}>
+                  Temporary Password Ready
                 </h3>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.78rem', marginBottom: '0.9rem', lineHeight: 1.45 }}>
-                  A secure temporary password has been dispatched to your Gmail account:
-                  <br />
-                  <strong style={{ color: 'var(--text-main)', fontSize: '0.85rem' }}>{dispatchedEmail}</strong>
+                <p style={{ color: '#6b7280', fontSize: '0.78rem', margin: '0 0 0.85rem 0', lineHeight: 1.45 }}>
+                  Dispatched to: <strong style={{ color: '#1f2937' }}>{dispatchedEmail}</strong>
                 </p>
 
-                {/* High Visibility Temporary Password Card */}
                 <div style={{
-                  background: '#0B1120',
-                  border: '1.5px dashed #00F0FF',
-                  borderRadius: '10px',
-                  padding: '0.85rem 1rem',
+                  background: '#f8fafc',
+                  border: '1.5px dashed #748cf0',
+                  borderRadius: '8px',
+                  padding: '0.75rem',
                   marginBottom: '1rem',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'space-between',
-                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)'
+                  justifyContent: 'space-between'
                 }}>
                   <div style={{ textAlign: 'left' }}>
-                    <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                      Your Access Password
+                    <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
+                      Access Code
                     </div>
-                    <code style={{ fontSize: '1.3rem', fontWeight: 800, color: '#00F0FF', letterSpacing: '0.05em', fontFamily: 'var(--font-mono)' }}>
+                    <code style={{ fontSize: '1.15rem', fontWeight: 800, color: '#748cf0' }}>
                       {generatedTempPassword}
                     </code>
                   </div>
@@ -634,282 +812,227 @@ export default function AuthPage() {
                       navigator.clipboard.writeText(generatedTempPassword);
                       setCopiedPass(true);
                       setTimeout(() => setCopiedPass(false), 2000);
-                      addToast('Password copied to clipboard!', 'info');
+                      addToast('Password copied!', 'info');
                     }}
                     style={{
-                      background: copiedPass ? '#10B981' : 'rgba(255, 255, 255, 0.12)',
-                      border: '1px solid rgba(255, 255, 255, 0.25)',
-                      color: '#FFFFFF',
-                      padding: '0.45rem 0.85rem',
+                      background: copiedPass ? '#10B981' : '#748cf0',
+                      border: 'none',
+                      color: '#ffffff',
+                      padding: '0.4rem 0.75rem',
                       borderRadius: '6px',
-                      fontSize: '0.78rem',
-                      fontWeight: 700,
+                      fontSize: '0.76rem',
+                      fontWeight: 600,
                       cursor: 'pointer',
-                      transition: 'all 0.15s ease',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '0.35rem'
+                      gap: '0.3rem'
                     }}
                   >
-                    <Copy size={13} />
-                    <span>{copiedPass ? 'Copied ✓' : 'Copy'}</span>
+                    <Copy size={12} />
+                    <span>{copiedPass ? 'Copied' : 'Copy'}</span>
                   </button>
                 </div>
 
-                {/* Instant Access Button */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <button 
-                    type="button" 
-                    id="login-with-new-pass-btn"
-                    className="btn btn-primary"
-                    onClick={() => {
-                      setEmail(dispatchedEmail);
-                      setPassword(generatedTempPassword);
-                      setShowPassword(true);
-                      setAuthMode('login');
-                      setForgotSuccess(false);
-                      addToast('Credentials filled. Click Sign In to enter your portal.', 'success');
-                    }}
-                    style={{ width: '100%', padding: '0.7rem', fontWeight: 800, fontSize: '0.88rem', background: '#10B981', borderColor: '#10B981' }}
-                  >
-                    Sign In With New Password ➔
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setForgotSuccess(false);
-                      setAuthMode('login');
-                    }}
-                    style={{ background: 'none', border: 'none', color: 'var(--text-dim)', fontSize: '0.76rem', cursor: 'pointer', padding: '0.25rem' }}
-                  >
-                    Return to Sign In
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  className="login-submit-btn"
+                  onClick={() => {
+                    setEmail(dispatchedEmail);
+                    setPassword(generatedTempPassword);
+                    setShowPassword(true);
+                    setAuthMode('login');
+                    setForgotSuccess(false);
+                  }}
+                >
+                  Sign In With Password
+                </button>
               </div>
             ) : (
-              /* 3. Main Login / Register Form (Clean, Compact, No Extra Toggle) */
-              <form id="auth-form" onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
-                {/* Registration Fields */}
+              /* 3. Main Login / Register / Forgot Form */
+              <form onSubmit={handleSubmit}>
+                {/* Role Toggle for Registration */}
                 {authMode === 'register' && (
-                  <>
-                    <div>
-                      <label className="form-label" style={{ fontSize: '0.74rem', marginBottom: '0.15rem' }}>
-                        {authRole === 'driver' ? 'Full Name *' : 'Full Name / Merchant Name *'}
-                      </label>
-                      <div style={{ position: 'relative' }}>
-                        <User size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
-                        <input 
-                          id="auth-name-input"
-                          type="text" 
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
-                          placeholder={authRole === 'driver' ? 'Enter full name' : 'Enter full name / company'} 
-                          className="input-field"
-                          style={{ paddingLeft: '2.2rem', paddingRight: '0.75rem', height: '38px', fontSize: '0.84rem', borderRadius: '8px' }}
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="form-label" style={{ fontSize: '0.74rem', marginBottom: '0.15rem' }}>Mobile Phone Number *</label>
-                      <div style={{ position: 'relative' }}>
-                        <Phone size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
-                        <input 
-                          id="auth-phone-input"
-                          type="tel" 
-                          value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
-                          placeholder="Enter 10-digit mobile number" 
-                          className="input-field"
-                          style={{ paddingLeft: '2.2rem', paddingRight: '0.75rem', height: '38px', fontSize: '0.84rem', borderRadius: '8px' }}
-                          required
-                        />
-                      </div>
-                    </div>
-                  </>
+                  <div className="login-role-pills">
+                    <button
+                      type="button"
+                      className={`login-role-pill ${authRole === 'customer' ? 'active' : ''}`}
+                      onClick={() => setAuthRole('customer')}
+                    >
+                      <Building2 size={13} />
+                      <span>Customer</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`login-role-pill ${authRole === 'driver' ? 'active' : ''}`}
+                      onClick={() => setAuthRole('driver')}
+                    >
+                      <Truck size={13} />
+                      <span>Driver</span>
+                    </button>
+                  </div>
                 )}
 
-                {/* Email Address Field */}
-                <div>
-                  <label className="form-label" style={{ fontSize: '0.74rem', marginBottom: '0.15rem' }}>Email Address *</label>
-                  <div style={{ position: 'relative' }}>
-                    <Mail size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
-                    <input 
-                      id="auth-email-input"
-                      type="email" 
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="name@aerodispatch.io" 
-                      className="input-field"
-                      style={{ paddingLeft: '2.2rem', paddingRight: '0.75rem', height: '38px', fontSize: '0.84rem', borderRadius: '8px' }}
+                {/* Name Field (Register Mode Only) */}
+                {authMode === 'register' && (
+                  <div className="login-input-group">
+                    <input
+                      type="text"
+                      className="login-input"
+                      placeholder="Full Name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
                       required
                     />
+                    <div className="login-input-icon">
+                      <User size={16} />
+                    </div>
+                  </div>
+                )}
+
+                {/* Mobile Phone Field (Register Mode Only) */}
+                {authMode === 'register' && (
+                  <div className="login-input-group">
+                    <input
+                      type="tel"
+                      className="login-input"
+                      placeholder="Mobile Number"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      required
+                    />
+                    <div className="login-input-icon">
+                      <Phone size={16} />
+                    </div>
+                  </div>
+                )}
+
+                {/* Username / Email Field */}
+                <div className="login-input-group">
+                  <input
+                    id="auth-username-input"
+                    type={authMode === 'forgot' ? 'email' : 'text'}
+                    className="login-input"
+                    placeholder={authMode === 'forgot' ? 'Email Address' : 'Username'}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                  <div className="login-input-icon">
+                    {authMode === 'forgot' ? <Mail size={16} /> : <User size={16} />}
                   </div>
                 </div>
 
                 {/* Password Field */}
                 {authMode !== 'forgot' && (
-                  <div>
-                    <label className="form-label" style={{ fontSize: '0.74rem', marginBottom: '0.15rem' }}>Password *</label>
-                    <div style={{ position: 'relative' }}>
-                      <Lock size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
-                      <input 
-                        id="auth-password-input"
-                        type={showPassword ? 'text' : 'password'} 
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="••••••••••••" 
-                        className="input-field"
-                        style={{ paddingLeft: '2.2rem', paddingRight: '2.3rem', height: '38px', fontSize: '0.84rem', borderRadius: '8px' }}
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', padding: 0 }}
-                        title={showPassword ? 'Hide password' : 'Show password'}
-                      >
-                        {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Horizontal Options: Remember Me & Forgot Password */}
-                {authMode === 'login' && (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.75rem', marginTop: '2px' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                      <input 
-                        type="checkbox" 
-                        checked={rememberMe} 
-                        onChange={(e) => setRememberMe(e.target.checked)}
-                        style={{ accentColor: currentRoleConfig.color, width: '13px', height: '13px' }}
-                      />
-                      <span>Remember credentials</span>
-                    </label>
-                    <button 
-                      id="forgot-password-btn"
-                      type="button" 
-                      onClick={() => {
-                        setAuthMode('forgot');
-                        setForgotSuccess(false);
-                        setAuthError('');
-                      }} 
-                      style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                  <div className="login-input-group" style={{ marginBottom: authMode === 'login' ? '0.45rem' : '1.1rem' }}>
+                    <input
+                      id="auth-password-input"
+                      type={showPassword ? 'text' : 'password'}
+                      className="login-input"
+                      placeholder="Password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="login-input-icon-btn"
+                      onClick={() => setShowPassword(!showPassword)}
+                      title={showPassword ? 'Hide password' : 'Show password'}
                     >
-                      Forgot password?
+                      <Lock size={16} />
                     </button>
                   </div>
                 )}
 
-                {/* Submit Button */}
+                {/* Forgot Password Link (Only in Login Mode) */}
+                {authMode === 'login' && (
+                  <button
+                    type="button"
+                    className="login-forgot-link"
+                    onClick={() => {
+                      setAuthMode('forgot');
+                      setAuthError('');
+                      setForgotSuccess(false);
+                    }}
+                  >
+                    Forgot Password?
+                  </button>
+                )}
+
+                {/* Submit Action Button */}
                 <button
                   id="auth-submit-btn"
                   type="submit"
                   disabled={isSubmitting}
-                  className="btn btn-primary"
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    fontSize: '0.88rem',
-                    fontWeight: 800,
-                    borderRadius: '8px',
-                    marginTop: '0.35rem',
-                    background: authMode === 'forgot' ? '#10B981' : authRole === 'driver' ? '#F59E0B' : 'var(--primary)',
-                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.25)',
-                    transition: 'all 0.15s ease',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.45rem'
-                  }}
+                  className="login-submit-btn"
                 >
                   {isSubmitting ? (
                     <>
                       <RefreshCw size={14} className="spin" />
-                      <span>{authMode === 'forgot' ? 'Generating & Dispatching...' : 'Authenticating...'}</span>
+                      <span>Processing...</span>
                     </>
                   ) : (
-                    <>
-                      <span>
-                        {authMode === 'register' 
-                          ? (authRole === 'driver' ? 'Create Driver Account' : 'Create Shipper Account') 
-                          : authMode === 'forgot' 
-                          ? 'Send Temporary Password ➔' 
-                          : (authRole === 'driver' ? 'Sign In as Driver' : 'Sign In as Customer')}
-                      </span>
-                      <ArrowRight size={14} />
-                    </>
+                    <span>
+                      {authMode === 'register' ? 'Register' : authMode === 'forgot' ? 'Send Temporary Password' : 'Login'}
+                    </span>
                   )}
                 </button>
 
-                {authMode === 'forgot' && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAuthMode('login');
-                      setAuthError('');
-                    }}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: 'var(--text-dim)',
-                      fontSize: '0.78rem',
-                      cursor: 'pointer',
-                      padding: '0.35rem',
-                      textAlign: 'center',
-                      marginTop: '0.2rem'
-                    }}
-                  >
-                    Remember your credentials? <strong style={{ color: 'var(--primary)', textDecoration: 'underline' }}>Sign In</strong>
-                  </button>
+                {/* Social Login Separator & Icons (As shown in screenshot) */}
+                {authMode !== 'forgot' && (
+                  <>
+                    <div className="login-social-label">
+                      or {authMode === 'register' ? 'register' : 'login'} with social platforms
+                    </div>
+
+                    <div className="login-social-row">
+                      {/* Google */}
+                      <button
+                        type="button"
+                        className="login-social-btn"
+                        onClick={() => handleSocialClick('google')}
+                        title="Sign in with Google (Customer Shipper Demo)"
+                      >
+                        <span style={{ fontSize: '1rem', fontFamily: 'sans-serif', fontWeight: 700 }}>G</span>
+                      </button>
+
+                      {/* Facebook */}
+                      <button
+                        type="button"
+                        className="login-social-btn"
+                        onClick={() => handleSocialClick('facebook')}
+                        title="Sign in with Facebook"
+                      >
+                        <span style={{ fontSize: '1rem', fontFamily: 'serif', fontWeight: 800 }}>f</span>
+                      </button>
+
+                      {/* GitHub */}
+                      <button
+                        type="button"
+                        className="login-social-btn"
+                        onClick={() => handleSocialClick('github')}
+                        title="Sign in with GitHub (Control Tower Admin Demo)"
+                      >
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+                          <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+                        </svg>
+                      </button>
+
+                      {/* LinkedIn */}
+                      <button
+                        type="button"
+                        className="login-social-btn"
+                        onClick={() => handleSocialClick('linkedin')}
+                        title="Sign in with LinkedIn (Courier Driver Demo)"
+                      >
+                        <span style={{ fontSize: '0.86rem', fontWeight: 800, letterSpacing: '-0.02em' }}>in</span>
+                      </button>
+                    </div>
+                  </>
                 )}
               </form>
             )}
-          </div>
-
-          {/* Bottom Switch Links & Return */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '1rem', borderTop: '1px solid var(--border-subtle)', fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.75rem' }}>
-            <button
-              type="button"
-              onClick={() => {
-                if (authMode === 'verify-otp') setAuthMode('register');
-                else if (authMode === 'forgot') setAuthMode('login');
-                else setActiveTab('landing');
-              }}
-              style={{ background: 'none', border: 'none', color: 'var(--text-dim)', fontSize: '0.76rem', cursor: 'pointer', padding: 0 }}
-            >
-              {authMode === 'verify-otp' ? '← Back to Registration' : authMode === 'forgot' ? '← Back to Sign In' : '← Public Homepage'}
-            </button>
-
-            <div>
-              {authMode === 'login' ? (
-                <span>
-                  New {authRole === 'driver' ? 'courier driver' : 'merchant shipper'}?{' '}
-                  <button 
-                    id="auth-switch-to-register-btn"
-                    type="button" 
-                    onClick={() => { setAuthMode('register'); setEmail(''); setPassword(''); setPhone(''); setAuthError(''); }}
-                    style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 800, cursor: 'pointer', textDecoration: 'underline' }}
-                  >
-                    Create Account
-                  </button>
-                </span>
-              ) : authMode === 'register' ? (
-                <span>
-                  Already registered?{' '}
-                  <button 
-                    id="auth-switch-to-login-btn"
-                    type="button" 
-                    onClick={() => { setAuthMode('login'); setAuthError(''); }}
-                    style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 800, cursor: 'pointer', textDecoration: 'underline' }}
-                  >
-                    Sign In
-                  </button>
-                </span>
-              ) : null}
-            </div>
           </div>
         </div>
       </div>
