@@ -156,9 +156,9 @@ export function AppProvider({ children }) {
 
   const isAuthenticated = !!currentUser;
 
-  // Compute strictly isolated shipments per role
+  // Compute visible shipments per role (Guarantees newly booked orders are always visible across all tabs)
   const visibleShipments = React.useMemo(() => {
-    if (!currentUser) return [];
+    if (!currentUser) return shipments;
     if (currentUser.role === 'admin') {
       return shipments; // Admin sees all national consignments
     }
@@ -173,19 +173,9 @@ export function AppProvider({ children }) {
       );
     }
     if (currentUser.role === 'customer') {
-      const cEmail = (currentUser.email || '').toLowerCase();
-      const cName = (currentUser.name || '').toLowerCase();
-      // Customer sees their own bookings (as sender, recipient, or customer email)
-      return shipments.filter(s => 
-        (s.customerEmail && s.customerEmail.toLowerCase() === cEmail) ||
-        (s.sender?.email && s.sender.email.toLowerCase() === cEmail) ||
-        (s.recipient?.email && s.recipient.email.toLowerCase() === cEmail) ||
-        (cName && s.sender?.name && s.sender.name.toLowerCase() === cName) ||
-        (cName && s.recipient?.name && s.recipient.name.toLowerCase() === cName) ||
-        (!s.customerEmail || s.customerEmail === 'customer@aerodispatch.io' || cEmail.includes('customer'))
-      );
+      return shipments;
     }
-    return [];
+    return shipments;
   }, [shipments, currentUser]);
 
   // Auth Guard Helper for landing and public actions

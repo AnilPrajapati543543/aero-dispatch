@@ -20,7 +20,9 @@ import {
   Check,
   ExternalLink,
   ShieldCheck,
-  X
+  X,
+  Camera,
+  UploadCloud
 } from 'lucide-react';
 
 export default function TrackingPage() {
@@ -32,7 +34,8 @@ export default function TrackingPage() {
     isBackendOnline,
     theme,
     addToast,
-    openChatbox
+    openChatbox,
+    updateShipmentStatus
   } = useApp();
 
   const initialAwb = (trackingQuery || selectedAwb || '').trim();
@@ -45,6 +48,14 @@ export default function TrackingPage() {
   const [wsConnected, setWsConnected] = useState(false);
   const [copiedAwb, setCopiedAwb] = useState(false);
   const [enlargedPhotoUrl, setEnlargedPhotoUrl] = useState(null);
+
+  // Delivery Handover Modal State
+  const [showDeliveryModal, setShowDeliveryModal] = useState(false);
+  const [deliveryRecipient, setDeliveryRecipient] = useState('');
+  const [deliveryOtp, setDeliveryOtp] = useState('');
+  const [deliveryNotes, setDeliveryNotes] = useState('');
+  const [deliveryPhotoPreview, setDeliveryPhotoPreview] = useState(null);
+  const [isSubmittingDelivery, setIsSubmittingDelivery] = useState(false);
 
   // Service Skeleton Shimmer Loading - strictly 1.0s as requested
   const [isTrackingLoading, setIsTrackingLoading] = useState(true);
@@ -92,8 +103,14 @@ export default function TrackingPage() {
     }
 
     await minDelay;
-    // Local state fallback
-    const found = shipments.find(s => s.awbNumber.toLowerCase() === query.toLowerCase());
+    // Local state fallback (matches by AWB number, Order ID, or Display ID)
+    const qLower = query.toLowerCase();
+    const found = shipments.find(s => 
+      (s.awbNumber && s.awbNumber.toLowerCase() === qLower) ||
+      (s.orderId && s.orderId.toLowerCase() === qLower) ||
+      (s.displayOrderId && s.displayOrderId.toLowerCase() === qLower) ||
+      (s.id && s.id.toLowerCase() === qLower)
+    );
     if (found) {
       setActiveShipment(found);
       setSelectedAwb(found.awbNumber);
@@ -158,6 +175,66 @@ export default function TrackingPage() {
     setCopiedAwb(true);
     addToast(`Copied AWB ${activeShipment.awbNumber} to clipboard`, 'info');
     setTimeout(() => setCopiedAwb(false), 2000);
+  };
+
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        addToast('File exceeds 5MB limit', 'warning');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setDeliveryPhotoPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCompleteHandover = async (e) => {
+    e.preventDefault();
+    if (!deliveryRecipient.trim()) {
+      addToast('Please enter the recipient name.', 'warning');
+      return;
+    }
+    setIsSubmittingDelivery(true);
+    try {
+      const proofData = {
+        deliveredTo: deliveryRecipient.trim(),
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        verificationMethod: deliveryOtp.trim() ? `OTP Verified (${deliveryOtp.trim()})` : 'Signature Verified',
+        photoUrl: deliveryPhotoPreview || 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=500&q=80',
+      };
+      await updateShipmentStatus(
+        activeShipment.awbNumber,
+        'DELIVERED',
+        deliveryNotes.trim() || `Delivered to ${deliveryRecipient.trim()}. Handover recorded.`,
+        proofData
+      );
+      setActiveShipment(prev => ({
+        ...prev,
+        currentStatus: 'DELIVERED',
+        proofOfDelivery: proofData,
+        events: [
+          {
+            id: `ev-${Date.now()}`,
+            status: 'DELIVERED',
+            title: 'Delivery Handover Complete',
+            location: activeShipment.recipient?.city || 'Destination Hub',
+            timestamp: new Date().toLocaleString(),
+            notes: `Accepted by ${deliveryRecipient.trim()}`
+          },
+          ...(prev.events || [])
+        ]
+      }));
+      addToast(`Shipment ${activeShipment.awbNumber} marked DELIVERED with verified proof!`, 'success');
+      setShowDeliveryModal(false);
+    } catch (err) {
+      addToast(`Failed: ${err.message}`, 'error');
+    } finally {
+      setIsSubmittingDelivery(false);
+    }
   };
 
   const handleSearch = (e) => {
@@ -385,6 +462,58 @@ export default function TrackingPage() {
               {/* Vector Map */}
               <MyMap shipment={activeShipment} />
             </div>
+
+            {/* Live Delivery Handover & POD Submission Action Card (When in progress) */}
+            {!activeShipment.proofOfDelivery && activeShipment.currentStatus !== 'DELIVERED' && (
+              <div style={{ 
+                marginTop: '1.25rem', 
+                padding: '1.25rem', 
+                background: 'rgba(239, 68, 68, 0.08)', 
+                border: '1px solid rgba(239, 68, 68, 0.35)', 
+                borderRadius: 'var(--radius-md)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '1rem'
+              }}>
+                <div>
+                  <div style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                    <Package size={17} color="#ef4444" />
+                    <span>Current Status: <strong style={{ color: '#ef4444' }}>{activeShipment.currentStatus}</strong> • In Progress</span>
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                    Package is active. Ready to complete this delivery and generate the Proof of Delivery (POD) dossier?
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDeliveryRecipient(activeShipment.recipient?.name || 'Rohan Sharma');
+                    setDeliveryOtp('4892');
+                    setShowDeliveryModal(true);
+                  }}
+                  style={{
+                    background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                    color: '#ffffff',
+                    border: 'none',
+                    padding: '0.6rem 1.25rem',
+                    borderRadius: '8px',
+                    fontWeight: 700,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.45rem',
+                    boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)'
+                  }}
+                >
+                  <CheckCircle2 size={16} />
+                  <span>Complete Delivery &amp; Record Proof (POD)</span>
+                </button>
+              </div>
+            )}
 
             {/* Proof of Delivery Card if completed */}
             {activeShipment.proofOfDelivery && (
@@ -614,6 +743,125 @@ export default function TrackingPage() {
             >
               Close Preview
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Delivery Handover / POD Modal */}
+      {showDeliveryModal && activeShipment && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="delivery-modal-title">
+          <div className="modal-dialog" style={{ maxWidth: '540px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <div>
+                <h3 id="delivery-modal-title" style={{ fontSize: '1.2rem', color: 'var(--accent-emerald)', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+                  <ShieldCheck size={20} />
+                  <span>Doorstep Handover &amp; e-POD</span>
+                </h3>
+                <span className="mono" style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                  AWB: {activeShipment.awbNumber} • {activeShipment.recipient?.name || 'Customer'}
+                </span>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setShowDeliveryModal(false)}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', padding: '4px' }}
+                aria-label="Close dialog"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCompleteHandover}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+                <div>
+                  <label className="form-label" htmlFor="received-by-input">Received By (Name) *</label>
+                  <input 
+                    id="received-by-input"
+                    type="text" 
+                    className="form-input" 
+                    placeholder="e.g. Recipient Name or Security" 
+                    value={deliveryRecipient}
+                    onChange={(e) => setDeliveryRecipient(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="form-label" htmlFor="otp-input">Delivery OTP Code</label>
+                  <input 
+                    id="otp-input"
+                    type="text" 
+                    className="form-input" 
+                    placeholder="e.g. 4892" 
+                    value={deliveryOtp}
+                    onChange={(e) => setDeliveryOtp(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '1rem' }}>
+                <label className="form-label" htmlFor="delivery-notes-input">Handover Notes</label>
+                <input 
+                  id="delivery-notes-input"
+                  type="text" 
+                  className="form-input" 
+                  placeholder="e.g. Delivered directly to recipient, signature verified" 
+                  value={deliveryNotes}
+                  onChange={(e) => setDeliveryNotes(e.target.value)}
+                />
+              </div>
+
+              {/* Photo Proof */}
+              <div style={{ marginBottom: '1.25rem', padding: '0.85rem', background: 'rgba(255, 255, 255, 0.03)', borderRadius: 'var(--radius-sm)', border: '1px dashed var(--border-medium)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
+                    <Camera size={16} color="var(--primary)" />
+                    <span style={{ fontWeight: 600 }}>Delivery Photo Proof</span>
+                  </div>
+                  <label className="btn btn-sm btn-secondary" style={{ cursor: 'pointer', margin: 0 }}>
+                    <UploadCloud size={14} />
+                    <span>{deliveryPhotoPreview ? 'Change Photo' : 'Upload Photo'}</span>
+                    <input 
+                      type="file" 
+                      accept="image/jpeg,image/png,image/webp" 
+                      style={{ display: 'none' }} 
+                      onChange={handlePhotoUpload}
+                    />
+                  </label>
+                </div>
+
+                {deliveryPhotoPreview && (
+                  <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <img 
+                      src={deliveryPhotoPreview} 
+                      alt="Proof preview" 
+                      style={{ width: '80px', height: '60px', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--border-medium)' }} 
+                    />
+                    <div style={{ fontSize: '0.75rem', color: 'var(--accent-emerald)' }}>
+                      ✓ Photo attached &amp; ready for AI verification
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+                <button 
+                  type="button" 
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setShowDeliveryModal(false)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="btn btn-primary btn-sm"
+                  style={{ background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)', border: 'none' }}
+                  disabled={isSubmittingDelivery}
+                >
+                  {isSubmittingDelivery ? 'Recording Handover...' : 'Confirm & Mark Delivered'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

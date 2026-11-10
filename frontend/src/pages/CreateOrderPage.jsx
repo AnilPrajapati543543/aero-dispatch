@@ -216,7 +216,7 @@ export default function CreateOrderPage() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '0.85rem', flexWrap: 'wrap' }}>
             <button
               className="btn btn-primary"
               onClick={() => {
@@ -227,6 +227,41 @@ export default function CreateOrderPage() {
             >
               <span>Track This Shipment</span>
               <ArrowRight size={16} />
+            </button>
+
+            <button
+              className="btn btn-secondary"
+              onClick={() => {
+                setSelectedAwb(createdOrder.awbNumber);
+                setActiveTab('shipments');
+              }}
+            >
+              <Package size={16} />
+              <span>View in All Shipments</span>
+            </button>
+
+            <button
+              style={{
+                background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                color: '#ffffff',
+                border: 'none',
+                padding: '0.65rem 1.25rem',
+                borderRadius: '8px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.45rem',
+                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)'
+              }}
+              onClick={() => {
+                setSelectedAwb(createdOrder.awbNumber);
+                setTrackingQuery(createdOrder.awbNumber);
+                setActiveTab('track');
+              }}
+            >
+              <CheckCircle size={16} />
+              <span>Deliver &amp; Submit Proof (POD)</span>
             </button>
 
             <button

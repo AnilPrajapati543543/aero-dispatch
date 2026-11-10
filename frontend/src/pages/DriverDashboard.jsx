@@ -67,12 +67,13 @@ export default function DriverDashboard() {
     return () => clearTimeout(timer);
   }, [activeTabFilter]);
 
-  // Filter shipments strictly assigned to current driver
+  // Filter shipments assigned to current driver or ready for pickup
   const driverShipments = useMemo(() => {
     const dId = currentUser?.driverId || 'DRV-8469';
     return shipments.filter(s => 
       (s.assignedDriver && s.assignedDriver.driverId === dId) ||
-      (s.assignedDriver && s.assignedDriver.name?.toLowerCase() === currentUser?.name?.toLowerCase())
+      (s.assignedDriver && s.assignedDriver.name?.toLowerCase() === currentUser?.name?.toLowerCase()) ||
+      (!s.assignedDriver && (s.currentStatus === 'BOOKED' || s.currentStatus === 'PICKUP_SCHEDULED'))
     );
   }, [shipments, currentUser]);
 
