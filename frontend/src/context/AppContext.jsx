@@ -59,7 +59,13 @@ export function AppProvider({ children }) {
 
   const [notifications, setNotifications] = useState(() => {
     const saved = localStorage.getItem('aerodispatch_notifications');
-    return saved ? JSON.parse(saved) : MOCK_NOTIFICATIONS;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {}
+    }
+    return MOCK_NOTIFICATIONS;
   });
 
   const [driversList, setDriversList] = useState(() => {

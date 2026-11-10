@@ -358,3 +358,4 @@ export default function AccountDropdown({ isOpen, onClose, triggerRef }) {
     </div>
   );
 }
+

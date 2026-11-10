@@ -90,20 +90,20 @@ export default function NotificationsPage() {
       </div>
 
       {/* 2. Category Filters & Unread Toggle */}
-      <div className="card" style={{ padding: '0.85rem 1.25rem' }}>
+      <div className="card" style={{ padding: '0.85rem 1.25rem', borderRadius: '24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
-          <div style={{ display: 'flex', gap: '0.35rem', overflowX: 'auto' }}>
+          <div className="notification-category-scroll">
             {[
               { id: 'ALL', label: 'All Alerts' },
               { id: 'alert', label: 'Delivery Alerts' },
-              { id: 'assignment', label: 'Driver Routes' },
+              { id: 'assignment', label: 'Captain Routes' },
               { id: 'shipment', label: 'Shipment Updates' },
               { id: 'system', label: 'System & Security' }
             ].map(tab => (
               <button
                 key={tab.id}
                 className={`btn btn-sm ${activeCategory === tab.id ? 'btn-primary' : 'btn-secondary'}`}
-                style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem' }}
+                style={{ fontSize: '0.78rem', padding: '0.45rem 1rem', borderRadius: '9999px', whiteSpace: 'nowrap' }}
                 onClick={() => setActiveCategory(tab.id)}
               >
                 {tab.label}
@@ -116,19 +116,19 @@ export default function NotificationsPage() {
               type="checkbox"
               checked={showUnreadOnly}
               onChange={(e) => setShowUnreadOnly(e.target.checked)}
-              style={{ accentColor: 'var(--primary)' }}
+              style={{ accentColor: 'var(--primary)', width: '16px', height: '16px', borderRadius: '4px' }}
             />
-            <span>Unread Only ({unreadNotificationsCount})</span>
+            <span style={{ fontWeight: 600 }}>Unread Only ({unreadNotificationsCount})</span>
           </label>
         </div>
       </div>
 
-      {/* 3. Notifications List */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+      {/* 3. Notifications List with Adjusted Smooth Scrolling Container */}
+      <div className="notifications-scroll-container">
         {filteredNotifications.length === 0 ? (
-          <div className="card" style={{ textAlign: 'center', padding: '3.5rem 1.5rem' }}>
+          <div className="card" style={{ textAlign: 'center', padding: '3.5rem 1.5rem', borderRadius: '24px' }}>
             <Bell size={40} color="var(--text-dim)" style={{ margin: '0 auto 1rem', opacity: 0.4 }} />
-            <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', marginBottom: '0.25rem' }}>All Caught Up!</h3>
+            <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', marginBottom: '0.25rem', fontWeight: 800 }}>All Caught Up!</h3>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
               No notifications matching your active filter.
             </p>
@@ -137,24 +137,34 @@ export default function NotificationsPage() {
           filteredNotifications.map((notif) => (
             <div 
               key={notif.id}
-              className="card"
+              className="card notification-item-card"
               style={{
-                padding: '1.25rem',
+                padding: '1.25rem 1.35rem',
                 display: 'flex',
                 alignItems: 'flex-start',
                 gap: '1rem',
+                borderRadius: '20px',
                 borderLeft: notif.read ? '3px solid transparent' : '3px solid var(--primary)',
-                background: notif.read ? 'var(--bg-card)' : 'rgba(0, 240, 255, 0.04)',
-                transition: 'all 0.15s ease'
+                background: notif.read ? 'var(--bg-card)' : 'rgba(0, 240, 255, 0.05)',
+                transition: 'all 0.2s cubic-bezier(0.2, 0, 0, 1)',
+                cursor: 'pointer'
               }}
               onClick={() => markNotificationRead(notif.id)}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.borderColor = 'var(--primary)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.borderColor = 'var(--border-subtle)';
+              }}
             >
               {/* Category Icon */}
               <div 
                 style={{
-                  width: '38px',
-                  height: '38px',
-                  borderRadius: 'var(--radius-sm)',
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '14px',
                   background: 'var(--bg-secondary)',
                   border: '1px solid var(--border-subtle)',
                   display: 'flex',
@@ -172,21 +182,21 @@ export default function NotificationsPage() {
                   <h4 style={{ fontSize: '0.95rem', fontWeight: notif.read ? 600 : 800, color: 'var(--text-main)', lineHeight: 1.3 }}>
                     {notif.title}
                   </h4>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', whiteSpace: 'nowrap', fontWeight: 500 }}>
                     {notif.time}
                   </span>
                 </div>
 
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.25rem', lineHeight: 1.4 }}>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.3rem', lineHeight: 1.45 }}>
                   {notif.message}
                 </p>
 
                 {/* Optional AWB Action Link */}
                 {notif.awbNumber && (
-                  <div style={{ marginTop: '0.65rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <button
-                      className="btn btn-sm btn-outline-cyan"
-                      style={{ fontSize: '0.72rem', padding: '0.2rem 0.55rem' }}
+                      className="btn btn-sm btn-outline-cyan google-pill-btn"
+                      style={{ fontSize: '0.74rem', padding: '0.3rem 0.75rem', borderRadius: '9999px', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedAwb(notif.awbNumber);
@@ -194,7 +204,7 @@ export default function NotificationsPage() {
                       }}
                     >
                       <span>Track {notif.awbNumber}</span>
-                      <ChevronRight size={12} />
+                      <ChevronRight size={13} />
                     </button>
                   </div>
                 )}
@@ -204,13 +214,13 @@ export default function NotificationsPage() {
               {!notif.read && (
                 <div 
                   style={{
-                    width: '8px',
-                    height: '8px',
+                    width: '9px',
+                    height: '9px',
                     borderRadius: '50%',
                     background: 'var(--primary)',
                     flexShrink: 0,
                     marginTop: '0.35rem',
-                    boxShadow: '0 0 8px rgba(0, 240, 255, 0.8)'
+                    boxShadow: '0 0 10px rgba(0, 240, 255, 0.9)'
                   }}
                   title="Unread notification"
                 />

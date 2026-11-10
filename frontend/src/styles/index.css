@@ -595,6 +595,100 @@ body.theme-light .driver-cockpit-scroll-container::-webkit-scrollbar-track {
   background: var(--primary-hover);
 }
 
+/* Notifications Center & Dropdown Adjusted Scroll Containers */
+.notifications-scroll-container {
+  max-height: calc(100vh - 280px);
+  min-height: 420px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 0.65rem;
+  padding-bottom: 2rem;
+  scroll-behavior: smooth;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.notifications-scroll-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.notifications-scroll-container::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 9999px;
+}
+
+body.theme-light .notifications-scroll-container::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.notifications-scroll-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 9999px;
+  transition: background 0.2s ease;
+}
+
+.notifications-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+body.theme-light .notifications-scroll-container::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+body.theme-light .notifications-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+/* Category Filter Strip (Invisible Scrollbars, Clean Touch Glide) */
+.notification-category-scroll {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding-bottom: 2px;
+}
+
+.notification-category-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* Compact Notification Dropdown Scroll */
+.notification-dropdown-scroll {
+  max-height: 380px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 0.4rem;
+  scroll-behavior: smooth;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.notification-dropdown-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+
+.notification-dropdown-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.notification-dropdown-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 9999px;
+}
+
+.notification-dropdown-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+body.theme-light .notification-dropdown-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+}
+
 /* High-Performance Smooth Continuous Skeleton Shimmer (Zero Pause) */
 @keyframes skeletonShimmerWave {
   0% {

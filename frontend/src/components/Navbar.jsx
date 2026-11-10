@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import AeroLogo from './AeroLogo';
 import AccountDropdown from './AccountDropdown';
+import NotificationDropdown from './NotificationDropdown';
 import { getCleanDisplayName } from '../utils/userUtils';
 import {
   Search,
@@ -52,6 +53,8 @@ export default function Navbar() {
 
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
   const userChipRef = useRef(null);
+  const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] = useState(false);
+  const notificationButtonRef = useRef(null);
 
   const [inputSearch, setInputSearch] = useState('');
   const [landingRole, setLandingRole] = useState(() => {
@@ -357,35 +360,44 @@ export default function Navbar() {
              DASHBOARD NAVBAR ACTIONS (CLEAN, NO WASTE TELEMETRY PILLS)
              ========================================================== */
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-            {/* Notifications Button with Badge */}
-            <button
-              className={`btn btn-sm ${activeTab === 'notifications' ? 'btn-outline-cyan' : 'btn-secondary'}`}
-              onClick={() => setActiveTab('notifications')}
-              style={{ position: 'relative', padding: '0.45rem' }}
-              title="Logistics Notifications Center"
-              aria-label="View notifications"
-            >
-              <Bell size={16} />
-              {unreadNotificationsCount > 0 && (
-                <span
-                  style={{
-                    position: 'absolute',
-                    top: '-3px',
-                    right: '-3px',
-                    background: '#F43F5E',
-                    color: '#FFFFFF',
-                    borderRadius: '9999px',
-                    fontSize: '0.62rem',
-                    fontWeight: 800,
-                    padding: '1px 5px',
-                    lineHeight: 1.2,
-                    boxShadow: '0 0 8px rgba(244, 63, 94, 0.8)'
-                  }}
-                >
-                  {unreadNotificationsCount}
-                </span>
-              )}
-            </button>
+            {/* Notifications Button with Dropdown Popover & Adjusted Scrolling */}
+            <div style={{ position: 'relative' }}>
+              <button
+                ref={notificationButtonRef}
+                className={`btn btn-sm ${isNotificationDropdownOpen || activeTab === 'notifications' ? 'btn-outline-cyan' : 'btn-secondary'}`}
+                onClick={() => setIsNotificationDropdownOpen(prev => !prev)}
+                style={{ position: 'relative', padding: '0.45rem' }}
+                title="Logistics Notifications Center"
+                aria-label="View notifications"
+              >
+                <Bell size={16} />
+                {unreadNotificationsCount > 0 && (
+                  <span
+                    style={{
+                      position: 'absolute',
+                      top: '-3px',
+                      right: '-3px',
+                      background: '#F43F5E',
+                      color: '#FFFFFF',
+                      borderRadius: '9999px',
+                      fontSize: '0.62rem',
+                      fontWeight: 800,
+                      padding: '1px 5px',
+                      lineHeight: 1.2,
+                      boxShadow: '0 0 8px rgba(244, 63, 94, 0.8)'
+                    }}
+                  >
+                    {unreadNotificationsCount}
+                  </span>
+                )}
+              </button>
+
+              <NotificationDropdown
+                isOpen={isNotificationDropdownOpen}
+                onClose={() => setIsNotificationDropdownOpen(false)}
+                triggerRef={notificationButtonRef}
+              />
+            </div>
 
             {/* Theme Toggle Button */}
             <button
