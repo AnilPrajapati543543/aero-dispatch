@@ -19,11 +19,7 @@ import {
 } from 'lucide-react';
 
 export default function AuthPage() {
-  const { currentUser, loginUser, loginWithGoogle, resetAccountPassword, addToast, setActiveTab } = useApp();
-
-  const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
-  const [customGoogleEmail, setCustomGoogleEmail] = useState('');
-  const [showCustomGoogleInput, setShowCustomGoogleInput] = useState(false);
+  const { currentUser, loginUser, resetAccountPassword, addToast, setActiveTab } = useApp();
 
   const initialMode = React.useMemo(() => {
     const modeKey = localStorage.getItem('aerodispatch_auth_mode');
@@ -186,12 +182,6 @@ export default function AuthPage() {
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  // Google Single Sign-On (SSO) Flow
-  const handleGoogleClick = () => {
-    setAuthError('');
-    setIsGoogleModalOpen(true);
   };
 
   const handleSubmit = async (e) => {
@@ -606,47 +596,6 @@ export default function AuthPage() {
         .login-submit-btn:disabled {
           opacity: 0.6;
           cursor: not-allowed;
-        }
-
-        .login-social-label {
-          text-align: center;
-          margin: 1.35rem 0 0.9rem 0;
-          color: #9ca3af;
-          font-size: 0.78rem;
-          font-weight: 500;
-        }
-
-        .login-social-row {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          gap: 0.85rem;
-        }
-
-        .login-social-btn {
-          width: 42px;
-          height: 42px;
-          border: 1px solid rgba(255, 255, 255, 0.12);
-          border-radius: 10px;
-          background: rgba(255, 255, 255, 0.05);
-          backdrop-filter: blur(10px);
-          -webkit-backdrop-filter: blur(10px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #e5e7eb;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          font-weight: 700;
-          padding: 0;
-        }
-
-        .login-social-btn:hover {
-          border-color: #ef4444;
-          color: #ffffff;
-          background: rgba(239, 68, 68, 0.2);
-          transform: translateY(-2px);
-          box-shadow: 0 6px 18px rgba(220, 38, 38, 0.35);
         }
 
         .login-error-alert {
@@ -1069,244 +1018,11 @@ export default function AuthPage() {
                     </span>
                   )}
                 </button>
-
-                {/* Google Single Sign-On (SSO) */}
-                {authMode !== 'forgot' && (
-                  <>
-                    <div className="login-social-label">
-                      or {authMode === 'register' ? 'register' : 'login'} with Google
-                    </div>
-
-                    <div className="login-social-row">
-                      {/* Google SSO Only */}
-                      <button
-                        type="button"
-                        className="login-social-btn"
-                        onClick={handleGoogleClick}
-                        title="Continue with Google"
-                        style={{ width: '46px', height: '46px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.16)' }}
-                      >
-                        <svg width="22" height="22" viewBox="0 0 24 24">
-                          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-                        </svg>
-                      </button>
-                    </div>
-                  </>
-                )}
               </form>
             )}
           </div>
         </div>
       </div>
-
-      {/* Google Account Chooser Modal (Direct Seamless Google Sign-In) */}
-      {isGoogleModalOpen && (
-        <div 
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0, 0, 0, 0.72)',
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999,
-            padding: '1.25rem'
-          }}
-          onClick={() => setIsGoogleModalOpen(false)}
-        >
-          <div 
-            style={{
-              width: '100%',
-              maxWidth: '440px',
-              background: '#202124',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
-              borderRadius: '28px',
-              boxShadow: '0 25px 60px rgba(0, 0, 0, 0.5), 0 4px 16px rgba(0, 0, 0, 0.2)',
-              padding: '2rem 1.85rem 1.5rem 1.85rem',
-              color: '#FFFFFF',
-              position: 'relative',
-              animation: 'googleModalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-              textAlign: 'left'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <style>{`
-              @keyframes googleModalPop {
-                from { opacity: 0; transform: scale(0.95) translateY(10px); }
-                to { opacity: 1; transform: scale(1) translateY(0); }
-              }
-              .google-account-row {
-                display: flex;
-                align-items: center;
-                gap: 1rem;
-                padding: 0.85rem 0.95rem;
-                border-radius: 16px;
-                background: rgba(255, 255, 255, 0.05);
-                border: 1px solid rgba(255, 255, 255, 0.08);
-                cursor: pointer;
-                transition: all 0.15s ease;
-                text-align: left;
-                width: 100%;
-              }
-              .google-account-row:hover {
-                background: rgba(255, 255, 255, 0.1);
-                border-color: rgba(66, 133, 244, 0.5);
-                transform: translateY(-1px);
-              }
-            `}</style>
-
-            {/* Google G Logo Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                <svg width="24" height="24" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-                </svg>
-                <span style={{ fontSize: '1rem', fontWeight: 700, color: '#e8eaed' }}>Sign in with Google</span>
-              </div>
-              <button 
-                type="button" 
-                onClick={() => setIsGoogleModalOpen(false)}
-                style={{ background: 'transparent', border: 'none', color: '#9aa0a6', cursor: 'pointer', padding: '4px', fontSize: '1.1rem' }}
-                title="Close"
-              >
-                ✕
-              </button>
-            </div>
-
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ffffff', margin: '0 0 0.35rem 0', letterSpacing: '-0.01em' }}>
-              Choose an account
-            </h3>
-            <p style={{ fontSize: '0.82rem', color: '#9aa0a6', margin: '0 0 1.25rem 0', lineHeight: 1.45 }}>
-              to continue to <strong style={{ color: '#ffffff' }}>AeroDispatch Smart Logistics</strong> as{' '}
-              <span style={{ color: authRole === 'driver' ? '#FBBF24' : '#00F0FF', fontWeight: 700 }}>
-                {authRole === 'driver' ? 'Delivery Captain' : 'Customer Merchant'}
-              </span>
-            </p>
-
-            {/* Primary Google Account (microsofty543@gmail.com from User's Screenshot) */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-              <button
-                type="button"
-                className="google-account-row"
-                onClick={async () => {
-                  setIsGoogleModalOpen(false);
-                  if (loginWithGoogle) {
-                    await loginWithGoogle({
-                      name: 'Anil Prajapati',
-                      email: 'microsofty543@gmail.com',
-                      role: authRole
-                    });
-                  }
-                }}
-              >
-                <div style={{
-                  width: '42px',
-                  height: '42px',
-                  borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #4285F4, #34A853)',
-                  color: '#FFFFFF',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 800,
-                  fontSize: '1.1rem',
-                  flexShrink: 0
-                }}>
-                  A
-                </div>
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    Anil Prajapati
-                  </div>
-                  <div style={{ fontSize: '0.78rem', color: '#9aa0a6', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '1px' }}>
-                    microsofty543@gmail.com
-                  </div>
-                </div>
-                <span style={{ fontSize: '0.7rem', color: '#34A853', background: 'rgba(52, 168, 83, 0.15)', padding: '2px 8px', borderRadius: '9999px', fontWeight: 700 }}>
-                  Active
-                </span>
-              </button>
-
-              {/* Custom Google Account Toggle */}
-              {showCustomGoogleInput ? (
-                <div style={{ background: 'rgba(255, 255, 255, 0.05)', borderRadius: '16px', padding: '0.85rem', border: '1px solid rgba(255, 255, 255, 0.12)' }}>
-                  <input
-                    type="email"
-                    placeholder="Enter your Gmail address"
-                    value={customGoogleEmail}
-                    onChange={(e) => setCustomGoogleEmail(e.target.value)}
-                    style={{
-                      width: '100%',
-                      background: 'rgba(0, 0, 0, 0.3)',
-                      border: '1px solid rgba(255, 255, 255, 0.2)',
-                      borderRadius: '10px',
-                      padding: '0.6rem 0.85rem',
-                      color: '#ffffff',
-                      fontSize: '0.85rem',
-                      marginBottom: '0.65rem',
-                      outline: 'none'
-                    }}
-                  />
-                  <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-secondary"
-                      onClick={() => setShowCustomGoogleInput(false)}
-                      style={{ fontSize: '0.75rem', padding: '0.35rem 0.65rem' }}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-primary"
-                      onClick={async () => {
-                        const target = customGoogleEmail.trim().toLowerCase();
-                        if (!target || !target.includes('@')) {
-                          addToast('Please enter a valid Google email address.', 'error');
-                          return;
-                        }
-                        setIsGoogleModalOpen(false);
-                        if (loginWithGoogle) {
-                          await loginWithGoogle({
-                            name: target.split('@')[0],
-                            email: target,
-                            role: authRole
-                          });
-                        }
-                      }}
-                      style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem' }}
-                    >
-                      Continue
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  className="google-account-row"
-                  onClick={() => setShowCustomGoogleInput(true)}
-                  style={{ color: '#8ab4f8', fontWeight: 600, fontSize: '0.86rem', justifyContent: 'flex-start' }}
-                >
-                  <span style={{ fontSize: '1.2rem', lineHeight: 1, marginRight: '4px' }}>+</span>
-                  <span>Use another Google account</span>
-                </button>
-              )}
-            </div>
-
-            <div style={{ marginTop: '1.35rem', paddingTop: '0.9rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)', fontSize: '0.72rem', color: '#9aa0a6', lineHeight: 1.45, textAlign: 'center' }}>
-              To continue, Google will share your name, email address, language preference, and profile picture with AeroDispatch.
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
