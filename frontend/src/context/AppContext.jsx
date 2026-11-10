@@ -1,5 +1,16 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { MOCK_SHIPMENTS, MOCK_USERS, MOCK_ADMIN_METRICS, MOCK_DRIVERS, MOCK_HUBS, MOCK_NOTIFICATIONS } from '../data/mockShipments';
+import { 
+  MOCK_SHIPMENTS, 
+  MOCK_USERS, 
+  MOCK_ADMIN_METRICS, 
+  MOCK_DRIVERS, 
+  MOCK_HUBS, 
+  MOCK_NOTIFICATIONS,
+  MASTER_ADMIN_SHIPMENTS,
+  MASTER_ADMIN_HUBS,
+  MASTER_ADMIN_DRIVERS,
+  MASTER_ADMIN_METRICS
+} from '../data/mockShipments';
 import { 
   checkBackendHealth, 
   apiCreateOrder, 
@@ -51,8 +62,17 @@ export function AppProvider({ children }) {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       } catch (e) {}
+    }
+    const currentRole = localStorage.getItem('aerodispatch_role');
+    const currentUserStr = localStorage.getItem('aerodispatch_user');
+    const isAdmin = currentRole === 'admin' || (currentUserStr && currentUserStr.includes('"role":"admin"'));
+    if (isAdmin) {
+      try {
+        localStorage.setItem('aerodispatch_shipments', JSON.stringify(MASTER_ADMIN_SHIPMENTS));
+      } catch (e) {}
+      return MASTER_ADMIN_SHIPMENTS;
     }
     return MOCK_SHIPMENTS;
   });
@@ -73,9 +93,18 @@ export function AppProvider({ children }) {
       const saved = localStorage.getItem('aerodispatch_fleet_drivers');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
     } catch (e) {}
+    const currentRole = localStorage.getItem('aerodispatch_role');
+    const currentUserStr = localStorage.getItem('aerodispatch_user');
+    const isAdmin = currentRole === 'admin' || (currentUserStr && currentUserStr.includes('"role":"admin"'));
+    if (isAdmin) {
+      try {
+        localStorage.setItem('aerodispatch_fleet_drivers', JSON.stringify(MASTER_ADMIN_DRIVERS));
+      } catch (e) {}
+      return MASTER_ADMIN_DRIVERS;
+    }
     return MOCK_DRIVERS;
   });
 
@@ -686,6 +715,27 @@ export function AppProvider({ children }) {
     // Trigger Admin specific entrance animation
     setLoginAnimationRole('admin');
 
+    // Ensure Admin has the Master Operational Dataset immediately in Edge or any fresh session
+    setShipments(prev => {
+      if (!prev || prev.length === 0) {
+        try {
+          localStorage.setItem('aerodispatch_shipments', JSON.stringify(MASTER_ADMIN_SHIPMENTS));
+        } catch (e) {}
+        return MASTER_ADMIN_SHIPMENTS;
+      }
+      return prev;
+    });
+
+    setDriversList(prev => {
+      if (!prev || prev.length === 0) {
+        try {
+          localStorage.setItem('aerodispatch_fleet_drivers', JSON.stringify(MASTER_ADMIN_DRIVERS));
+        } catch (e) {}
+        return MASTER_ADMIN_DRIVERS;
+      }
+      return prev;
+    });
+
     return adminUser;
   };
 
@@ -1142,10 +1192,40 @@ export function AppProvider({ children }) {
   };
 
   const resetToDefaultMock = () => {
-    setShipments(MOCK_SHIPMENTS);
-    localStorage.removeItem('aerodispatch_shipments');
-    addToast('Restored default logistics database.', 'info');
+    if (currentUser?.role === 'admin' || currentRole === 'admin') {
+      setShipments(MASTER_ADMIN_SHIPMENTS);
+      try {
+        localStorage.setItem('aerodispatch_shipments', JSON.stringify(MASTER_ADMIN_SHIPMENTS));
+      } catch (e) {}
+      setDriversList(MASTER_ADMIN_DRIVERS);
+      try {
+        localStorage.setItem('aerodispatch_fleet_drivers', JSON.stringify(MASTER_ADMIN_DRIVERS));
+      } catch (e) {}
+      addToast('Restored national logistics master database for Admin.', 'info');
+    } else {
+      setShipments(MOCK_SHIPMENTS);
+      localStorage.removeItem('aerodispatch_shipments');
+      addToast('Restored default logistics database.', 'info');
+    }
   };
+
+  // Ensure the System Administrator always has full operational visibility across Edge, Chrome, Safari, etc.
+  useEffect(() => {
+    if (currentUser?.role === 'admin' || currentRole === 'admin') {
+      if (!shipments || shipments.length === 0) {
+        setShipments(MASTER_ADMIN_SHIPMENTS);
+        try {
+          localStorage.setItem('aerodispatch_shipments', JSON.stringify(MASTER_ADMIN_SHIPMENTS));
+        } catch (e) {}
+      }
+      if (!driversList || driversList.length === 0) {
+        setDriversList(MASTER_ADMIN_DRIVERS);
+        try {
+          localStorage.setItem('aerodispatch_fleet_drivers', JSON.stringify(MASTER_ADMIN_DRIVERS));
+        } catch (e) {}
+      }
+    }
+  }, [currentUser?.role, currentRole, shipments?.length, driversList?.length]);
 
   // Dynamically compute real logistics metrics from active shipments
   const computedMetrics = React.useMemo(() => {
@@ -1206,6 +1286,10 @@ export function AppProvider({ children }) {
         }
       }
     });
+
+    if (hubMap.size === 0) {
+      return MASTER_ADMIN_HUBS;
+    }
 
     return Array.from(hubMap.values()).map(h => ({
       ...h,

@@ -44,3 +44,4 @@ export function formatINR(val) {
     maximumFractionDigits: 0
   }).format(num);
 }
+
