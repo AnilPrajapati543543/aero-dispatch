@@ -1,23 +1,21 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { 
-  Play, 
-  Pause, 
-  RotateCcw, 
-  Truck, 
-  Plane, 
-  Gauge, 
-  Clock, 
-  MapPin, 
-  CheckCircle2, 
-  Zap,
-  Radio,
-  SlidersHorizontal
-} from "lucide-react";
 
 // Known Hub Coordinates for Real-World Route Corridor Mapping (lat, lng)
 const CITY_COORDINATES = {
+  // Mumbai Metropolitan Region & Satellite Cities (Including Diva Junction)
+  "diva": [19.1892, 73.0427],
+  "thane": [19.2183, 72.9781],
+  "kalyan": [19.2437, 73.1355],
+  "dombivli": [19.2184, 73.0867],
+  "mumbai": [19.0760, 72.8777],
+  "navi mumbai": [19.0330, 73.0297],
+  "panvel": [18.9894, 73.1175],
+  "vasai": [19.3919, 72.8397],
+  "virar": [19.4700, 72.8000],
+  "bhiwandi": [19.2813, 73.0483],
+
   // Metros & Northern Belts
   "delhi": [28.6139, 77.2090],
   "new delhi": [28.6139, 77.2090],
@@ -37,9 +35,6 @@ const CITY_COORDINATES = {
   "dehradun": [30.3165, 78.0322],
 
   // Western & Central Belts
-  "mumbai": [19.0760, 72.8777],
-  "navi mumbai": [19.0330, 73.0297],
-  "thane": [19.2183, 72.9781],
   "pune": [18.5204, 73.8567],
   "ahmedabad": [23.0225, 72.5714],
   "surat": [21.1702, 72.8311],
@@ -98,11 +93,11 @@ function calculateBearing(p1, p2) {
   return (brng + 360) % 360;
 }
 
-// Calculate realistic route progress based on booking time vs estimated delivery SLA
+// Calculate realistic route progress based on delivery estimated time SLA
 export function calculateETABasedProgress(shipment) {
-  if (!shipment) return 0.45;
+  if (!shipment) return 0.50;
   if (shipment.currentStatus === 'DELIVERED') return 1.0;
-  if (shipment.currentStatus === 'BOOKED') return 0.08;
+  if (shipment.currentStatus === 'BOOKED') return 0.05;
 
   const nowMs = Date.now();
   const createdMs = new Date(shipment.createdAt || (nowMs - 3600000 * 18)).getTime();
@@ -121,9 +116,9 @@ export function calculateETABasedProgress(shipment) {
     return Math.max(0.20, Math.min(0.74, ratio));
   }
   if (shipment.currentStatus === 'PICKED_UP' || shipment.currentStatus === 'HUB_INBOUND') {
-    return Math.max(0.10, Math.min(0.22, ratio));
+    return Math.max(0.08, Math.min(0.22, ratio));
   }
-  return Math.max(0.06, Math.min(0.96, ratio));
+  return Math.max(0.05, Math.min(0.96, ratio));
 }
 
 export function MyMap({ center = [20.80, 77.40], zoom = 5, shipment = null }) {
@@ -137,35 +132,20 @@ export function MyMap({ center = [20.80, 77.40], zoom = 5, shipment = null }) {
   const etaBaseProgress = useMemo(() => calculateETABasedProgress(shipment), [shipment]);
   const [progress, setProgress] = useState(etaBaseProgress);
   const progressRef = useRef(progress);
-  progressRef.current = progress;
 
-  const [isPlaying, setIsPlaying] = useState(false); // Default to ETA sync, toggle play for simulation
-  const isPlayingRef = useRef(isPlaying);
-  useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
-
-  const [playbackSpeed, setPlaybackSpeed] = useState(1); // 1x | 2x | 4x
-  const speedRef = useRef(playbackSpeed);
-  useEffect(() => { speedRef.current = playbackSpeed; }, [playbackSpeed]);
-
-  const [vehicleMode, setVehicleMode] = useState('auto'); // 'auto' | 'plane' | 'truck'
-  const [isLiveSynced, setIsLiveSynced] = useState(true);
+  // Road geometry coordinates
+  const [realRoadPoints, setRealRoadPoints] = useState(null);
 
   // Sync state whenever shipment changes
   useEffect(() => {
     const p = calculateETABasedProgress(shipment);
     setProgress(p);
     progressRef.current = p;
-    setIsLiveSynced(true);
-    setIsPlaying(false);
   }, [shipment]);
-
-  // Road geometry coordinates
-  const [realRoadPoints, setRealRoadPoints] = useState(null);
-  const [roadMetrics, setRoadMetrics] = useState({ distanceKm: null, durationMins: null });
 
   // Origin & Destination coordinates [latitude, longitude]
   const origin = useMemo(() => {
-    return resolveCoords(shipment?.sender?.city, [28.6139, 77.2090]); // New Delhi default
+    return resolveCoords(shipment?.sender?.city, [19.1892, 73.0427]); // Diva/Mumbai default
   }, [shipment?.sender?.city]);
 
   const destination = useMemo(() => {
@@ -174,11 +154,8 @@ export function MyMap({ center = [20.80, 77.40], zoom = 5, shipment = null }) {
 
   const isAirTier = shipment?.serviceTier?.toLowerCase().includes("air") ?? false;
 
-  // Decide effective vehicle based on mode or progress
+  // Decide effective vehicle based on lifecycle and delivery progress
   const effectiveVehicle = useMemo(() => {
-    if (vehicleMode === 'plane') return 'plane';
-    if (vehicleMode === 'truck') return 'truck';
-    // 'auto' mode:
     // If progress is >= 75% or status is OUT_FOR_DELIVERY, switch to last-mile Delivery Truck
     if (progress >= 0.75 || shipment?.currentStatus === 'OUT_FOR_DELIVERY') {
       return 'truck';
@@ -188,7 +165,7 @@ export function MyMap({ center = [20.80, 77.40], zoom = 5, shipment = null }) {
       return 'plane';
     }
     return 'truck';
-  }, [vehicleMode, progress, isAirTier, shipment?.currentStatus]);
+  }, [progress, isAirTier, shipment?.currentStatus]);
 
   // Fetch real-world road-level routing from OpenStreetMap / OSRM API
   useEffect(() => {
@@ -204,17 +181,12 @@ export function MyMap({ center = [20.80, 77.40], zoom = 5, shipment = null }) {
           const coords = route.geometry.coordinates.map(pt => [pt[1], pt[0]]);
           if (!isCancelled && coords.length > 0) {
             setRealRoadPoints(coords);
-            setRoadMetrics({
-              distanceKm: Math.round(route.distance / 1000),
-              durationMins: Math.round(route.duration / 60)
-            });
             return;
           }
         }
       } catch (err) {}
       if (!isCancelled) {
         setRealRoadPoints(null);
-        setRoadMetrics({ distanceKm: null, durationMins: null });
       }
     };
 
@@ -343,7 +315,7 @@ export function MyMap({ center = [20.80, 77.40], zoom = 5, shipment = null }) {
     vectorGroup.addLayer(mainRouteLine);
 
     try {
-      map.fitBounds(mainRouteLine.getBounds(), { padding: [55, 55], maxZoom: 14 });
+      map.fitBounds(mainRouteLine.getBounds(), { padding: [45, 45], maxZoom: 14 });
     } catch {}
 
     // 2. Origin Hub Pin
@@ -375,7 +347,7 @@ export function MyMap({ center = [20.80, 77.40], zoom = 5, shipment = null }) {
     originMarker.bindPopup(`
       <div style="font-family: inherit; font-size: 12px; color: #0F172A;">
         <strong style="color: #10B981;">● Origin Station</strong><br/>
-        <strong>${shipment.sender?.city || "Origin City"}</strong><br/>
+        <strong>${shipment.sender?.city || "Origin"}</strong><br/>
         <span style="color: #64748B;">Shipper: ${shipment.sender?.name || "Sender"}</span>
       </div>
     `);
@@ -410,13 +382,13 @@ export function MyMap({ center = [20.80, 77.40], zoom = 5, shipment = null }) {
     destMarker.bindPopup(`
       <div style="font-family: inherit; font-size: 12px; color: #0F172A;">
         <strong style="color: #EF4444;">● Final Destination</strong><br/>
-        <strong>${shipment.recipient?.city || "Destination City"}</strong><br/>
+        <strong>${shipment.recipient?.city || "Destination"}</strong><br/>
         <span style="color: #64748B;">Recipient: ${shipment.recipient?.name || "Recipient"}</span>
       </div>
     `);
     vectorGroup.addLayer(destMarker);
 
-    // 4. Moving Vehicle Marker (Aeroplane or Ground Delivery Truck)
+    // 4. Moving Vehicle Marker (Aeroplane or Ground Delivery Van)
     const initialPos = getPositionAndBearing(progressRef.current);
     
     // SVG plane points North (0 deg), SVG truck points East (90 deg)
@@ -456,10 +428,9 @@ export function MyMap({ center = [20.80, 77.40], zoom = 5, shipment = null }) {
     vehicleMarker.bindPopup(`
       <div style="font-family: inherit; font-size: 12px; color: #0F172A;">
         <strong style="color: ${effectiveVehicle === 'plane' ? '#00F0FF' : '#10B981'};">
-          ${effectiveVehicle === 'plane' ? '✈️ Air Linehaul Flight' : '🚚 Last-Mile Delivery Truck'}
+          ${effectiveVehicle === 'plane' ? '✈️ Express Air Flight' : '🚚 Ground Delivery Van'}
         </strong><br/>
-        AWB: <strong>${shipment.awbNumber}</strong><br/>
-        Progress: <strong>${Math.round(progressRef.current * 100)}% of route</strong><br/>
+        AWB: <strong>${shipment.awbNumber || shipment.id}</strong><br/>
         Status: <span style="font-weight: 700; color: #10B981;">${shipment.currentStatus}</span>
       </div>
     `);
@@ -468,7 +439,7 @@ export function MyMap({ center = [20.80, 77.40], zoom = 5, shipment = null }) {
 
   }, [shipment, activeRoutePoints, origin, destination, effectiveVehicle, getPositionAndBearing]);
 
-  // Smooth Telemetry Animation Loop
+  // Smooth Telemetry Animation Loop based on estimated delivery progress
   useEffect(() => {
     let lastTimestamp = performance.now();
 
@@ -476,20 +447,11 @@ export function MyMap({ center = [20.80, 77.40], zoom = 5, shipment = null }) {
       const delta = (timestamp - lastTimestamp) / 1000;
       lastTimestamp = timestamp;
 
-      if (isPlayingRef.current) {
-        // Complete route simulation in ~24s at 1x speed
-        const speedMultiplier = speedRef.current;
-        let nextP = progressRef.current + delta * 0.04 * speedMultiplier;
-        if (nextP >= 1.0) {
-          nextP = 1.0;
-          setIsPlaying(false);
-        }
-
-        progressRef.current = nextP;
-        setProgress(nextP);
-        setIsLiveSynced(false);
-
-        const { pos, bearing } = getPositionAndBearing(nextP);
+      // Only animate if in transit or out for delivery; delivered stays at 100%
+      if (shipment && shipment.currentStatus !== 'DELIVERED') {
+        // Continuous smooth cruise around the estimated delivery progress
+        progressRef.current = (progressRef.current + delta * 0.03) % 1.0;
+        const { pos, bearing } = getPositionAndBearing(progressRef.current);
 
         if (
           vehicleMarkerRef.current &&
@@ -519,448 +481,26 @@ export function MyMap({ center = [20.80, 77.40], zoom = 5, shipment = null }) {
         animFrameRef.current = null;
       }
     };
-  }, [getPositionAndBearing, effectiveVehicle]);
-
-  // Handle manual scrub from progress slider
-  const handleSliderChange = (e) => {
-    const newProgress = Number(e.target.value) / 100;
-    setProgress(newProgress);
-    progressRef.current = newProgress;
-    setIsLiveSynced(false);
-
-    const { pos, bearing } = getPositionAndBearing(newProgress);
-    if (vehicleMarkerRef.current) {
-      try {
-        vehicleMarkerRef.current.setLatLng(pos);
-        const markerEl = document.getElementById("live-vehicle-marker-el");
-        if (markerEl) {
-          const rotationDeg = effectiveVehicle === 'plane' ? bearing : (bearing - 90);
-          markerEl.style.transform = `rotate(${rotationDeg}deg)`;
-        }
-      } catch {}
-    }
-  };
-
-  // Quick milestone snaps
-  const jumpToMilestone = (milestoneProgress) => {
-    setProgress(milestoneProgress);
-    progressRef.current = milestoneProgress;
-    setIsLiveSynced(false);
-
-    const { pos, bearing } = getPositionAndBearing(milestoneProgress);
-    if (vehicleMarkerRef.current) {
-      try {
-        vehicleMarkerRef.current.setLatLng(pos);
-        const markerEl = document.getElementById("live-vehicle-marker-el");
-        if (markerEl) {
-          const rotationDeg = effectiveVehicle === 'plane' ? bearing : (bearing - 90);
-          markerEl.style.transform = `rotate(${rotationDeg}deg)`;
-        }
-      } catch {}
-    }
-  };
-
-  // Sync to real-time calculated ETA progress
-  const handleSyncToLiveETA = () => {
-    const liveP = calculateETABasedProgress(shipment);
-    setProgress(liveP);
-    progressRef.current = liveP;
-    setIsLiveSynced(true);
-    setIsPlaying(false);
-
-    const { pos, bearing } = getPositionAndBearing(liveP);
-    if (vehicleMarkerRef.current) {
-      try {
-        vehicleMarkerRef.current.setLatLng(pos);
-        const markerEl = document.getElementById("live-vehicle-marker-el");
-        if (markerEl) {
-          const rotationDeg = effectiveVehicle === 'plane' ? bearing : (bearing - 90);
-          markerEl.style.transform = `rotate(${rotationDeg}deg)`;
-        }
-      } catch {}
-    }
-  };
-
-  // Format ETA time text
-  const etaText = useMemo(() => {
-    if (!shipment) return "On Schedule";
-    if (shipment.currentStatus === 'DELIVERED') return "Delivered Safely";
-    if (!shipment.estimatedDelivery) return "In Transit • On Schedule";
-    const d = new Date(shipment.estimatedDelivery);
-    const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const dateStr = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
-    return `ETA: ${dateStr} at ${timeStr}`;
-  }, [shipment]);
+  }, [getPositionAndBearing, effectiveVehicle, shipment]);
 
   return (
     <div
       style={{
         position: "relative",
         width: "100%",
-        height: "520px",
-        borderRadius: "24px",
+        height: "460px",
+        borderRadius: "20px",
         overflow: "hidden",
         border: "1px solid var(--border-medium, rgba(255, 255, 255, 0.1))",
-        boxShadow: "0 24px 50px -10px rgba(0, 0, 0, 0.45)",
-        display: "flex",
-        flexDirection: "column"
+        boxShadow: "0 20px 40px -10px rgba(0, 0, 0, 0.45)"
       }}
     >
-      {/* 1. Top HUD Telemetry Banner */}
-      <div 
-        style={{
-          position: "absolute",
-          top: "14px",
-          left: "14px",
-          right: "14px",
-          zIndex: 1000,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: "8px",
-          pointerEvents: "none"
-        }}
-      >
-        {/* Left Telemetry Pill */}
-        <div 
-          style={{
-            background: "rgba(15, 23, 42, 0.88)",
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
-            border: "1px solid rgba(255, 255, 255, 0.15)",
-            padding: "6px 14px",
-            borderRadius: "9999px",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            color: "#FFFFFF",
-            fontSize: "0.82rem",
-            fontWeight: 700,
-            pointerEvents: "auto",
-            boxShadow: "0 8px 24px rgba(0, 0, 0, 0.3)"
-          }}
-        >
-          {effectiveVehicle === 'plane' ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#00F0FF' }}>
-              <Plane size={15} />
-              <span>Express Air Linehaul • ~780 km/h</span>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#10B981' }}>
-              <Truck size={15} />
-              <span>Ground Delivery Van • ~52 km/h</span>
-            </div>
-          )}
-
-          <span style={{ color: "rgba(255, 255, 255, 0.3)" }}>|</span>
-
-          <span style={{ color: "#E2E8F0" }}>
-            {shipment?.sender?.city || "Origin"} ➔ {shipment?.recipient?.city || "Destination"}
-          </span>
-        </div>
-
-        {/* Right ETA Countdown & Progress Badge */}
-        <div 
-          style={{
-            background: "rgba(15, 23, 42, 0.88)",
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
-            border: isLiveSynced ? "1px solid rgba(16, 185, 129, 0.4)" : "1px solid rgba(255, 255, 255, 0.15)",
-            padding: "6px 14px",
-            borderRadius: "9999px",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            color: "#FFFFFF",
-            fontSize: "0.82rem",
-            fontWeight: 700,
-            pointerEvents: "auto",
-            boxShadow: "0 8px 24px rgba(0, 0, 0, 0.3)"
-          }}
-        >
-          <Clock size={14} color={isLiveSynced ? "#10B981" : "#FBBF24"} />
-          <span>{etaText}</span>
-          <span style={{
-            background: isLiveSynced ? "rgba(16, 185, 129, 0.2)" : "rgba(0, 240, 255, 0.2)",
-            color: isLiveSynced ? "#10B981" : "#00F0FF",
-            padding: "2px 8px",
-            borderRadius: "9999px",
-            fontSize: "0.74rem",
-            fontWeight: 800
-          }}>
-            {Math.round(progress * 100)}%
-          </span>
-        </div>
-      </div>
-
-      {/* Leaflet Map DOM Container */}
+      {/* Leaflet Map DOM Container (Clean, Spacious View) */}
       <div 
         ref={containerRef} 
         className="osm-deep-map-container"
-        style={{ width: "100%", height: "100%", flex: 1 }} 
+        style={{ width: "100%", height: "100%" }} 
       />
-
-      {/* 2. Bottom Interactive Control Panel Overlay */}
-      <div
-        className="map-control-panel-container"
-        style={{
-          position: "absolute",
-          bottom: "12px",
-          left: "14px",
-          right: "14px",
-          zIndex: 1000,
-          background: "rgba(15, 23, 42, 0.92)",
-          backdropFilter: "blur(16px)",
-          WebkitBackdropFilter: "blur(16px)",
-          border: "1px solid rgba(255, 255, 255, 0.18)",
-          borderRadius: "20px",
-          padding: "12px 18px",
-          boxShadow: "0 16px 40px rgba(0, 0, 0, 0.45)",
-          display: "flex",
-          flexDirection: "column",
-          gap: "10px"
-        }}
-      >
-        {/* Row 1: Scrubbable Timeline Slider */}
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#10B981", display: "flex", alignItems: "center", gap: "4px", minWidth: "90px" }}>
-            <MapPin size={13} />
-            <span>{shipment?.sender?.city || "Origin"}</span>
-          </div>
-
-          <div style={{ flex: 1, position: "relative", display: "flex", alignItems: "center" }}>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={Math.round(progress * 100)}
-              onChange={handleSliderChange}
-              style={{
-                width: "100%",
-                height: "6px",
-                borderRadius: "9999px",
-                outline: "none",
-                cursor: "pointer",
-                accentColor: effectiveVehicle === 'plane' ? "#00F0FF" : "#10B981"
-              }}
-              title="Scrub vehicle position along estimated delivery schedule"
-            />
-          </div>
-
-          <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#EF4444", display: "flex", alignItems: "center", gap: "4px", minWidth: "90px", justifyContent: "flex-end" }}>
-            <MapPin size={13} />
-            <span>{shipment?.recipient?.city || "Destination"}</span>
-          </div>
-        </div>
-
-        {/* Row 2: Control Action Buttons */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
-          
-          {/* Left Actions: Play/Pause, Live Sync, Speed */}
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <button
-              type="button"
-              onClick={() => setIsPlaying(prev => !prev)}
-              className="btn btn-sm"
-              style={{
-                background: isPlaying ? "rgba(239, 68, 68, 0.2)" : "rgba(0, 240, 255, 0.2)",
-                color: isPlaying ? "#EF4444" : "#00F0FF",
-                border: `1px solid ${isPlaying ? "rgba(239, 68, 68, 0.4)" : "rgba(0, 240, 255, 0.4)"}`,
-                borderRadius: "9999px",
-                padding: "4px 12px",
-                display: "flex",
-                alignItems: "center",
-                gap: "5px",
-                fontSize: "0.78rem",
-                fontWeight: 800
-              }}
-              title={isPlaying ? "Pause timeline simulation" : "Play route simulation"}
-            >
-              {isPlaying ? <Pause size={13} /> : <Play size={13} />}
-              <span>{isPlaying ? "Pause" : "Play Simulation"}</span>
-            </button>
-
-            {/* Sync to Live ETA Button */}
-            <button
-              type="button"
-              onClick={handleSyncToLiveETA}
-              className="btn btn-sm"
-              style={{
-                background: isLiveSynced ? "rgba(16, 185, 129, 0.25)" : "rgba(255, 255, 255, 0.08)",
-                color: isLiveSynced ? "#10B981" : "#E2E8F0",
-                border: `1px solid ${isLiveSynced ? "rgba(16, 185, 129, 0.5)" : "rgba(255, 255, 255, 0.15)"}`,
-                borderRadius: "9999px",
-                padding: "4px 12px",
-                display: "flex",
-                alignItems: "center",
-                gap: "5px",
-                fontSize: "0.78rem",
-                fontWeight: 700
-              }}
-              title="Snap vehicle directly to real-time estimated delivery schedule"
-            >
-              <Radio size={13} />
-              <span>{isLiveSynced ? "● Live ETA Synced" : "Sync to Live ETA"}</span>
-            </button>
-
-            {/* Speed Multiplier */}
-            <button
-              type="button"
-              onClick={() => setPlaybackSpeed(s => (s === 1 ? 2 : s === 2 ? 4 : 1))}
-              className="btn btn-sm"
-              style={{
-                background: "rgba(255, 255, 255, 0.08)",
-                color: "#E2E8F0",
-                border: "1px solid rgba(255, 255, 255, 0.15)",
-                borderRadius: "9999px",
-                padding: "4px 10px",
-                fontSize: "0.76rem",
-                fontWeight: 700
-              }}
-              title="Playback simulation speed"
-            >
-              Speed: {playbackSpeed}x
-            </button>
-          </div>
-
-          {/* Right Actions: Vehicle Mode Switcher & Quick Milestone Snaps */}
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
-            {/* Vehicle Mode Toggle: Auto / Plane / Truck */}
-            <div 
-              style={{
-                display: "flex",
-                background: "rgba(255, 255, 255, 0.06)",
-                border: "1px solid rgba(255, 255, 255, 0.12)",
-                borderRadius: "9999px",
-                padding: "2px"
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => setVehicleMode('auto')}
-                style={{
-                  background: vehicleMode === 'auto' ? "rgba(0, 240, 255, 0.3)" : "transparent",
-                  color: vehicleMode === 'auto' ? "#00F0FF" : "#94A3B8",
-                  border: "none",
-                  borderRadius: "9999px",
-                  padding: "3px 8px",
-                  fontSize: "0.72rem",
-                  fontWeight: 700,
-                  cursor: "pointer"
-                }}
-                title="Auto-switch: Plane during interstate linehaul, Truck during last-mile delivery"
-              >
-                Auto Switch
-              </button>
-              <button
-                type="button"
-                onClick={() => setVehicleMode('plane')}
-                style={{
-                  background: vehicleMode === 'plane' ? "rgba(0, 240, 255, 0.3)" : "transparent",
-                  color: vehicleMode === 'plane' ? "#00F0FF" : "#94A3B8",
-                  border: "none",
-                  borderRadius: "9999px",
-                  padding: "3px 8px",
-                  fontSize: "0.72rem",
-                  fontWeight: 700,
-                  cursor: "pointer"
-                }}
-                title="Force Aeroplane Mode"
-              >
-                ✈️ Plane
-              </button>
-              <button
-                type="button"
-                onClick={() => setVehicleMode('truck')}
-                style={{
-                  background: vehicleMode === 'truck' ? "rgba(16, 185, 129, 0.3)" : "transparent",
-                  color: vehicleMode === 'truck' ? "#10B981" : "#94A3B8",
-                  border: "none",
-                  borderRadius: "9999px",
-                  padding: "3px 8px",
-                  fontSize: "0.72rem",
-                  fontWeight: 700,
-                  cursor: "pointer"
-                }}
-                title="Force Delivery Truck Mode"
-              >
-                🚚 Truck
-              </button>
-            </div>
-
-            {/* Quick Milestone Snaps */}
-            <button
-              type="button"
-              onClick={() => jumpToMilestone(0.0)}
-              style={{
-                background: "rgba(255, 255, 255, 0.06)",
-                color: "#94A3B8",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-                borderRadius: "9999px",
-                padding: "3px 8px",
-                fontSize: "0.72rem",
-                fontWeight: 700,
-                cursor: "pointer"
-              }}
-              title="Jump to Origin Station"
-            >
-              0%
-            </button>
-            <button
-              type="button"
-              onClick={() => jumpToMilestone(0.5)}
-              style={{
-                background: "rgba(255, 255, 255, 0.06)",
-                color: "#94A3B8",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-                borderRadius: "9999px",
-                padding: "3px 8px",
-                fontSize: "0.72rem",
-                fontWeight: 700,
-                cursor: "pointer"
-              }}
-              title="Jump to Mid-Flight Linehaul"
-            >
-              50%
-            </button>
-            <button
-              type="button"
-              onClick={() => jumpToMilestone(0.85)}
-              style={{
-                background: "rgba(255, 255, 255, 0.06)",
-                color: "#94A3B8",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-                borderRadius: "9999px",
-                padding: "3px 8px",
-                fontSize: "0.72rem",
-                fontWeight: 700,
-                cursor: "pointer"
-              }}
-              title="Jump to Out for Delivery City Route"
-            >
-              85%
-            </button>
-            <button
-              type="button"
-              onClick={() => jumpToMilestone(1.0)}
-              style={{
-                background: "rgba(255, 255, 255, 0.06)",
-                color: "#10B981",
-                border: "1px solid rgba(16, 185, 129, 0.3)",
-                borderRadius: "9999px",
-                padding: "3px 8px",
-                fontSize: "0.72rem",
-                fontWeight: 700,
-                cursor: "pointer"
-              }}
-              title="Jump to Delivered Doorstep"
-            >
-              100%
-            </button>
-          </div>
-        </div>
-      </div>
 
       {/* Global OpenStreetMap Custom Styling Overrides */}
       <style>{`
@@ -983,9 +523,18 @@ export function MyMap({ center = [20.80, 77.40], zoom = 5, shipment = null }) {
           backdrop-filter: blur(8px);
           border: 1px solid rgba(255, 255, 255, 0.2);
           border-radius: 12px;
+          box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+        }
+        .theme-light .leaflet-popup-content-wrapper {
+          background: rgba(255, 255, 255, 0.96);
+          color: #0F172A;
+          border: 1px solid rgba(0, 0, 0, 0.1);
         }
         .leaflet-popup-tip {
           background: rgba(15, 23, 42, 0.95);
+        }
+        .theme-light .leaflet-popup-tip {
+          background: rgba(255, 255, 255, 0.96);
         }
         .leaflet-bar {
           background: rgba(15, 23, 42, 0.9) !important;
@@ -993,21 +542,27 @@ export function MyMap({ center = [20.80, 77.40], zoom = 5, shipment = null }) {
           border-radius: 10px !important;
           overflow: hidden;
         }
+        .theme-light .leaflet-bar {
+          background: rgba(255, 255, 255, 0.95) !important;
+          border: 1px solid rgba(0, 0, 0, 0.12) !important;
+        }
         .leaflet-bar a {
           background: transparent !important;
           color: #FFFFFF !important;
           border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
         }
+        .theme-light .leaflet-bar a {
+          color: #0F172A !important;
+          border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+        }
         .leaflet-bar a:hover {
           background: rgba(255, 255, 255, 0.1) !important;
         }
+        .theme-light .leaflet-bar a:hover {
+          background: rgba(0, 0, 0, 0.05) !important;
+        }
         .leaflet-control-attribution {
           display: none !important;
-        }
-        body.theme-light .map-control-panel-container {
-          background: rgba(255, 255, 255, 0.95) !important;
-          border-color: #E2E8F0 !important;
-          box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12) !important;
         }
       `}</style>
     </div>

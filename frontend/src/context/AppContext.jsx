@@ -65,16 +65,7 @@ export function AppProvider({ children }) {
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       } catch (e) {}
     }
-    const currentRole = localStorage.getItem('aerodispatch_role');
-    const currentUserStr = localStorage.getItem('aerodispatch_user');
-    const isAdmin = currentRole === 'admin' || (currentUserStr && currentUserStr.includes('"role":"admin"'));
-    if (isAdmin) {
-      try {
-        localStorage.setItem('aerodispatch_shipments', JSON.stringify(MASTER_ADMIN_SHIPMENTS));
-      } catch (e) {}
-      return MASTER_ADMIN_SHIPMENTS;
-    }
-    return MOCK_SHIPMENTS;
+    return [];
   });
 
   const [notifications, setNotifications] = useState(() => {
@@ -85,7 +76,7 @@ export function AppProvider({ children }) {
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       } catch (e) {}
     }
-    return MOCK_NOTIFICATIONS;
+    return [];
   });
 
   const [driversList, setDriversList] = useState(() => {
@@ -96,16 +87,7 @@ export function AppProvider({ children }) {
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
     } catch (e) {}
-    const currentRole = localStorage.getItem('aerodispatch_role');
-    const currentUserStr = localStorage.getItem('aerodispatch_user');
-    const isAdmin = currentRole === 'admin' || (currentUserStr && currentUserStr.includes('"role":"admin"'));
-    if (isAdmin) {
-      try {
-        localStorage.setItem('aerodispatch_fleet_drivers', JSON.stringify(MASTER_ADMIN_DRIVERS));
-      } catch (e) {}
-      return MASTER_ADMIN_DRIVERS;
-    }
-    return MOCK_DRIVERS;
+    return [];
   });
 
   // Save drivers to localStorage whenever updated
@@ -715,27 +697,6 @@ export function AppProvider({ children }) {
     // Trigger Admin specific entrance animation
     setLoginAnimationRole('admin');
 
-    // Ensure Admin has the Master Operational Dataset immediately in Edge or any fresh session
-    setShipments(prev => {
-      if (!prev || prev.length === 0) {
-        try {
-          localStorage.setItem('aerodispatch_shipments', JSON.stringify(MASTER_ADMIN_SHIPMENTS));
-        } catch (e) {}
-        return MASTER_ADMIN_SHIPMENTS;
-      }
-      return prev;
-    });
-
-    setDriversList(prev => {
-      if (!prev || prev.length === 0) {
-        try {
-          localStorage.setItem('aerodispatch_fleet_drivers', JSON.stringify(MASTER_ADMIN_DRIVERS));
-        } catch (e) {}
-        return MASTER_ADMIN_DRIVERS;
-      }
-      return prev;
-    });
-
     return adminUser;
   };
 
@@ -1192,40 +1153,10 @@ export function AppProvider({ children }) {
   };
 
   const resetToDefaultMock = () => {
-    if (currentUser?.role === 'admin' || currentRole === 'admin') {
-      setShipments(MASTER_ADMIN_SHIPMENTS);
-      try {
-        localStorage.setItem('aerodispatch_shipments', JSON.stringify(MASTER_ADMIN_SHIPMENTS));
-      } catch (e) {}
-      setDriversList(MASTER_ADMIN_DRIVERS);
-      try {
-        localStorage.setItem('aerodispatch_fleet_drivers', JSON.stringify(MASTER_ADMIN_DRIVERS));
-      } catch (e) {}
-      addToast('Restored national logistics master database for Admin.', 'info');
-    } else {
-      setShipments(MOCK_SHIPMENTS);
-      localStorage.removeItem('aerodispatch_shipments');
-      addToast('Restored default logistics database.', 'info');
-    }
+    setShipments([]);
+    localStorage.removeItem('aerodispatch_shipments');
+    addToast('Logistics database reset.', 'info');
   };
-
-  // Ensure the System Administrator always has full operational visibility across Edge, Chrome, Safari, etc.
-  useEffect(() => {
-    if (currentUser?.role === 'admin' || currentRole === 'admin') {
-      if (!shipments || shipments.length === 0) {
-        setShipments(MASTER_ADMIN_SHIPMENTS);
-        try {
-          localStorage.setItem('aerodispatch_shipments', JSON.stringify(MASTER_ADMIN_SHIPMENTS));
-        } catch (e) {}
-      }
-      if (!driversList || driversList.length === 0) {
-        setDriversList(MASTER_ADMIN_DRIVERS);
-        try {
-          localStorage.setItem('aerodispatch_fleet_drivers', JSON.stringify(MASTER_ADMIN_DRIVERS));
-        } catch (e) {}
-      }
-    }
-  }, [currentUser?.role, currentRole, shipments?.length, driversList?.length]);
 
   // Dynamically compute real logistics metrics from active shipments
   const computedMetrics = React.useMemo(() => {
