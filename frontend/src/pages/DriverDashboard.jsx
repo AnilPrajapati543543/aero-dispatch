@@ -23,7 +23,8 @@ import {
   Globe,
   ShieldCheck,
   Navigation,
-  CheckCircle
+  CheckCircle,
+  Settings
 } from 'lucide-react';
 
 // Dynamic realistic route estimation per consignment (Never static ~15.2 km)
@@ -81,22 +82,30 @@ export default function DriverDashboard() {
     return () => clearTimeout(timer);
   }, [activeTabFilter, captainSection]);
 
-  // Filter shipments assigned strictly to current Captain
+  // Filter shipments assigned strictly to current Captain (or master fleet view for Admin)
   const myAssignedShipments = useMemo(() => {
+    const isMasterAdmin = currentUser?.role === 'admin';
     const dId = currentUser?.driverId || 'DRV-8469';
-    return shipments.filter(s => 
+    const directMatches = shipments.filter(s => 
       (s.assignedDriver && (s.assignedDriver.driverId === dId || s.assignedDriver.name?.toLowerCase() === currentUser?.name?.toLowerCase())) ||
       s.driverId === dId
     );
+    if (isMasterAdmin && directMatches.length === 0) {
+      // In Admin inspection mode, show active assigned deliveries across the fleet so admin can test the cockpit
+      const assigned = shipments.filter(s => s.assignedDriver);
+      return assigned.length > 0 ? assigned : shipments.slice(0, 3);
+    }
+    return directMatches;
   }, [shipments, currentUser]);
 
   // Unassigned broadcast shipments waiting for captain acceptance
   const availableOrders = useMemo(() => {
+    const isMasterAdmin = currentUser?.role === 'admin';
     const dId = currentUser?.driverId || 'DRV-8469';
     return shipments.filter(s => 
       !s.assignedDriver &&
       (s.currentStatus === 'BOOKED' || s.currentStatus === 'PICKUP_SCHEDULED' || s.status === 'booked') &&
-      !(s.declinedByDrivers && s.declinedByDrivers.includes(dId))
+      (isMasterAdmin || !(s.declinedByDrivers && s.declinedByDrivers.includes(dId)))
     );
   }, [shipments, currentUser]);
 
@@ -258,15 +267,19 @@ export default function DriverDashboard() {
       {/* Captain Cockpit Header Bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
         <div>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '2px 8px', borderRadius: '9999px', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.35rem', background: 'rgba(245, 158, 11, 0.15)', color: '#FBBF24', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '2px 8px', borderRadius: '9999px', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.35rem', background: currentUser?.role === 'admin' ? 'rgba(99, 102, 241, 0.15)' : 'rgba(245, 158, 11, 0.15)', color: currentUser?.role === 'admin' ? '#818CF8' : '#FBBF24', border: `1px solid ${currentUser?.role === 'admin' ? 'rgba(99, 102, 241, 0.3)' : 'rgba(245, 158, 11, 0.3)'}` }}>
             <Truck size={12} />
-            <span>Delivery Captain Cockpit</span>
+            <span>Delivery Captain Cockpit {currentUser?.role === 'admin' && '• Admin Simulation'}</span>
           </div>
           <h1 style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em', margin: 0 }}>
-            Welcome, Captain {currentUser?.name?.replace(/^captain\s+/i, '') || 'Rishabh Pandey'}
+            {currentUser?.role === 'admin' 
+              ? 'Captain Cockpit (Admin Master View)' 
+              : `Welcome, Captain ${currentUser?.name?.replace(/^captain\s+/i, '') || 'Rishabh Pandey'}`}
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', margin: '0.2rem 0 0' }}>
-            Daily run manifest, real-world route navigation, and recipient OTP handover.
+            {currentUser?.role === 'admin'
+              ? 'Master fleet inspector: test and monitor live run sheets, route GPS estimations, and recipient OTP verification.'
+              : 'Daily run manifest, real-world route navigation, and recipient OTP handover.'}
           </p>
         </div>
 
@@ -278,7 +291,7 @@ export default function DriverDashboard() {
             style={{ borderRadius: '9999px', padding: '0.5rem 1.15rem' }}
           >
             <Settings size={14} />
-            <span>Vehicle &amp; Settings</span>
+            <span>{currentUser?.role === 'admin' ? 'System Settings' : 'Vehicle & Settings'}</span>
           </button>
         </div>
       </div>
