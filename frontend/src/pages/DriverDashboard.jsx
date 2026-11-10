@@ -49,8 +49,7 @@ export default function DriverDashboard() {
     isBackendOnline,
     logoutUser,
     setActiveTab,
-    isLoadingOrders,
-    openProfileZoom
+    isLoadingOrders
   } = useApp();
   
   // Selected parcel for delivery action modal

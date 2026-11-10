@@ -34,8 +34,7 @@ export default function Sidebar() {
     closeMobileSidebar,
     isSidebarCollapsed,
     currentUser,
-    logoutUser,
-    openProfileZoom
+    logoutUser
   } = useApp();
 
   const userRole = currentUser?.role || 'guest';
@@ -333,14 +332,7 @@ export default function Sidebar() {
             onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', minWidth: 0 }}>
-              <div
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openProfileZoom();
-                }}
-                style={{ flexShrink: 0, cursor: 'zoom-in' }}
-                title="Click to zoom profile picture"
-              >
+              <div style={{ flexShrink: 0 }}>
                 {currentUser?.avatarUrl ? (
                   <img 
                     src={currentUser.avatarUrl} 

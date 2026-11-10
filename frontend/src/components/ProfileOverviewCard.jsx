@@ -30,7 +30,6 @@ export default function ProfileOverviewCard({
     shipments, 
     updateUserProfile, 
     updateUserAvatar, 
-    openProfileZoom, 
     addToast,
     setActiveTab 
   } = useApp();
@@ -223,8 +222,8 @@ export default function ProfileOverviewCard({
               cursor: 'pointer',
               flexShrink: 0
             }}
-            onClick={openProfileZoom}
-            title="Click to view & zoom profile picture"
+            onClick={() => fileInputRef.current?.click()}
+            title="Click to upload profile photo"
           >
             {avatarPreview || currentUser?.avatarUrl ? (
               <img 

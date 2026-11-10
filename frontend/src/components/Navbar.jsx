@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import AeroLogo from './AeroLogo';
+import AccountDropdown from './AccountDropdown';
 import { getCleanDisplayName } from '../utils/userUtils';
 import {
   Search,
@@ -46,9 +47,11 @@ export default function Navbar() {
     theme,
     toggleTheme,
     addToast,
-    openChatbox,
-    openProfileZoom
+    openChatbox
   } = useApp();
+
+  const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
+  const userChipRef = useRef(null);
 
   const [inputSearch, setInputSearch] = useState('');
   const [landingRole, setLandingRole] = useState(() => {
@@ -406,79 +409,85 @@ export default function Navbar() {
               <Settings size={16} />
             </button>
 
-            {/* Clean User Profile Avatar & Name Pill (With Zoom Option & Clickable to Settings) */}
-            <div
-              className="navbar-user-chip"
-              onClick={() => setActiveTab('settings')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.55rem',
-                padding: '0.25rem 0.75rem 0.25rem 0.35rem',
-                borderRadius: '9999px',
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border-medium)',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease'
-              }}
-              title="Click to view & edit Profile & Settings"
-              onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--primary)'}
-              onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-medium)'}
-            >
+            {/* Google / Canva Style Account Popover Menu (Matching Image 2) */}
+            <div style={{ position: 'relative' }}>
               <div
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openProfileZoom();
+                ref={userChipRef}
+                className="navbar-user-chip"
+                onClick={() => setIsAccountDropdownOpen(prev => !prev)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.55rem',
+                  padding: '0.25rem 0.75rem 0.25rem 0.35rem',
+                  borderRadius: '9999px',
+                  background: isAccountDropdownOpen ? 'var(--bg-secondary)' : 'var(--bg-card)',
+                  border: isAccountDropdownOpen ? '1px solid var(--primary)' : '1px solid var(--border-medium)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
                 }}
-                style={{ position: 'relative', flexShrink: 0, cursor: 'zoom-in' }}
-                title="Click to view & zoom profile picture"
+                title="Click to switch or manage accounts"
+                onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--primary)'}
+                onMouseLeave={(e) => {
+                  if (!isAccountDropdownOpen) {
+                    e.currentTarget.style.borderColor = 'var(--border-medium)';
+                  }
+                }}
               >
-                {currentUser?.avatarUrl ? (
-                  <img 
-                    src={currentUser.avatarUrl} 
-                    alt={getCleanDisplayName(currentUser, currentRole)} 
-                    style={{ 
-                      width: '28px', 
-                      height: '28px', 
-                      borderRadius: '50%', 
-                      objectFit: 'cover',
-                      border: '1.5px solid var(--primary)',
-                      display: 'block'
-                    }} 
-                  />
-                ) : (
-                  <div
-                    style={{
-                      width: '28px',
-                      height: '28px',
-                      borderRadius: '50%',
-                      background: currentRole === 'admin' ? 'linear-gradient(135deg, #EF4444, #991B1B)' :
-                        currentRole === 'driver' ? 'linear-gradient(135deg, #F59E0B, #D97706)' :
-                          'linear-gradient(135deg, #EF4444, #E11D48)',
-                      color: '#FFFFFF',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 800,
-                      fontSize: '0.74rem'
-                    }}
-                  >
-                    {getCleanDisplayName(currentUser, currentRole)?.charAt(0) || 'U'}
-                  </div>
-                )}
+                <div style={{ position: 'relative', flexShrink: 0 }}>
+                  {currentUser?.avatarUrl ? (
+                    <img 
+                      src={currentUser.avatarUrl} 
+                      alt={getCleanDisplayName(currentUser, currentRole)} 
+                      style={{ 
+                        width: '28px', 
+                        height: '28px', 
+                        borderRadius: '50%', 
+                        objectFit: 'cover',
+                        border: '1.5px solid var(--primary)',
+                        display: 'block'
+                      }} 
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '50%',
+                        background: currentRole === 'admin' ? 'linear-gradient(135deg, #EF4444, #991B1B)' :
+                          currentRole === 'driver' ? 'linear-gradient(135deg, #F59E0B, #D97706)' :
+                            'linear-gradient(135deg, #EF4444, #E11D48)',
+                        color: '#FFFFFF',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 800,
+                        fontSize: '0.74rem'
+                      }}
+                    >
+                      {getCleanDisplayName(currentUser, currentRole)?.charAt(0) || 'U'}
+                    </div>
+                  )}
+                </div>
+
+                <div
+                  style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15 }}
+                >
+                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-main)', maxWidth: '110px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {getCleanDisplayName(currentUser, currentRole)}
+                  </span>
+                  <span style={{ fontSize: '0.62rem', color: 'var(--primary)', fontWeight: 600, textTransform: 'capitalize' }}>
+                    {currentRole === 'driver' ? 'Captain' : currentRole}
+                  </span>
+                </div>
               </div>
 
-              <div
-                style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15 }}
-                title="Manage account settings"
-              >
-                <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-main)', maxWidth: '110px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {getCleanDisplayName(currentUser, currentRole)}
-                </span>
-                <span style={{ fontSize: '0.62rem', color: 'var(--primary)', fontWeight: 600, textTransform: 'capitalize' }}>
-                  {currentRole === 'driver' ? 'Captain' : currentRole}
-                </span>
-              </div>
+              {/* Small Popover Box (Exact Image 2 Design) */}
+              <AccountDropdown 
+                isOpen={isAccountDropdownOpen} 
+                onClose={() => setIsAccountDropdownOpen(false)} 
+                triggerRef={userChipRef}
+              />
             </div>
 
             {/* Standardized Logout Button */}

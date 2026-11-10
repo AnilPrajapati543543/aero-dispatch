@@ -6,7 +6,6 @@ import ToastContainer from './components/ToastContainer';
 import AeroChatbox from './components/AeroChatbox';
 import LoginRoleAnimation from './components/LoginRoleAnimation';
 import FullPageSkeleton from './components/FullPageSkeleton';
-import ProfilePictureZoomModal from './components/ProfilePictureZoomModal';
 import CookieConsentBanner from './components/CookieConsentBanner';
 
 // 10 Required Pages & Landing
@@ -157,20 +156,6 @@ export default function App() {
 
       {/* Floating Customer & Care Support Assistant */}
       <AeroChatbox />
-
-      {/* Profile Picture View & Zoom Inspector Modal (WhatsApp Style) */}
-      <ProfilePictureZoomModal
-        isOpen={isProfileZoomOpen}
-        onClose={closeProfileZoom}
-        user={currentUser}
-        avatarUrl={currentUser?.avatarUrl}
-        onUploadNewPhoto={(newAvatar) => {
-          updateUserAvatar(newAvatar);
-        }}
-        onRemovePhoto={() => {
-          updateUserAvatar(null);
-        }}
-      />
 
       {/* Floating GDPR & DPDP Cookie Consent Banner (New Visitors Only) */}
       <CookieConsentBanner />

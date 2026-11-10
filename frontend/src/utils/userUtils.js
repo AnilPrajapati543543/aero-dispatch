@@ -107,3 +107,4 @@ export function getCleanDisplayName(user, role = null) {
 
   return 'Valued Merchant';
 }
+

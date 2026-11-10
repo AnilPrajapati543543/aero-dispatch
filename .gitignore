@@ -22,6 +22,8 @@ __pycache__/
 .Python
 build/
 develop-eggs/
+deploy.zip
+*.zip
 dist/
 downloads/
 eggs/
@@ -30,7 +32,9 @@ eggs/
 !frontend/src/lib/
 lib64/
 parts/
-sdist/
+sdeploy.zip
+*.zip
+dist/
 var/
 wheels/
 *.egg-info/
@@ -57,7 +61,9 @@ samconfig.toml
 
 # Node / Frontend
 frontend/node_modules/
-frontend/dist/
+frontend/deploy.zip
+*.zip
+dist/
 frontend/dist-ssr/
 frontend/*.local
 npm-debug.log*
