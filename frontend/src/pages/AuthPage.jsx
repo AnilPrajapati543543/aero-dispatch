@@ -53,8 +53,6 @@ export default function AuthPage() {
   const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
   const [otpCountdown, setOtpCountdown] = useState(60);
   const [pendingUserData, setPendingUserData] = useState(null);
-  const [expectedOtpCode, setExpectedOtpCode] = useState('489215');
-  const [otpPurpose, setOtpPurpose] = useState('register'); // 'register' | 'login'
 
   // Countdown timer for OTP resend
   useEffect(() => {
@@ -103,69 +101,39 @@ export default function AuthPage() {
 
   const handleResendCode = async () => {
     if (otpCountdown > 0) return;
+    setIsSubmitting(true);
+    setAuthError('');
     try {
-      const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
-      setExpectedOtpCode(newOtp);
+      await apiResendCode(otpEmail);
       setOtpCountdown(60);
       setOtpDigits(['', '', '', '', '', '']);
-      try {
-        await apiResendCode(otpEmail);
-      } catch (e) {}
-      addToast(`New verification code [${newOtp}] sent to ${otpEmail}!`, 'info');
+      addToast(`New verification code sent to ${otpEmail}! Check your inbox.`, 'info');
     } catch (err) {
+      setAuthError(err.message || 'Failed to resend code');
       addToast(err.message || 'Failed to resend code', 'error');
+    } finally {
+      setIsSubmitting(false);
     }
-  };
-
-  const handleTriggerLoginOtp = (e) => {
-    if (e && e.preventDefault) e.preventDefault();
-    if (!email.trim()) {
-      setAuthError('Please enter your username/email to receive an OTP code.');
-      return;
-    }
-    const resolvedEmail = email.trim();
-    const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    setExpectedOtpCode(generatedOtp);
-    setOtpPurpose('login');
-    setOtpEmail(resolvedEmail);
-    setOtpPassword(password);
-    setOtpDigits(['', '', '', '', '', '']);
-    setOtpCountdown(60);
-    setAuthMode('verify-otp');
-    setAuthError('');
-    addToast(`Login 2FA Code [${generatedOtp}] sent to ${resolvedEmail}!`, 'info');
   };
 
   const handleVerifyOtpSubmit = async (e) => {
     e.preventDefault();
     const code = otpDigits.join('').trim();
     if (code.length < 6) {
-      setAuthError('Please enter all 6 digits of your verification code.');
+      setAuthError('Please enter all 6 digits of the verification code sent to your email.');
       return;
     }
 
     setIsSubmitting(true);
     setAuthError('');
 
-    // Verification check (matches generated code or standard test codes)
-    const isValid = code === expectedOtpCode || code === '489215' || code === '123456';
-    if (!isValid) {
-      let backendSuccess = false;
-      try {
-        await apiConfirmRegister(otpEmail, code, otpPassword);
-        backendSuccess = true;
-      } catch (err) {}
-
-      if (!backendSuccess) {
-        setAuthError(`Invalid verification code. Expected: ${expectedOtpCode || '489215'}`);
-        setIsSubmitting(false);
-        return;
-      }
-    }
-
     try {
-      if (otpPurpose === 'register' && pendingUserData) {
-        // Save user into aerodispatch_registered_users
+      // 1. Validate real verification code with AWS Cognito
+      await apiConfirmRegister(otpEmail, code);
+      addToast('Email verified successfully with AWS Cognito! Logging in...', 'success');
+
+      // 2. Persist user locally for reliable role-matching
+      if (pendingUserData) {
         const existing = JSON.parse(localStorage.getItem('aerodispatch_registered_users') || '[]');
         const updated = existing.filter(u => u.email?.toLowerCase() !== pendingUserData.email.toLowerCase());
         updated.push({
@@ -178,18 +146,14 @@ export default function AuthPage() {
           vehicleNumber: pendingUserData.role === 'driver' ? 'MH-02-EE-8891' : undefined
         });
         localStorage.setItem('aerodispatch_registered_users', JSON.stringify(updated));
-
-        addToast(`Account verified! Logging in to ${pendingUserData.role.toUpperCase()} portal...`, 'success');
-        await loginUser(pendingUserData.email, pendingUserData.password, pendingUserData.role);
-      } else if (otpPurpose === 'login') {
-        addToast(`OTP 2FA verified! Logging in to ${authRole.toUpperCase()} portal...`, 'success');
-        await loginUser(otpEmail, otpPassword, authRole);
-      } else {
-        await loginUser(otpEmail, otpPassword, authRole);
       }
+
+      // 3. Log user in
+      const loginPassword = otpPassword || pendingUserData?.password;
+      await loginUser(otpEmail, loginPassword, authRole);
       setOtpDigits(['', '', '', '', '', '']);
     } catch (err) {
-      setAuthError(err.message || 'Verification failed. Please check the code and try again.');
+      setAuthError(err.message || 'Verification failed. Please check the code sent to your email and try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -292,33 +256,64 @@ export default function AuthPage() {
           return;
         }
 
-        const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-        setExpectedOtpCode(generatedOtp);
-        setPendingUserData({
-          name: name.trim(),
-          email: resolvedEmail,
-          password: password,
-          role: authRole,
-          phone: phone.trim()
-        });
-        setOtpPurpose('register');
-        setOtpEmail(resolvedEmail);
-        setOtpPassword(password);
-        setOtpDigits(['', '', '', '', '', '']);
-        setOtpCountdown(60);
-        setAuthMode('verify-otp');
-        setAuthError('');
-        addToast(`6-Digit Verification Code [${generatedOtp}] sent to ${resolvedEmail}!`, 'info');
-        setIsSubmitting(false);
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(resolvedEmail)) {
+          setAuthError('Please enter a valid email address (e.g. name@domain.com).');
+          setIsSubmitting(false);
+          return;
+        }
 
-        // Attempt live API registration in parallel
+        // Proper password validation: min 8 chars, uppercase, lowercase, number, symbol
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+        if (!passwordRegex.test(password)) {
+          setAuthError('Password must be at least 8 characters and include uppercase, lowercase, numbers, and special symbols (e.g. StrongPass123!).');
+          setIsSubmitting(false);
+          return;
+        }
+
         try {
-          apiRegister(name.trim(), resolvedEmail, password, authRole, phone.trim()).catch(() => {});
-        } catch (apiErr) {}
+          // Real AWS Cognito User Registration -> Dispatches actual email verification code
+          await apiRegister(name.trim(), resolvedEmail, password, authRole, phone.trim());
+          setOtpEmail(resolvedEmail);
+          setOtpPassword(password);
+          setPendingUserData({
+            name: name.trim(),
+            email: resolvedEmail,
+            password: password,
+            role: authRole,
+            phone: phone.trim()
+          });
+          setOtpDigits(['', '', '', '', '', '']);
+          setOtpCountdown(60);
+          setAuthMode('verify-otp');
+          setAuthError('');
+          addToast(`Verification code sent to ${resolvedEmail}! Check your inbox.`, 'success');
+        } catch (apiErr) {
+          setAuthError(apiErr.message || 'Registration failed. Please check your details.');
+        } finally {
+          setIsSubmitting(false);
+        }
         return;
       }
 
-      await loginUser(resolvedEmail, password, authRole);
+      // Real Login: authenticate against AWS Cognito or persistent user store
+      try {
+        await loginUser(resolvedEmail, password, authRole);
+      } catch (loginErr) {
+        if (loginErr.requiresVerification || (loginErr.message && loginErr.message.includes('not verified'))) {
+          setOtpEmail(resolvedEmail);
+          setOtpPassword(password);
+          setOtpDigits(['', '', '', '', '', '']);
+          setOtpCountdown(60);
+          setAuthMode('verify-otp');
+          setAuthError('Your account has not been verified yet. We sent a verification code to your email.');
+          try {
+            await apiResendCode(resolvedEmail);
+          } catch {}
+          return;
+        }
+        throw loginErr;
+      }
     } catch (err) {
       setAuthError(err.message || 'Authentication failed. Please verify your credentials.');
     } finally {
@@ -786,18 +781,16 @@ export default function AuthPage() {
           ) : authMode === 'verify-otp' ? (
             <>
               <h2 className="login-left-title">Verification</h2>
-              <p className="login-left-subtitle">
-                {otpPurpose === 'register' ? 'Back to registration?' : 'Back to login?'}
-              </p>
+              <p className="login-left-subtitle">Back to registration?</p>
               <button 
                 type="button" 
                 className="login-outline-btn"
                 onClick={() => {
-                  setAuthMode(otpPurpose === 'register' ? 'register' : 'login');
+                  setAuthMode('register');
                   setAuthError('');
                 }}
               >
-                {otpPurpose === 'register' ? 'Register' : 'Login'}
+                Register
               </button>
             </>
           ) : (
@@ -845,51 +838,12 @@ export default function AuthPage() {
             {/* 1. OTP Verification Form */}
             {authMode === 'verify-otp' ? (
               <form onSubmit={handleVerifyOtpSubmit}>
-                <div style={{ textAlign: 'center', marginBottom: '1.15rem', color: '#9ca3af', fontSize: '0.85rem' }}>
-                  {otpPurpose === 'register' ? (
-                    <span>Enter the 6-digit verification code to activate your <strong>{authRole === 'driver' ? 'Driver' : 'Customer'}</strong> account:</span>
-                  ) : (
-                    <span>Enter the 6-digit Two-Factor (2FA) verification code to access <strong>{authRole === 'driver' ? 'Driver Run Sheet' : 'Customer Portal'}</strong>:</span>
-                  )}
+                <div style={{ textAlign: 'center', marginBottom: '1.35rem', color: '#9ca3af', fontSize: '0.86rem', lineHeight: 1.5 }}>
+                  <span>A real 6-digit verification passcode has been dispatched to:</span>
                   <br />
-                  <strong style={{ color: '#ffffff', fontSize: '0.92rem' }}>{otpEmail}</strong>
-                </div>
-
-                {/* Simulated / Live Code Badge with 1-click Auto-Fill */}
-                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.25rem' }}>
-                  <div style={{
-                    padding: '0.45rem 0.85rem',
-                    background: 'rgba(239, 68, 68, 0.12)',
-                    border: '1px dashed rgba(239, 68, 68, 0.45)',
-                    borderRadius: '8px',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.6rem',
-                    fontSize: '0.8rem',
-                    color: '#fca5a5'
-                  }}>
-                    <span>Security OTP:</span>
-                    <strong className="mono" style={{ color: '#ffffff', letterSpacing: '2px', fontSize: '1rem' }}>
-                      {expectedOtpCode || '489215'}
-                    </strong>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const codeArr = (expectedOtpCode || '489215').split('');
-                        setOtpDigits(codeArr);
-                      }}
-                      style={{
-                        background: 'rgba(255, 255, 255, 0.15)',
-                        border: 'none',
-                        color: '#ffffff',
-                        fontSize: '0.72rem',
-                        padding: '2px 8px',
-                        borderRadius: '4px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Auto-fill
-                    </button>
+                  <strong style={{ color: '#ffffff', fontSize: '1rem', display: 'inline-block', margin: '0.4rem 0' }}>{otpEmail}</strong>
+                  <div style={{ fontSize: '0.78rem', color: '#6b7280' }}>
+                    Please check your email inbox (and spam/junk folder) for the verification message from <strong>AeroDispatch</strong>.
                   </div>
                 </div>
 
@@ -1032,43 +986,56 @@ export default function AuthPage() {
                   </div>
                 )}
 
-                {/* Username / Email Field */}
+                {/* Email Address Field */}
                 <div className="login-input-group">
                   <input
                     id="auth-username-input"
-                    type={authMode === 'forgot' ? 'email' : 'text'}
+                    type={authMode === 'login' ? 'text' : 'email'}
                     className="login-input"
-                    placeholder={authMode === 'forgot' ? 'Enter Registered Email' : 'Username'}
+                    placeholder={
+                      authMode === 'register' 
+                        ? 'Email Address (e.g. yourname@gmail.com)' 
+                        : authMode === 'forgot' 
+                        ? 'Enter Registered Email' 
+                        : 'Email or Username'
+                    }
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
                   />
                   <div className="login-input-icon">
-                    {authMode === 'forgot' ? <Mail size={17} /> : <User size={17} />}
+                    {authMode === 'login' ? <User size={17} /> : <Mail size={17} />}
                   </div>
                 </div>
 
                 {/* Password Field */}
                 {authMode !== 'forgot' && (
-                  <div className="login-input-group" style={{ marginBottom: authMode === 'login' ? '0.45rem' : '1.25rem' }}>
-                    <input
-                      id="auth-password-input"
-                      type={showPassword ? 'text' : 'password'}
-                      className="login-input"
-                      placeholder="Password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                    <button
-                      type="button"
-                      className="login-input-icon-btn"
-                      onClick={() => setShowPassword(!showPassword)}
-                      title={showPassword ? 'Hide password' : 'Show password'}
-                    >
-                      {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-                    </button>
-                  </div>
+                  <>
+                    <div className="login-input-group" style={{ marginBottom: authMode === 'register' ? '0.25rem' : '0.45rem' }}>
+                      <input
+                        id="auth-password-input"
+                        type={showPassword ? 'text' : 'password'}
+                        className="login-input"
+                        placeholder={authMode === 'register' ? 'Create Password (min. 8 chars with symbols)' : 'Password'}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="login-input-icon-btn"
+                        onClick={() => setShowPassword(!showPassword)}
+                        title={showPassword ? 'Hide password' : 'Show password'}
+                      >
+                        {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                      </button>
+                    </div>
+                    {authMode === 'register' && (
+                      <div style={{ fontSize: '0.72rem', color: '#9ca3af', marginBottom: '1rem', paddingLeft: '6px' }}>
+                        Must be at least 8 characters and include uppercase, lowercase, numbers &amp; special symbols.
+                      </div>
+                    )}
+                  </>
                 )}
 
                 {/* Forgot Password Link (Only in Login Mode) */}
@@ -1108,34 +1075,6 @@ export default function AuthPage() {
                     </span>
                   )}
                 </button>
-
-                {/* Login with 2FA / OTP Alternative */}
-                {authMode === 'login' && (
-                  <button
-                    type="button"
-                    style={{
-                      width: '100%',
-                      marginTop: '0.65rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '0.5rem',
-                      background: 'rgba(239, 68, 68, 0.1)',
-                      border: '1px solid rgba(239, 68, 68, 0.35)',
-                      color: '#fca5a5',
-                      borderRadius: '8px',
-                      padding: '0.6rem',
-                      fontSize: '0.82rem',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease'
-                    }}
-                    onClick={handleTriggerLoginOtp}
-                  >
-                    <ShieldCheck size={16} color="#ef4444" />
-                    <span>Login via 6-Digit OTP (2FA)</span>
-                  </button>
-                )}
 
                 {/* Real-time Working Social Single Sign-On (SSO) */}
                 {authMode !== 'forgot' && (

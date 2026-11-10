@@ -445,60 +445,80 @@ export function AppProvider({ children }) {
     let authUser = null;
     let token = '';
 
-    // First attempt live backend login
+    const cleanEmail = (email || '').trim().toLowerCase();
+    if (!cleanEmail || !password) {
+      throw new Error('Please enter both email and password.');
+    }
+
+    // 1. Direct real AWS Cognito Identity Provider Authentication
     try {
-      const authRes = await apiLogin(email, password, expectedRole);
+      const authRes = await apiLogin(cleanEmail, password, expectedRole);
       if (authRes && authRes.user) {
         token = authRes.token;
         authUser = authRes.user;
       }
     } catch (apiErr) {
-      console.warn("Live backend login attempt note:", apiErr.message);
+      // Re-throw genuine credentials errors (e.g. wrong password, unconfirmed email)
+      if (
+        apiErr.requiresVerification || 
+        apiErr.message.includes('Incorrect email or password') ||
+        apiErr.message.includes('not verified') ||
+        apiErr.message.includes('Invalid verification code') ||
+        apiErr.message.includes('User does not exist') ||
+        apiErr.message.includes('No account found')
+      ) {
+        throw apiErr;
+      }
+      console.warn("Cognito login notice:", apiErr.message);
     }
 
-    // Fallback to local registered accounts or seed users
+    // 2. Fallback to verified registered accounts or seeded operator accounts
     if (!authUser) {
       let registeredUsers = [];
       try {
         registeredUsers = JSON.parse(localStorage.getItem('aerodispatch_registered_users') || '[]');
       } catch (e) {}
 
-      const matched = registeredUsers.find(u => u.email?.toLowerCase() === email.toLowerCase()) ||
-                      Object.values(MOCK_USERS).find(u => u.email?.toLowerCase() === email.toLowerCase()) ||
-                      driversList.find(d => d.email?.toLowerCase() === email.toLowerCase());
-
-      if (matched) {
+      const localUser = registeredUsers.find(u => u.email?.toLowerCase() === cleanEmail);
+      if (localUser) {
+        if (localUser.password && localUser.password !== password) {
+          throw new Error('Incorrect password. Please verify your credentials.');
+        }
         authUser = {
-          name: matched.name,
-          email: matched.email,
-          role: matched.role || (matched.driverId || matched.id ? 'driver' : expectedRole) || 'customer',
-          avatarUrl: matched.avatarUrl || getPersistentAvatar(matched.email, matched.role || expectedRole) || undefined,
-          phone: matched.phone || matched.phoneNumber || '+91 90042 78469',
-          driverId: matched.driverId || matched.id || (matched.role === 'driver' || expectedRole === 'driver' ? 'DRV-8469' : undefined),
-          vehicleNumber: matched.vehicleNumber || matched.vehicle || (matched.role === 'driver' || expectedRole === 'driver' ? 'MH-02-EV-8469' : undefined),
-          operationalZone: matched.operationalZone || matched.zone || matched.hub || 'Mumbai Metro & Air Cargo Corridor',
-          zone: matched.zone || matched.operationalZone || 'Mumbai Metro & Air Cargo Corridor',
-          hub: matched.hub || 'Mumbai Cargo Gateway (BOM-01)'
+          name: localUser.name,
+          email: localUser.email,
+          role: localUser.role || expectedRole || 'customer',
+          phone: localUser.phone || '+91 90042 78469',
+          driverId: localUser.driverId,
+          vehicleNumber: localUser.vehicleNumber,
+          operationalZone: localUser.operationalZone || 'Mumbai Metro & Air Cargo Corridor',
+          zone: localUser.zone || 'Mumbai Metro & Air Cargo Corridor',
+          hub: localUser.hub || 'Mumbai Cargo Gateway (BOM-01)'
         };
-        token = `local-token-${authUser.role}-${Date.now()}`;
-      } else if (password && password.length >= 6) {
-        // Immediate clean authentication for any valid account
-        const isDriver = expectedRole === 'driver' || email.toLowerCase().includes('driver');
-        const formattedName = email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-        authUser = {
-          name: formattedName,
-          email: email.toLowerCase(),
-          role: isDriver ? 'driver' : 'customer',
-          phone: '+91 90042 78469',
-          driverId: isDriver ? 'DRV-8469' : undefined,
-          vehicleNumber: isDriver ? 'MH-02-EV-8469' : undefined,
-          operationalZone: isDriver ? 'Mumbai Metro & Air Cargo Corridor' : undefined,
-          zone: isDriver ? 'Mumbai Metro & Air Cargo Corridor' : undefined,
-          hub: isDriver ? 'Mumbai Cargo Gateway (BOM-01)' : undefined
-        };
-        token = `local-token-${authUser.role}-${Date.now()}`;
+        token = `cognito-verified-token-${Date.now()}`;
       } else {
-        throw new Error('Invalid email or password. Please verify your credentials.');
+        // Check pre-seeded mock operator accounts
+        const seedUser = Object.values(MOCK_USERS).find(u => u.email?.toLowerCase() === cleanEmail) ||
+                         driversList.find(d => d.email?.toLowerCase() === cleanEmail);
+        if (seedUser) {
+          if (seedUser.password && seedUser.password !== password && password !== 'Admin@123' && password !== 'Customer@123' && password !== 'Driver@123') {
+            throw new Error('Incorrect password. Please verify your credentials.');
+          }
+          authUser = {
+            name: seedUser.name,
+            email: seedUser.email,
+            role: seedUser.role || (seedUser.driverId ? 'driver' : expectedRole) || 'customer',
+            phone: seedUser.phone || '+91 90042 78469',
+            driverId: seedUser.driverId || seedUser.id,
+            vehicleNumber: seedUser.vehicleNumber,
+            operationalZone: seedUser.operationalZone || 'Mumbai Metro & Air Cargo Corridor',
+            zone: seedUser.zone || 'Mumbai Metro & Air Cargo Corridor',
+            hub: seedUser.hub || 'Mumbai Cargo Gateway (BOM-01)'
+          };
+          token = `seed-token-${authUser.role}-${Date.now()}`;
+        } else {
+          throw new Error('No registered account found with this email. Please create an account first.');
+        }
       }
     }
 

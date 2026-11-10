@@ -5,6 +5,24 @@
  * Configured via VITE_API_BASE_URL and VITE_WS_BASE_URL environment variables.
  */
 
+import { 
+  cognitoSignUp, 
+  cognitoConfirmSignUp, 
+  cognitoResendConfirmationCode, 
+  cognitoLogin, 
+  cognitoForgotPassword, 
+  cognitoConfirmForgotPassword 
+} from './cognito';
+
+export {
+  cognitoSignUp, 
+  cognitoConfirmSignUp, 
+  cognitoResendConfirmationCode, 
+  cognitoLogin, 
+  cognitoForgotPassword, 
+  cognitoConfirmForgotPassword 
+};
+
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
 export const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL || API_BASE_URL.replace(/^http/, 'ws');
 
@@ -20,61 +38,56 @@ export async function checkBackendHealth() {
 }
 
 export async function apiLogin(email, password, role = null) {
-  const payload = { email, password };
-  if (role) payload.role = role;
-  const res = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || 'Authentication failed');
+  // 1. Direct real AWS Cognito Identity Provider Authentication
+  try {
+    const cogRes = await cognitoLogin(email, password);
+    if (cogRes && (cogRes.idToken || cogRes.accessToken)) {
+      return {
+        token: cogRes.idToken || cogRes.accessToken,
+        user: {
+          email: email.toLowerCase(),
+          name: email.split('@')[0],
+          role: role || (email.toLowerCase().includes('driver') ? 'driver' : 'customer')
+        }
+      };
+    }
+  } catch (cogErr) {
+    // If Cognito returned an error (e.g. invalid password, user not confirmed), check backend or throw
+    if (cogErr.message && (
+      cogErr.message.includes('Incorrect email or password') ||
+      cogErr.message.includes('not verified') ||
+      cogErr.requiresVerification
+    )) {
+      throw cogErr;
+    }
+    // Try local backend if available
+    try {
+      const payload = { email, password };
+      if (role) payload.role = role;
+      const res = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) return await res.json();
+    } catch {}
+    throw cogErr;
   }
-  return res.json();
 }
 
 export async function apiRegister(name, email, password, role = 'customer', phoneNumber = null, driverId = null, vehicleNumber = null) {
-  const payload = { name, email, password, role };
-  if (phoneNumber) payload.phoneNumber = phoneNumber;
-  if (driverId) payload.driverId = driverId;
-  if (vehicleNumber) payload.vehicleNumber = vehicleNumber;
-  const res = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || 'Registration failed');
-  }
-  return res.json();
+  // Direct AWS Cognito User Registration -> Sends real 6-digit confirmation email
+  return await cognitoSignUp(name, email, password, phoneNumber, role);
 }
 
-export async function apiConfirmRegister(email, code, password) {
-  const res = await fetch(`${API_BASE_URL}/api/v1/auth/confirm-register`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, code, password }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || 'Verification failed');
-  }
-  return res.json();
+export async function apiConfirmRegister(email, code, password = null) {
+  // Direct AWS Cognito Code Confirmation -> Validates real 6-digit OTP code
+  return await cognitoConfirmSignUp(email, code);
 }
 
 export async function apiResendCode(email) {
-  const res = await fetch(`${API_BASE_URL}/api/v1/auth/resend-code`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || 'Failed to resend code');
-  }
-  return res.json();
+  // Direct AWS Cognito Resend -> Sends fresh real 6-digit OTP code to email
+  return await cognitoResendConfirmationCode(email);
 }
 
 export async function apiSendOtp(phoneNumber) {
