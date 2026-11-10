@@ -2918,3 +2918,65 @@ body.theme-light input[type="checkbox"].switch:checked {
   background: #1A73E8 !important;
   border-color: #1A73E8 !important;
 }
+
+/* ==========================================================================
+   Google Rounded Profile Card & Capsule Stats (As requested by user)
+   ========================================================================== */
+.google-profile-card {
+  border-radius: 28px !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+}
+
+body.theme-light .google-profile-card {
+  background: #FFFFFF !important;
+  border-color: #E2E8F0 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+}
+
+body.theme-light .google-profile-stat-pill {
+  background: #F8FAFC !important;
+  border-color: #E2E8F0 !important;
+}
+
+body.theme-light .google-profile-stat-pill:hover {
+  background: #F1F5F9 !important;
+  border-color: #1A73E8 !important;
+}
+
+.google-pill-btn {
+  border-radius: 9999px !important;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1) !important;
+}
+
+body.theme-light .google-pill-btn {
+  background: #F1F3F5 !important;
+  border-color: #E2E8F0 !important;
+  color: #1E293B !important;
+}
+
+body.theme-light .google-pill-btn:hover {
+  background: #E2E8F0 !important;
+  border-color: #1A73E8 !important;
+  color: #1A73E8 !important;
+}
+
+@media (max-width: 900px) {
+  .google-profile-stats-row {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .google-profile-card {
+    padding: 1.25rem !important;
+    border-radius: 22px !important;
+  }
+  .google-profile-stats-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.5rem !important;
+  }
+  .google-profile-stat-pill {
+    padding: 0.75rem 0.5rem !important;
+  }
+}
+

@@ -4,6 +4,7 @@ import StatusBadge from '../components/StatusBadge';
 import CopyButton from '../components/CopyButton';
 import TrackingTimeline from '../components/TrackingTimeline';
 import CustomSelect from '../components/CustomSelect';
+import ProfileOverviewCard from '../components/ProfileOverviewCard';
 import { SkeletonTableRows } from '../components/SkeletonLoading';
 import { 
   Package, 
@@ -23,7 +24,8 @@ import {
   User,
   Truck,
   Layers,
-  ArrowUpDown
+  ArrowUpDown,
+  Settings
 } from 'lucide-react';
 
 export default function ShipmentManagementPage() {
@@ -153,7 +155,16 @@ export default function ShipmentManagementPage() {
           </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <button 
+            className="btn btn-secondary btn-sm"
+            onClick={() => setActiveTab('settings')}
+            title="Account & Profile Settings"
+          >
+            <Settings size={14} />
+            <span>Profile &amp; Settings</span>
+          </button>
+
           <button 
             className="btn btn-secondary btn-sm"
             onClick={handleExportCSV}
@@ -175,7 +186,12 @@ export default function ShipmentManagementPage() {
         </div>
       </div>
 
-      {/* 2. Filter & Search Control Bar */}
+      {/* 2. Customer Profile Hero Card (Exact Google Rounded Card Layout with 5 Capsule Stat Pills) */}
+      {currentUser?.role === 'customer' && (
+        <ProfileOverviewCard allowInlineEdit={true} />
+      )}
+
+      {/* 3. Filter & Search Control Bar */}
       <div className="card" style={{ padding: '1.25rem' }}>
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
           {/* Search Box */}

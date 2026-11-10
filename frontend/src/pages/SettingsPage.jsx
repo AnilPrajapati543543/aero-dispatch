@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { compressAvatarImage } from '../utils/avatarUtils';
+import ProfileOverviewCard from '../components/ProfileOverviewCard';
 import { 
   User, 
   Shield, 
@@ -36,6 +37,7 @@ export default function SettingsPage() {
     switchRole,
     resetToDefaultMock,
     updateUserAvatar,
+    updateUserProfile,
     openProfileZoom
   } = useApp();
 
@@ -122,6 +124,13 @@ export default function SettingsPage() {
 
   const handleProfileSave = (e) => {
     e.preventDefault();
+    if (updateUserProfile) {
+      updateUserProfile({
+        name: profileForm.name,
+        phone: profileForm.phone,
+        company: profileForm.company
+      });
+    }
     addToast('Profile and organizational settings saved successfully.', 'success');
   };
 
@@ -147,7 +156,10 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      {/* 2. Settings Nav Tabs */}
+      {/* 2. Google Rounded Profile Card (Exact Image Layout with 5 Capsule Metric Pills) */}
+      <ProfileOverviewCard allowInlineEdit={true} />
+
+      {/* 3. Settings Nav Tabs */}
       <div className="card" style={{ padding: '0.5rem', display: 'flex', gap: '0.35rem', overflowX: 'auto' }}>
         {[
           { id: 'profile', label: 'User Profile', icon: User },

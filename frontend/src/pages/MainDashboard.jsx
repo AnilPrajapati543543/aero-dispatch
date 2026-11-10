@@ -23,7 +23,8 @@ import {
   Filter,
   RefreshCw,
   Zap,
-  Globe2
+  Globe2,
+  Settings
 } from 'lucide-react';
 
 export default function MainDashboard() {
@@ -32,6 +33,7 @@ export default function MainDashboard() {
     metrics, 
     hubs, 
     drivers, 
+    currentUser,
     setActiveTab, 
     setSelectedAwb, 
     isBackendOnline,
@@ -133,7 +135,16 @@ export default function MainDashboard() {
           </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <button 
+            className="btn btn-secondary btn-sm"
+            onClick={() => setActiveTab('settings')}
+            title="Administrator Profile & Security Settings"
+          >
+            <Settings size={14} />
+            <span>Profile &amp; Settings</span>
+          </button>
+
           <button 
             className="btn btn-secondary btn-sm"
             onClick={refreshBackendOrders}

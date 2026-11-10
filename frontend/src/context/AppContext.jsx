@@ -9,7 +9,8 @@ import {
   apiDriverAcceptOrder,
   apiDriverDeclineOrder,
   apiLogin,
-  apiUploadProofPhoto 
+  apiUploadProofPhoto,
+  extractDisplayName
 } from '../services/api';
 import { 
   compressAvatarImage, 
@@ -28,6 +29,10 @@ export function AppProvider({ children }) {
         if (!parsed.avatarUrl) {
           const restored = getPersistentAvatar(parsed.email, parsed.role);
           if (restored) parsed.avatarUrl = restored;
+        }
+        // Clean name if currently stored as raw gmail address or email prefix
+        if (!parsed.name || parsed.name.includes('@') || parsed.name === parsed.email?.split('@')[0]) {
+          parsed.name = extractDisplayName(parsed.email);
         }
         return parsed;
       } catch (e) {}
@@ -272,6 +277,62 @@ export function AppProvider({ children }) {
     }
 
     addToast('Profile photograph saved permanently across all sessions!', 'success');
+  };
+
+  // Update user profile information (name, phone, company, etc.) permanently
+  const updateUserProfile = (updatedFields = {}) => {
+    if (!currentUser) return;
+
+    const nextUser = {
+      ...currentUser,
+      ...updatedFields
+    };
+
+    setCurrentUser(nextUser);
+    try {
+      localStorage.setItem('aerodispatch_user', JSON.stringify(nextUser));
+    } catch (e) {}
+
+    // 1. Save to user profiles map in localStorage
+    try {
+      const emailLower = (nextUser.email || '').toLowerCase();
+      const profs = JSON.parse(localStorage.getItem('aerodispatch_user_profiles') || '{}');
+      profs[emailLower] = {
+        ...(profs[emailLower] || {}),
+        ...updatedFields
+      };
+      localStorage.setItem('aerodispatch_user_profiles', JSON.stringify(profs));
+    } catch (e) {}
+
+    // 2. Update in registered users list
+    try {
+      const reg = JSON.parse(localStorage.getItem('aerodispatch_registered_users') || '[]');
+      const updatedReg = reg.map(u => {
+        if (u.email?.toLowerCase() === nextUser.email?.toLowerCase()) {
+          return { ...u, ...updatedFields };
+        }
+        return u;
+      });
+      localStorage.setItem('aerodispatch_registered_users', JSON.stringify(updatedReg));
+    } catch (e) {}
+
+    // 3. If driver, update fleet list
+    if (nextUser.role === 'driver' || nextUser.driverId) {
+      setDriversList(prev => {
+        const next = prev.map(d => {
+          if (d.id === (nextUser.driverId || 'DRV-8469') || d.email?.toLowerCase() === nextUser.email?.toLowerCase()) {
+            return { ...d, name: nextUser.name || d.name, phone: nextUser.phone || d.phone };
+          }
+          return d;
+        });
+        try {
+          localStorage.setItem('aerodispatch_fleet_drivers', JSON.stringify(next));
+        } catch (e) {}
+        return next;
+      });
+    }
+
+    addToast('Profile details updated and saved successfully!', 'success');
   };
 
   // Apply theme class to document body
@@ -528,6 +589,11 @@ export function AppProvider({ children }) {
         }
       }
 
+      // Guarantee clean human Full Name instead of raw email address/handle
+      if (!authUser.name || authUser.name.includes('@') || authUser.name === authUser.email?.split('@')[0]) {
+        authUser.name = extractDisplayName(authUser.email, token);
+      }
+
       setAuthToken(token);
       setCurrentRole(authUser.role);
       setCurrentUser(authUser);
@@ -568,7 +634,7 @@ export function AppProvider({ children }) {
         reg[idx].password = tempPassword;
       } else {
         reg.push({
-          name: emailLower.split('@')[0],
+          name: extractDisplayName(emailLower),
           email: emailLower,
           password: tempPassword,
           role: emailLower.includes('driver') ? 'driver' : 'customer'
@@ -1119,6 +1185,7 @@ export function AppProvider({ children }) {
         setDriversList,
         updateDriverStatus,
         updateUserAvatar,
+        updateUserProfile,
         notifications,
         unreadNotificationsCount,
         markNotificationRead,

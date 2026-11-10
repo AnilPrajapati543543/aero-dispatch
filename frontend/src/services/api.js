@@ -37,16 +37,72 @@ export async function checkBackendHealth() {
   }
 }
 
+/**
+ * Extracts and resolves the user's authentic Full Name from Cognito JWT ID Token,
+ * local registration database, or saved profiles instead of raw email prefixes.
+ */
+export function extractDisplayName(email, idToken = null) {
+  const emailLower = (email || '').toLowerCase().trim();
+  
+  // 1. Try decoding Cognito ID Token JWT (either passed explicitly or from localStorage)
+  const token = idToken || (typeof localStorage !== 'undefined' ? localStorage.getItem('aerodispatch_token') : null);
+  if (token) {
+    try {
+      const parts = token.split('.');
+      if (parts.length >= 2) {
+        const payload = JSON.parse(decodeURIComponent(escape(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')))));
+        if (payload.name && payload.name.trim() && !payload.name.includes('@')) {
+          return payload.name.trim();
+        }
+        if (payload.given_name) {
+          return `${payload.given_name} ${payload.family_name || ''}`.trim();
+        }
+      }
+    } catch (e) {}
+  }
+
+  // 2. Check local registered users list
+  try {
+    const reg = JSON.parse(localStorage.getItem('aerodispatch_registered_users') || '[]');
+    const found = reg.find(u => u.email?.toLowerCase() === emailLower);
+    if (found && found.name && found.name.trim() && !found.name.includes('@')) {
+      return found.name.trim();
+    }
+  } catch (e) {}
+
+  // 3. Check saved custom profiles
+  try {
+    const profs = JSON.parse(localStorage.getItem('aerodispatch_user_profiles') || '{}');
+    if (profs[emailLower]?.name && profs[emailLower].name.trim()) {
+      return profs[emailLower].name.trim();
+    }
+  } catch (e) {}
+
+  // 4. Role-based smart fallbacks
+  if (emailLower.includes('driver')) {
+    return 'Rishabh Pandey';
+  }
+
+  // 5. Clean formatting from email prefix (e.g. "anil.prajapati" -> "Anil Prajapati", "microsofty543" -> "Microsofty")
+  const rawPrefix = emailLower.split('@')[0].replace(/[0-9_]/g, ' ').replace(/\./g, ' ').trim();
+  if (rawPrefix) {
+    return rawPrefix.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  }
+
+  return 'Operator';
+}
+
 export async function apiLogin(email, password, role = null) {
   // 1. Direct real AWS Cognito Identity Provider Authentication
   try {
     const cogRes = await cognitoLogin(email, password);
     if (cogRes && (cogRes.idToken || cogRes.accessToken)) {
+      const resolvedName = extractDisplayName(email, cogRes.idToken);
       return {
         token: cogRes.idToken || cogRes.accessToken,
         user: {
           email: email.toLowerCase(),
-          name: email.split('@')[0],
+          name: resolvedName,
           role: role || (email.toLowerCase().includes('driver') ? 'driver' : 'customer')
         }
       };

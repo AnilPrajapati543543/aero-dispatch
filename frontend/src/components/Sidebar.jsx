@@ -313,55 +313,77 @@ export default function Sidebar() {
           }}
         >
           <div 
-            style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', cursor: 'pointer' }}
-            onClick={(e) => {
-              e.stopPropagation();
-              openProfileZoom();
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between',
+              padding: '0.45rem 0.6rem',
+              borderRadius: '16px',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              border: activeTab === 'settings' ? '1px solid var(--primary)' : '1px solid transparent'
             }}
-            title="Click to view & zoom profile picture"
+            onClick={() => {
+              setActiveTab('settings');
+              closeMobileSidebar();
+            }}
+            title="Click to manage Profile & Settings"
+            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-secondary)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
           >
-            {currentUser?.avatarUrl ? (
-              <img 
-                src={currentUser.avatarUrl} 
-                alt={currentUser.name} 
-                style={{ 
-                  width: '36px', 
-                  height: '36px', 
-                  borderRadius: '50%', 
-                  objectFit: 'cover',
-                  border: '2px solid var(--primary)',
-                  flexShrink: 0 
-                }} 
-              />
-            ) : (
-              <div 
-                style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '50%',
-                  background: userRole === 'admin' ? 'linear-gradient(135deg, #EF4444, #991B1B)' : 
-                              userRole === 'driver' ? 'linear-gradient(135deg, #F59E0B, #D97706)' : 
-                              'linear-gradient(135deg, #EF4444, #E11D48)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 800,
-                  fontSize: '0.85rem',
-                  color: '#FFFFFF',
-                  flexShrink: 0
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', minWidth: 0 }}>
+              <div
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openProfileZoom();
                 }}
+                style={{ flexShrink: 0, cursor: 'zoom-in' }}
+                title="Click to zoom profile picture"
               >
-                {currentUser?.name?.charAt(0) || 'U'}
+                {currentUser?.avatarUrl ? (
+                  <img 
+                    src={currentUser.avatarUrl} 
+                    alt={currentUser.name} 
+                    style={{ 
+                      width: '36px', 
+                      height: '36px', 
+                      borderRadius: '50%', 
+                      objectFit: 'cover',
+                      border: '2px solid var(--primary)',
+                      display: 'block'
+                    }} 
+                  />
+                ) : (
+                  <div 
+                    style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '50%',
+                      background: userRole === 'admin' ? 'linear-gradient(135deg, #EF4444, #991B1B)' : 
+                                  userRole === 'driver' ? 'linear-gradient(135deg, #F59E0B, #D97706)' : 
+                                  'linear-gradient(135deg, #EF4444, #E11D48)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 800,
+                      fontSize: '0.85rem',
+                      color: '#FFFFFF'
+                    }}
+                  >
+                    {currentUser?.name?.charAt(0) || 'U'}
+                  </div>
+                )}
               </div>
-            )}
-            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {currentUser?.name || 'User'}
-              </span>
-              <span style={{ fontSize: '0.68rem', color: 'var(--text-dim)', textTransform: 'capitalize' }}>
-                {userRole} Account
-              </span>
+              <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {currentUser?.name || 'User'}
+                </span>
+                <span style={{ fontSize: '0.68rem', color: 'var(--primary)', fontWeight: 600, textTransform: 'capitalize' }}>
+                  {userRole} • Settings ➔
+                </span>
+              </div>
             </div>
+            <Settings size={15} color="var(--text-muted)" style={{ flexShrink: 0 }} />
           </div>
 
           {/* Clean Full-width Sign Out Button */}

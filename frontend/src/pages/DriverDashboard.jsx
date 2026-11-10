@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import StatusBadge from '../components/StatusBadge';
 import { SkeletonRunSheet } from '../components/SkeletonLoading';
 import CopyButton from '../components/CopyButton';
+import ProfileOverviewCard from '../components/ProfileOverviewCard';
 import { resolvePhotoUrl } from '../services/api';
 import { 
   Truck, 
@@ -235,135 +236,19 @@ export default function DriverDashboard() {
 
   return (
     <div>
-      {/* Driver Header Profile */}
-      <div className="card driver-profile-header" style={{ marginBottom: '2rem', borderColor: 'var(--border-accent)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-            {/* WhatsApp-Style Driver Profile Picture with Camera Pill & Zoom Click */}
-            <div 
-              style={{ 
-                width: '58px', 
-                height: '58px', 
-                borderRadius: '50%', 
-                background: 'linear-gradient(135deg, #FF9F1C 0%, #F59E0B 100%)', 
-                color: '#070B14', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                boxShadow: '0 0 18px rgba(245, 158, 11, 0.35)',
-                cursor: 'pointer',
-                position: 'relative',
-                overflow: 'hidden',
-                border: '2px solid rgba(245, 158, 11, 0.8)',
-                flexShrink: 0,
-                transition: 'transform 0.15s ease'
-              }}
-              onClick={openProfileZoom}
-              title="Click to view & zoom WhatsApp profile photo"
-              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-            >
-              {currentUser?.avatarUrl ? (
-                <img 
-                  src={currentUser.avatarUrl} 
-                  alt={currentUser.name || 'Driver'} 
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-              ) : (
-                <span style={{ fontSize: '1.45rem', fontWeight: 900, color: '#070B14' }}>
-                  {currentUser?.name?.charAt(0) || 'R'}
-                </span>
-              )}
-              {/* Camera icon badge */}
-              <div 
-                style={{
-                  position: 'absolute',
-                  bottom: '0',
-                  right: '0',
-                  background: '#0B141A',
-                  border: '1px solid #F59E0B',
-                  borderRadius: '50%',
-                  width: '20px',
-                  height: '20px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#25D366'
-                }}
-              >
-                <Camera size={11} />
-              </div>
-            </div>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-                <h1 style={{ fontSize: '1.5rem', fontWeight: 800 }}>{currentUser?.name || 'Rishabh Pandey'}</h1>
-                <span className="mono" style={{ fontSize: '0.75rem', background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.35)', color: '#F43F5E', padding: '3px 10px', borderRadius: '6px', fontWeight: 800 }}>
-                  DRIVER ID: {currentUser?.driverId || currentUser?.id || 'DRV-8469'}
-                </span>
-                <span style={{ 
-                  fontSize: '0.72rem', 
-                  padding: '3px 9px', 
-                  borderRadius: '6px',
-                  background: 'rgba(16, 185, 129, 0.15)',
-                  border: '1px solid rgba(16, 185, 129, 0.35)',
-                  color: 'var(--accent-emerald)',
-                  fontWeight: 700
-                }}>
-                  ● On Duty / Available
-                </span>
-                <span style={{ 
-                  fontSize: '0.72rem', 
-                  padding: '3px 10px', 
-                  borderRadius: '6px',
-                  background: 'rgba(0, 240, 255, 0.1)',
-                  border: '1px solid rgba(0, 240, 255, 0.3)',
-                  color: '#00F0FF',
-                  fontWeight: 700
-                }}>
-                  OPERATIONAL ZONE: {currentUser?.operationalZone || currentUser?.zone || currentUser?.hub || 'Mumbai Metro & Air Cargo Corridor'}
-                </span>
-              </div>
-              <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '6px', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                <span>Vehicle: <strong style={{ color: 'var(--text-main)' }}>{currentUser?.vehicleNumber || currentUser?.vehicle || 'MH-02-EV-8469'}</strong></span>
-                <span>Base Hub: <strong style={{ color: 'var(--text-main)' }}>{currentUser?.hub || 'Mumbai Cargo Gateway (BOM-01)'}</strong></span>
-                <span>Contact: <strong style={{ color: 'var(--text-main)' }}>{currentUser?.phone || '+91 90042 78469'}</strong></span>
-              </div>
-            </div>
-          </div>
-
-          {/* Run Sheet Progress & Exit / Sign Out Actions */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Daily Progress</div>
-              <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-main)' }}>
-                <span style={{ color: 'var(--accent-emerald)' }}>{completedCount}</span> / {driverShipments.length} Delivered
-              </div>
-            </div>
-
-            <div style={{ width: '120px', height: '8px', background: 'var(--border-subtle)', borderRadius: '4px', overflow: 'hidden' }}>
-              <div style={{ 
-                width: `${driverShipments.length > 0 ? (completedCount / driverShipments.length) * 100 : 0}%`, 
-                height: '100%', 
-                background: 'var(--accent-emerald)',
-                transition: 'width 0.4s ease'
-              }}></div>
-            </div>
-
-            {/* Clean Sign Out Action */}
-            <div style={{ display: 'flex', alignItems: 'center', borderLeft: '1px solid var(--border-subtle)', paddingLeft: '1rem' }}>
-              <button
-                type="button"
-                className="btn btn-sm btn-secondary"
-                onClick={logoutUser}
-                style={{ color: '#F43F5E', borderColor: 'rgba(244, 63, 94, 0.3)', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
-                title="Sign out of Driver Account"
-              >
-                <LogOut size={14} />
-                <span>Logout</span>
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* 1. Driver Profile Header (Exact Google Rounded Card Layout with 5 Capsule Stat Pills) */}
+      <div style={{ marginBottom: '1.75rem' }}>
+        <ProfileOverviewCard 
+          onEditClick={() => setActiveTab('settings')}
+          allowInlineEdit={true}
+          customStats={[
+            { label: "Today's Stops", value: `${driverShipments.length} Assigned` },
+            { label: "Delivered", value: `${completedCount} Completed` },
+            { label: "Driver Rating", value: "4.98 ★" },
+            { label: "Assigned Van", value: currentUser?.vehicleNumber || currentUser?.vehicle || 'MH-02-EV-8469' },
+            { label: "Base Hub", value: currentUser?.hub || 'BOM-01 Gateway' }
+          ]}
+        />
       </div>
 
       {/* Real-time Incoming Dispatch Requests Card (Accept / Decline) */}

@@ -403,8 +403,9 @@ export default function Navbar() {
               <Settings size={16} />
             </button>
 
-            {/* Clean User Profile Avatar & Name Pill (With Zoom Option) */}
+            {/* Clean User Profile Avatar & Name Pill (With Zoom Option & Clickable to Settings) */}
             <div
+              onClick={() => setActiveTab('settings')}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -416,6 +417,9 @@ export default function Navbar() {
                 cursor: 'pointer',
                 transition: 'all 0.2s ease'
               }}
+              title="Click to view & edit Profile & Settings"
+              onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--primary)'}
+              onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-medium)'}
             >
               <div
                 onClick={(e) => {
