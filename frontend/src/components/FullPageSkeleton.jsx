@@ -94,12 +94,12 @@ export default function FullPageSkeleton({ isDashboardView = true }) {
           {/* Top Page Header Skeleton */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <SkeletonBlock width="260px" height="28px" borderRadius="6px" />
+              <SkeletonBlock width="260px" height="28px" borderRadius="9999px" />
               <SkeletonBlock width="380px" height="14px" />
             </div>
             <div style={{ display: 'flex', gap: '0.75rem' }}>
-              <SkeletonBlock width="110px" height="38px" borderRadius="8px" />
-              <SkeletonBlock width="130px" height="38px" borderRadius="8px" />
+              <SkeletonBlock width="110px" height="38px" borderRadius="9999px" />
+              <SkeletonBlock width="130px" height="38px" borderRadius="9999px" />
             </div>
           </div>
 
@@ -114,8 +114,8 @@ export default function FullPageSkeleton({ isDashboardView = true }) {
                 <SkeletonBlock width="220px" height="12px" />
               </div>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <SkeletonBlock width="90px" height="32px" borderRadius="6px" />
-                <SkeletonBlock width="120px" height="32px" borderRadius="6px" />
+                <SkeletonBlock width="90px" height="32px" borderRadius="9999px" />
+                <SkeletonBlock width="120px" height="32px" borderRadius="9999px" />
               </div>
             </div>
 

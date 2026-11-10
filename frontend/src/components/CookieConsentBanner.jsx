@@ -193,7 +193,7 @@ export default function CookieConsentBanner() {
                   fontSize: '0.88rem',
                   fontWeight: 600,
                   padding: '0.6rem 1.25rem',
-                  borderRadius: '6px',
+                  borderRadius: '9999px',
                   cursor: 'pointer',
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -219,7 +219,7 @@ export default function CookieConsentBanner() {
                   fontSize: '0.88rem',
                   fontWeight: 600,
                   padding: '0.6rem 1.35rem',
-                  borderRadius: '6px',
+                  borderRadius: '9999px',
                   cursor: 'pointer',
                   transition: 'all 0.15s ease'
                 }}
@@ -241,7 +241,7 @@ export default function CookieConsentBanner() {
                   fontSize: '0.88rem',
                   fontWeight: 700,
                   padding: '0.6rem 1.45rem',
-                  borderRadius: '6px',
+                  borderRadius: '9999px',
                   cursor: 'pointer',
                   boxShadow: '0 2px 6px rgba(25, 103, 210, 0.28)',
                   transition: 'all 0.15s ease'
@@ -281,7 +281,7 @@ export default function CookieConsentBanner() {
           <div
             style={{
               background: '#FFFFFF',
-              borderRadius: '10px',
+              borderRadius: '28px',
               maxWidth: '720px',
               width: '100%',
               maxHeight: '90vh',
@@ -323,7 +323,7 @@ export default function CookieConsentBanner() {
                 style={{
                   background: '#E9ECEF',
                   border: 'none',
-                  borderRadius: '6px',
+                  borderRadius: '50%',
                   width: '32px',
                   height: '32px',
                   display: 'flex',
@@ -369,7 +369,7 @@ export default function CookieConsentBanner() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
               
               {/* Category 1: Strictly Necessary cookies (Always Active) */}
-              <div style={{ border: '1px solid #E2E8F0', borderRadius: '6px', overflow: 'hidden' }}>
+              <div style={{ border: '1px solid #E2E8F0', borderRadius: '20px', overflow: 'hidden' }}>
                 <div
                   style={{
                     background: '#F1F5F9',
@@ -442,7 +442,7 @@ export default function CookieConsentBanner() {
               </div>
 
               {/* Category 2: Performance and Analytics (Interactive Toggle) */}
-              <div style={{ border: '1px solid #E2E8F0', borderRadius: '6px', overflow: 'hidden' }}>
+              <div style={{ border: '1px solid #E2E8F0', borderRadius: '20px', overflow: 'hidden' }}>
                 <div
                   style={{
                     background: '#F1F5F9',
@@ -524,7 +524,7 @@ export default function CookieConsentBanner() {
               </div>
 
               {/* Category 3: Advertising (Interactive Toggle) */}
-              <div style={{ border: '1px solid #E2E8F0', borderRadius: '6px', overflow: 'hidden' }}>
+              <div style={{ border: '1px solid #E2E8F0', borderRadius: '20px', overflow: 'hidden' }}>
                 <div
                   style={{
                     background: '#F1F5F9',
@@ -610,7 +610,7 @@ export default function CookieConsentBanner() {
             <div
               style={{
                 border: '1px solid #E2E8F0',
-                borderRadius: '6px',
+                borderRadius: '20px',
                 padding: '1.15rem 1.25rem',
                 marginBottom: '1.5rem',
                 background: '#FFFFFF'
@@ -670,7 +670,7 @@ export default function CookieConsentBanner() {
                     fontSize: '0.88rem',
                     fontWeight: 700,
                     padding: '0.65rem 1.4rem',
-                    borderRadius: '6px',
+                    borderRadius: '9999px',
                     border: 'none',
                     cursor: 'pointer',
                     transition: 'background 0.15s ease'
@@ -692,7 +692,7 @@ export default function CookieConsentBanner() {
                     fontSize: '0.88rem',
                     fontWeight: 700,
                     padding: '0.65rem 1.4rem',
-                    borderRadius: '6px',
+                    borderRadius: '9999px',
                     cursor: 'pointer',
                     transition: 'background 0.15s ease'
                   }}
@@ -716,7 +716,7 @@ export default function CookieConsentBanner() {
                     fontSize: '0.88rem',
                     fontWeight: 700,
                     padding: '0.65rem 1.4rem',
-                    borderRadius: '6px',
+                    borderRadius: '9999px',
                     cursor: 'pointer',
                     transition: 'background 0.15s ease'
                   }}

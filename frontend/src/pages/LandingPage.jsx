@@ -428,11 +428,12 @@ className="landing-hero-headline"
                     display: 'grid',
                     gridTemplateColumns: 'repeat(3, 1fr)',
                     border: '1.5px solid #CBD5E1',
-                    borderRadius: 'var(--radius-sm)',
+                    borderRadius: '9999px',
                     overflow: 'hidden',
                     marginBottom: '1.25rem',
                     textAlign: 'center',
-                    background: '#F1F5F9'
+                    background: '#F1F5F9',
+                    padding: '3px'
                   }}
                 >
                   {[
@@ -454,6 +455,7 @@ className="landing-hero-headline"
                           backgroundColor: isActive ? '#0F172A' : '#FFFFFF',
                           color: isActive ? '#FFFFFF' : '#475569',
                           border: 'none',
+                          borderRadius: '9999px',
                           padding: '0.6rem 0',
                           fontSize: '0.8rem',
                           fontWeight: 700,
@@ -481,8 +483,8 @@ className="landing-hero-headline"
                       }
                       style={{
                         width: '100%',
-                        padding: '0.8rem 1rem',
-                        borderRadius: 'var(--radius-sm)',
+                        padding: '0.85rem 1.4rem',
+                        borderRadius: '9999px',
                         border: '1.5px solid #CBD5E1',
                         fontSize: '0.95rem',
                         background: '#FFFFFF',
@@ -490,7 +492,7 @@ className="landing-hero-headline"
                         color: '#0F172A',
                         fontWeight: 600,
                         outline: 'none',
-                        boxShadow: 'inset 0 1px 2px rgba(0, 0, 0, 0.04)',
+                        boxShadow: '0 1px 6px rgba(32, 33, 36, 0.12)',
                         fontFamily: trackMethod !== 'mobile' ? 'var(--font-mono)' : 'inherit'
                       }}
                       required={trackMethod !== 'mobile'}
@@ -506,12 +508,12 @@ className="landing-hero-headline"
                       background: '#0F172A',
                       color: '#FFFFFF',
                       border: 'none',
-                      borderRadius: 'var(--radius-sm)',
+                      borderRadius: '9999px',
                       fontSize: '0.95rem',
                       fontWeight: 800,
                       cursor: 'pointer',
-                      boxShadow: '0 4px 12px rgba(15, 23, 42, 0.25)',
-                      transition: 'background 0.15s ease',
+                      boxShadow: '0 4px 14px rgba(15, 23, 42, 0.25)',
+                      transition: 'all 0.2s cubic-bezier(0.2, 0, 0, 1)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -543,7 +545,7 @@ className="landing-hero-headline"
                         value={calcOrigin}
                         onChange={(e) => setCalcOrigin(e.target.value)}
                         placeholder="e.g. 110037"
-                        style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1.5px solid #CBD5E1', background: '#FFFFFF', backgroundColor: '#FFFFFF', color: '#0F172A', fontWeight: 600 }}
+                        style={{ width: '100%', padding: '0.75rem 1.25rem', borderRadius: '9999px', border: '1.5px solid #CBD5E1', background: '#FFFFFF', backgroundColor: '#FFFFFF', color: '#0F172A', fontWeight: 600, boxShadow: '0 1px 4px rgba(32, 33, 36, 0.08)' }}
                         required
                       />
                     </div>
@@ -557,7 +559,7 @@ className="landing-hero-headline"
                         value={calcDest}
                         onChange={(e) => setCalcDest(e.target.value)}
                         placeholder="e.g. 560038"
-                        style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1.5px solid #CBD5E1', background: '#FFFFFF', backgroundColor: '#FFFFFF', color: '#0F172A', fontWeight: 600 }}
+                        style={{ width: '100%', padding: '0.75rem 1.25rem', borderRadius: '9999px', border: '1.5px solid #CBD5E1', background: '#FFFFFF', backgroundColor: '#FFFFFF', color: '#0F172A', fontWeight: 600, boxShadow: '0 1px 4px rgba(32, 33, 36, 0.08)' }}
                         required
                       />
                     </div>
@@ -572,12 +574,12 @@ className="landing-hero-headline"
                       step="0.5"
                       value={calcWeight}
                       onChange={(e) => setCalcWeight(e.target.value)}
-                      style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1.5px solid #CBD5E1', background: '#FFFFFF', backgroundColor: '#FFFFFF', color: '#0F172A', fontWeight: 600 }}
+                      style={{ width: '100%', padding: '0.75rem 1.25rem', borderRadius: '9999px', border: '1.5px solid #CBD5E1', background: '#FFFFFF', backgroundColor: '#FFFFFF', color: '#0F172A', fontWeight: 600, boxShadow: '0 1px 4px rgba(32, 33, 36, 0.08)' }}
                       required
                     />
                   </div>
 
-                  <div style={{ padding: '0.75rem', background: '#F8FAFC', borderRadius: 'var(--radius-sm)', border: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ padding: '0.85rem 1.25rem', background: '#F8FAFC', borderRadius: '20px', border: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: '0.8rem', color: '#64748B' }}>Estimated Express Shipping:</span>
                     <strong style={{ fontSize: '1.15rem', color: '#EF4444' }}>
                       ₹{Math.round(parseFloat(calcWeight || 1) * 190)}
@@ -592,11 +594,12 @@ className="landing-hero-headline"
                       background: '#EF4444',
                       color: '#FFFFFF',
                       border: 'none',
-                      borderRadius: 'var(--radius-sm)',
+                      borderRadius: '9999px',
                       fontSize: '0.95rem',
                       fontWeight: 800,
                       cursor: 'pointer',
-                      boxShadow: '0 4px 14px rgba(239, 68, 68, 0.4)'
+                      boxShadow: '0 4px 14px rgba(239, 68, 68, 0.4)',
+                      transition: 'all 0.2s cubic-bezier(0.2, 0, 0, 1)'
                     }}
                   >
                     Book Shipment ➔

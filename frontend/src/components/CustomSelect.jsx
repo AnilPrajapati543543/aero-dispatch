@@ -122,8 +122,8 @@ export default function CustomSelect({
           background: triggerBg,
           color: triggerColor,
           border: `1px solid ${triggerBorder}`,
-          borderRadius: '6px',
-          padding: '0.45rem 0.75rem',
+          borderRadius: '9999px',
+          padding: '0.5rem 1rem',
           fontSize: '0.82rem',
           fontWeight: 600,
           cursor: 'pointer',
@@ -159,11 +159,11 @@ export default function CustomSelect({
             minWidth: '100%',
             background: menuBg,
             border: `1px solid ${menuBorder}`,
-            borderRadius: '6px',
+            borderRadius: '20px',
             boxShadow: menuShadow,
             zIndex: 9999,
             overflow: 'hidden',
-            padding: '4px',
+            padding: '6px',
             ...menuStyle
           }}
         >
@@ -180,9 +180,10 @@ export default function CustomSelect({
                   setIsOpen(false);
                 }}
                 style={{
-                  padding: '0.55rem 0.75rem',
+                  padding: '0.55rem 0.9rem',
                   fontSize: '0.82rem',
-                  borderRadius: '4px',
+                  borderRadius: '9999px',
+                  marginBottom: '2px',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',

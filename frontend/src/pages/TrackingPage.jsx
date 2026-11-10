@@ -290,8 +290,8 @@ export default function TrackingPage() {
             />
             <input 
               type="text"
-              className="form-input mono"
-              style={{ paddingLeft: '2.75rem', fontSize: '1rem', letterSpacing: '0.05em' }}
+              className="form-input mono google-search-input"
+              style={{ paddingLeft: '3rem', paddingRight: '1.4rem', fontSize: '1rem', letterSpacing: '0.05em', borderRadius: '9999px', boxShadow: 'var(--google-search-shadow)' }}
               placeholder="Enter AWB (e.g. AD-8849-2041, AD-2910-4491)..."
               value={inputVal}
               onChange={(e) => setInputVal(e.target.value)}
@@ -301,7 +301,7 @@ export default function TrackingPage() {
           <button 
             type="submit" 
             className="btn btn-primary"
-            style={{ padding: '0.75rem 1.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+            style={{ padding: '0.75rem 2rem', borderRadius: '9999px', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 4px 14px rgba(239, 68, 68, 0.4)' }}
             disabled={isSearching}
           >
             {isSearching ? <RefreshCw size={18} className="pulse" /> : <Search size={18} />}

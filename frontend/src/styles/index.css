@@ -63,13 +63,27 @@
   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  /* Shadows & Radius */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
+  /* Shadows & Radius - Google Material 3 Fully Rounded Design */
+  --radius-sm: 14px;
+  --radius-md: 9999px;
+  --radius-lg: 24px;
+  --radius-xl: 28px;
   --radius-full: 9999px;
   
+  /* Google Material 3 Color Tokens & Shadows */
+  --google-blue: #1A73E8;
+  --google-blue-hover: #1557B0;
+  --google-blue-glow: rgba(66, 133, 244, 0.4);
+  --google-red: #EA4335;
+  --google-yellow: #FBBC04;
+  --google-green: #34A853;
+  --google-surface-dark: #1E1F23;
+  --google-surface-elevated: #28292E;
+  --google-border-dark: rgba(255, 255, 255, 0.12);
+  --google-search-shadow: 0 1px 6px rgba(32, 33, 36, 0.28);
+  --google-search-shadow-hover: 0 2px 8px rgba(32, 33, 36, 0.38);
+  --google-card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 4px 12px 0 rgba(0, 0, 0, 0.2);
+
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
   --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.5);
   --shadow-lg: 0 12px 36px rgba(0, 0, 0, 0.7);
@@ -77,7 +91,7 @@
   
   /* Transitions */
   --transition-fast: 0.15s ease;
-  --transition-normal: 0.25s ease;
+  --transition-normal: 0.25s cubic-bezier(0.2, 0, 0, 1);
   --transition-smooth: 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -2625,4 +2639,282 @@ html {
     transform: translateX(-50%) translateY(-7px);
     box-shadow: 0 28px 65px rgba(0, 0, 0, 0.36), 0 12px 26px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(0, 0, 0, 0.05);
   }
+}
+
+/* ==========================================================================
+   GOOGLE MATERIAL 3 FULLY ROUNDED DESIGN SYSTEM & THEME
+   Signature Google Pill Shapes, Google Search Bars, M3 Switches & Soft Elevation
+   ========================================================================== */
+
+/* 1. All Buttons & Interactive Triggers -> Fully Rounded Google Pills */
+.btn,
+.btn-primary,
+.btn-secondary,
+.btn-outline-cyan,
+.btn-outline-red,
+.btn-success,
+.btn-danger,
+.btn-sm,
+.role-btn,
+.track-tab-btn-active,
+.track-tab-btn-inactive,
+.track-submit-btn,
+.landing-role-pill-btn,
+.sidebar-toggle-btn,
+.google-pill-btn {
+  border-radius: 9999px !important;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1) !important;
+}
+
+.btn:hover,
+.track-submit-btn:hover {
+  transform: translateY(-1.5px) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important;
+}
+
+.btn:active,
+.track-submit-btn:active {
+  transform: translateY(0.5px) scale(0.98) !important;
+}
+
+/* 2. All Cards, Hero Panels, Containers -> Google Material 3 24px-28px Curvature */
+.card,
+.hero-tracking-card,
+.metric-card,
+.timeline-card,
+.driver-card,
+.order-card,
+.login-card-container {
+  border-radius: 24px !important;
+  box-shadow: var(--google-card-shadow);
+  transition: transform 0.25s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.25s cubic-bezier(0.2, 0, 0, 1), border-color 0.2s ease !important;
+}
+
+.card:hover {
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* 3. All Dialogs, Modals, Popups -> Google M3 28px Curvature */
+.modal-content,
+.modal-dialog,
+.modal,
+.dialog,
+.cookie-banner,
+.zoom-modal {
+  border-radius: 28px !important;
+}
+
+/* 4. Google Search Bars Everywhere */
+.nav-search,
+.google-search-bar,
+.hero-tracking-card input[type="text"],
+.hero-tracking-card input[type="tel"],
+.hero-tracking-card input[type="number"],
+input[type="search"] {
+  border-radius: 9999px !important;
+}
+
+.nav-search input,
+.tracking-search-input,
+.google-search-input {
+  border-radius: 9999px !important;
+  padding: 0.75rem 3rem 0.75rem 1.4rem !important;
+  box-shadow: var(--google-search-shadow) !important;
+  border: 1.5px solid var(--border-medium) !important;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1) !important;
+}
+
+.nav-search input:hover,
+.tracking-search-input:hover,
+.google-search-input:hover {
+  box-shadow: var(--google-search-shadow-hover) !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+.nav-search input:focus,
+.tracking-search-input:focus,
+.google-search-input:focus {
+  outline: none !important;
+  border-color: var(--google-blue) !important;
+  box-shadow: 0 2px 12px var(--google-blue-glow) !important;
+  background: rgba(26, 115, 232, 0.04) !important;
+}
+
+/* 5. All Inputs, Selects, and Form Controls -> Fully Rounded Finish */
+.form-input,
+.form-select,
+.input-field,
+select:not([multiple]),
+.custom-select-trigger {
+  border-radius: 9999px !important;
+  padding: 0.7rem 1.35rem !important;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1) !important;
+}
+
+.form-input:focus,
+.form-select:focus,
+.input-field:focus,
+select:focus,
+.custom-select-trigger.is-open {
+  outline: none !important;
+  border-color: var(--google-blue) !important;
+  box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.25) !important;
+}
+
+.form-textarea {
+  border-radius: 20px !important;
+  padding: 1rem 1.25rem !important;
+}
+
+.custom-select-menu {
+  border-radius: 20px !important;
+  padding: 6px !important;
+}
+
+.custom-select-option {
+  border-radius: 9999px !important;
+  padding: 0.5rem 1rem !important;
+  margin-bottom: 2px !important;
+}
+
+/* 6. All Status Badges, Chips, Pills, and Tags */
+.status-badge,
+.badge,
+.chip,
+.filter-pill,
+.tab-pill,
+.track-tab-btn-active,
+.track-tab-btn-inactive {
+  border-radius: 9999px !important;
+}
+
+/* 7. Google Material 3 (M3) Toggle Switch System */
+.google-m3-switch,
+.google-switch {
+  width: 52px;
+  height: 32px;
+  border-radius: 9999px !important;
+  background: rgba(255, 255, 255, 0.16);
+  border: 2px solid rgba(255, 255, 255, 0.28);
+  position: relative;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  box-sizing: border-box;
+  transition: background-color 0.25s cubic-bezier(0.2, 0, 0, 1),
+              border-color 0.25s cubic-bezier(0.2, 0, 0, 1),
+              box-shadow 0.25s cubic-bezier(0.2, 0, 0, 1) !important;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.google-m3-switch:hover,
+.google-switch:hover {
+  background: rgba(255, 255, 255, 0.24);
+  border-color: rgba(255, 255, 255, 0.45);
+}
+
+.google-m3-switch.is-active,
+.google-switch.is-active {
+  background: #1A73E8 !important;
+  border-color: #4285F4 !important;
+  box-shadow: 0 0 14px rgba(66, 133, 244, 0.5) !important;
+}
+
+.google-m3-switch-thumb,
+.google-switch-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50% !important;
+  background: #FFFFFF !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4) !important;
+  transform: translateX(0);
+  transition: transform 0.25s cubic-bezier(0.2, 0, 0, 1),
+              width 0.18s ease,
+              background-color 0.25s ease !important;
+}
+
+.google-m3-switch:active .google-m3-switch-thumb,
+.google-switch:active .google-switch-thumb {
+  width: 28px;
+}
+
+.google-m3-switch.is-active .google-m3-switch-thumb,
+.google-switch.is-active .google-switch-thumb {
+  transform: translateX(20px) !important;
+  background: #FFFFFF !important;
+}
+
+/* Light Mode Overrides for Google M3 Switch */
+body.theme-light .google-m3-switch,
+body.theme-light .google-switch {
+  background: #E0E2E7;
+  border-color: #CBD5E1;
+}
+
+body.theme-light .google-m3-switch.is-active,
+body.theme-light .google-switch.is-active {
+  background: #1A73E8 !important;
+  border-color: #1A73E8 !important;
+  box-shadow: 0 0 12px rgba(26, 115, 232, 0.35) !important;
+}
+
+/* Universal Native Checkbox Enhancement to Google Material 3 Switch */
+input[type="checkbox"].google-checkbox-switch,
+input[type="checkbox"].switch {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 50px;
+  height: 28px;
+  border-radius: 9999px !important;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  position: relative;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.25s cubic-bezier(0.2, 0, 0, 1);
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+  margin: 0;
+}
+
+input[type="checkbox"].google-checkbox-switch::before,
+input[type="checkbox"].switch::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 21px;
+  height: 21px;
+  border-radius: 50% !important;
+  background: #FFFFFF;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+  transition: transform 0.25s cubic-bezier(0.2, 0, 0, 1);
+}
+
+input[type="checkbox"].google-checkbox-switch:checked,
+input[type="checkbox"].switch:checked {
+  background: #1A73E8 !important;
+  border-color: #4285F4 !important;
+  box-shadow: 0 0 12px rgba(66, 133, 244, 0.45) !important;
+}
+
+input[type="checkbox"].google-checkbox-switch:checked::before,
+input[type="checkbox"].switch:checked::before {
+  transform: translateX(22px);
+}
+
+body.theme-light input[type="checkbox"].google-checkbox-switch,
+body.theme-light input[type="checkbox"].switch {
+  background: #E2E8F0;
+  border-color: #CBD5E1;
+}
+
+body.theme-light input[type="checkbox"].google-checkbox-switch:checked,
+body.theme-light input[type="checkbox"].switch:checked {
+  background: #1A73E8 !important;
+  border-color: #1A73E8 !important;
 }

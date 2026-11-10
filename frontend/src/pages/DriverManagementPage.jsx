@@ -234,8 +234,8 @@ export default function DriverManagementPage() {
               <SkeletonBlock width="80%" height="14px" />
               <SkeletonBlock width="50%" height="14px" />
               <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                <SkeletonBlock width="70%" height="32px" borderRadius="6px" />
-                <SkeletonBlock width="30%" height="32px" borderRadius="6px" />
+                <SkeletonBlock width="70%" height="32px" borderRadius="9999px" />
+                <SkeletonBlock width="30%" height="32px" borderRadius="9999px" />
               </div>
             </div>
           ))}

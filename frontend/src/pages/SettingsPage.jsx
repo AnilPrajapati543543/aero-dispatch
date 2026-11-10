@@ -454,26 +454,37 @@ export default function SettingsPage() {
               <div 
                 key={item.key}
                 style={{
-                  padding: '1rem',
+                  padding: '1.1rem 1.25rem',
                   background: 'rgba(0,0,0,0.25)',
-                  borderRadius: 'var(--radius-sm)',
+                  borderRadius: '20px',
                   border: '1px solid var(--border-subtle)',
                   display: 'flex',
                   justifyContent: 'space-between',
-                  alignItems: 'center'
+                  alignItems: 'center',
+                  gap: '1rem'
                 }}
               >
                 <div>
-                  <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)' }}>{item.label}</div>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>{item.desc}</div>
+                  <div style={{ fontSize: '0.92rem', fontWeight: 600, color: 'var(--text-main)' }}>{item.label}</div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>{item.desc}</div>
                 </div>
 
-                <input 
-                  type="checkbox"
-                  checked={notifPrefs[item.key]}
-                  onChange={(e) => setNotifPrefs({ ...notifPrefs, [item.key]: e.target.checked })}
-                  style={{ accentColor: 'var(--primary)', width: '18px', height: '18px' }}
-                />
+                <div
+                  className={`google-m3-switch ${notifPrefs[item.key] ? 'is-active' : ''}`}
+                  onClick={() => setNotifPrefs({ ...notifPrefs, [item.key]: !notifPrefs[item.key] })}
+                  role="switch"
+                  aria-checked={notifPrefs[item.key]}
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === ' ' || e.key === 'Enter') {
+                      e.preventDefault();
+                      setNotifPrefs({ ...notifPrefs, [item.key]: !notifPrefs[item.key] });
+                    }
+                  }}
+                  title={`Toggle ${item.label}`}
+                >
+                  <div className="google-m3-switch-thumb" />
+                </div>
               </div>
             ))}
           </div>

@@ -549,9 +549,9 @@ export default function CreateOrderPage() {
             {/* Volumetric Weight Visual Comparison Box */}
             <div style={{
               marginBottom: '1.25rem',
-              padding: '0.85rem 1rem',
+              padding: '0.85rem 1.25rem',
               background: 'rgba(255, 255, 255, 0.02)',
-              borderRadius: 'var(--radius-sm)',
+              borderRadius: '20px',
               border: '1px solid var(--border-subtle)',
               display: 'flex',
               alignItems: 'center',
@@ -628,10 +628,11 @@ export default function CreateOrderPage() {
                 <label style={{
                   border: formData.serviceTier === 'Express Air' ? '2px solid var(--primary)' : '1px solid var(--border-medium)',
                   background: formData.serviceTier === 'Express Air' ? 'rgba(0, 240, 255, 0.05)' : 'rgba(255, 255, 255, 0.02)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: '1rem',
+                  borderRadius: '20px',
+                  padding: '1.1rem 1.25rem',
                   cursor: 'pointer',
-                  display: 'block'
+                  display: 'block',
+                  transition: 'all 0.2s cubic-bezier(0.2, 0, 0, 1)'
                 }}>
                   <input
                     type="radio"
@@ -650,10 +651,11 @@ export default function CreateOrderPage() {
                 <label style={{
                   border: formData.serviceTier === 'Standard Surface' ? '2px solid var(--primary)' : '1px solid var(--border-medium)',
                   background: formData.serviceTier === 'Standard Surface' ? 'rgba(0, 240, 255, 0.05)' : 'rgba(255, 255, 255, 0.02)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: '1rem',
+                  borderRadius: '20px',
+                  padding: '1.1rem 1.25rem',
                   cursor: 'pointer',
-                  display: 'block'
+                  display: 'block',
+                  transition: 'all 0.2s cubic-bezier(0.2, 0, 0, 1)'
                 }}>
                   <input
                     type="radio"
@@ -672,10 +674,11 @@ export default function CreateOrderPage() {
                 <label style={{
                   border: formData.serviceTier === 'Same-Day Priority' ? '2px solid var(--primary)' : '1px solid var(--border-medium)',
                   background: formData.serviceTier === 'Same-Day Priority' ? 'rgba(0, 240, 255, 0.05)' : 'rgba(255, 255, 255, 0.02)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: '1rem',
+                  borderRadius: '20px',
+                  padding: '1.1rem 1.25rem',
                   cursor: 'pointer',
-                  display: 'block'
+                  display: 'block',
+                  transition: 'all 0.2s cubic-bezier(0.2, 0, 0, 1)'
                 }}>
                   <input
                     type="radio"
