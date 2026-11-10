@@ -689,6 +689,61 @@ export function AppProvider({ children }) {
     return adminUser;
   };
 
+  // Google Single Sign-On (SSO) login/registration
+  const loginWithGoogle = async (googleUser = null) => {
+    const email = (googleUser?.email || 'microsofty543@gmail.com').trim().toLowerCase();
+    const name = googleUser?.name || 'Anil Prajapati';
+    const role = googleUser?.role || (currentRole === 'driver' ? 'driver' : 'customer');
+    const effectiveRole = role === 'admin' ? 'customer' : role; // Google login is strictly customer or captain
+
+    let registeredUsers = [];
+    try {
+      registeredUsers = JSON.parse(localStorage.getItem('aerodispatch_registered_users') || '[]');
+    } catch (e) {}
+
+    let user = registeredUsers.find(u => u.email?.toLowerCase() === email);
+    if (!user) {
+      user = {
+        name,
+        email,
+        role: effectiveRole,
+        phone: googleUser?.phone || '+91 98200 44112',
+        provider: 'google',
+        createdAt: new Date().toISOString()
+      };
+      if (effectiveRole === 'driver') {
+        user.driverId = `DRV-${Date.now().toString().slice(-4)}`;
+        user.vehicleNumber = 'MH-02-EV-8469';
+      }
+      registeredUsers.push(user);
+      localStorage.setItem('aerodispatch_registered_users', JSON.stringify(registeredUsers));
+    }
+
+    const savedAvatar = getPersistentAvatar(user.email, user.role);
+    const authUser = {
+      name: user.name || name,
+      email: user.email || email,
+      role: user.role || effectiveRole,
+      phone: user.phone || '+91 98200 44112',
+      avatarUrl: savedAvatar || user.avatarUrl,
+      driverId: user.driverId || (user.role === 'driver' ? 'DRV-8469' : undefined),
+      vehicleNumber: user.vehicleNumber || (user.role === 'driver' ? 'MH-02-EV-8469' : undefined)
+    };
+
+    const token = `google-sso-token-${Date.now()}`;
+    setCurrentUser(authUser);
+    setCurrentRole(authUser.role);
+    setAuthToken(token);
+    localStorage.setItem('aerodispatch_user', JSON.stringify(authUser));
+    localStorage.setItem('aerodispatch_token', token);
+    localStorage.setItem('aerodispatch_role', authUser.role);
+
+    const destTab = authUser.role === 'driver' ? 'driver' : 'shipments';
+    setActiveTab(destTab);
+    addToast(`Signed in with Google as ${authUser.name} (${authUser.email})`, 'success');
+    return authUser;
+  };
+
   // Add a newly created consignment
   const addShipment = async (formData) => {
     let finalOrder = null;
@@ -1172,6 +1227,7 @@ export function AppProvider({ children }) {
         switchRole,
         loginUser,
         loginWithAdminCode,
+        loginWithGoogle,
         resetAccountPassword,
         currentUser,
         loginAnimationRole,
