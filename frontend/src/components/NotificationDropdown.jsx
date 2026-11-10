@@ -306,3 +306,4 @@ export default function NotificationDropdown({ isOpen, onClose, triggerRef }) {
     </div>
   );
 }
+

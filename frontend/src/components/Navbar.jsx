@@ -501,26 +501,6 @@ export default function Navbar() {
                 triggerRef={userChipRef}
               />
             </div>
-
-            {/* Standardized Logout Button */}
-            <button
-              className="btn btn-sm btn-secondary"
-              onClick={logoutUser}
-              style={{ 
-                padding: '0.45rem 0.85rem', 
-                color: '#EF4444', 
-                borderColor: 'rgba(239, 68, 68, 0.35)',
-                fontWeight: 700,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                fontSize: '0.78rem'
-              }}
-              title="Sign out of your account"
-            >
-              <LogOut size={14} />
-              <span>Logout</span>
-            </button>
           </div>
         )}
       </div>
