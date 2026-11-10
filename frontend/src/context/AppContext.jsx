@@ -62,11 +62,35 @@ export function AppProvider({ children }) {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // If Edge or another browser has cached the old 6 demo shipments (AD-8849-2041), purge it and use actual shipments
+          const hasOldDemo = parsed.some(s => s.awbNumber === 'AD-8849-2041' || s.awbNumber === 'AD-1904-8842' || s.awbNumber === 'AD-1722-2734');
+          if (hasOldDemo) {
+            try {
+              localStorage.setItem('aerodispatch_shipments', JSON.stringify(MASTER_ADMIN_SHIPMENTS));
+            } catch (e) {}
+            return MASTER_ADMIN_SHIPMENTS;
+          }
+          return parsed;
+        }
       } catch (e) {}
     }
-    return [];
+    return MASTER_ADMIN_SHIPMENTS;
   });
+
+  // Edge and fresh browser auto-purge for legacy 6 demo records
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('aerodispatch_shipments');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.some(s => s.awbNumber === 'AD-8849-2041' || s.awbNumber === 'AD-1904-8842')) {
+          localStorage.setItem('aerodispatch_shipments', JSON.stringify(MASTER_ADMIN_SHIPMENTS));
+          setShipments(MASTER_ADMIN_SHIPMENTS);
+        }
+      }
+    } catch (e) {}
+  }, []);
 
   const [notifications, setNotifications] = useState(() => {
     const saved = localStorage.getItem('aerodispatch_notifications');
@@ -76,7 +100,7 @@ export function AppProvider({ children }) {
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       } catch (e) {}
     }
-    return [];
+    return MOCK_NOTIFICATIONS;
   });
 
   const [driversList, setDriversList] = useState(() => {
@@ -87,7 +111,7 @@ export function AppProvider({ children }) {
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
     } catch (e) {}
-    return [];
+    return MASTER_ADMIN_DRIVERS;
   });
 
   // Save drivers to localStorage whenever updated
@@ -1153,9 +1177,11 @@ export function AppProvider({ children }) {
   };
 
   const resetToDefaultMock = () => {
-    setShipments([]);
-    localStorage.removeItem('aerodispatch_shipments');
-    addToast('Logistics database reset.', 'info');
+    setShipments(MASTER_ADMIN_SHIPMENTS);
+    try {
+      localStorage.setItem('aerodispatch_shipments', JSON.stringify(MASTER_ADMIN_SHIPMENTS));
+    } catch (e) {}
+    addToast('Restored authentic shipments database.', 'info');
   };
 
   // Dynamically compute real logistics metrics from active shipments
