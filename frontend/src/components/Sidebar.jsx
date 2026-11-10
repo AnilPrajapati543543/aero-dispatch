@@ -223,7 +223,7 @@ export default function Sidebar() {
                 textTransform: 'uppercase'
               }}
             >
-              {userRole}
+              {userRole === 'driver' ? 'captain' : userRole}
             </span>
           </div>
 
@@ -233,7 +233,7 @@ export default function Sidebar() {
             {userRole === 'customer' && <Package size={18} color="#EF4444" />}
             <span>
               {userRole === 'admin' && 'Admin'}
-              {userRole === 'driver' && 'Driver Hub'}
+              {userRole === 'driver' && 'Captain Cockpit'}
               {userRole === 'customer' && 'Customer Portal'}
             </span>
           </div>

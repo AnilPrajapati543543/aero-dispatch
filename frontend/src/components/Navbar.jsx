@@ -205,8 +205,9 @@ export default function Navbar() {
           </button>
         </nav>
       ) : (
-        /* Quick AWB Search on Dashboard views */
-        <form className="nav-search" onSubmit={handleSearch} role="search">
+        /* Quick AWB Google M3 Search Bar on Dashboard views */
+        <form className="nav-search" onSubmit={handleSearch} role="search" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+          <Search size={16} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none', zIndex: 2 }} />
           <input
             type="text"
             placeholder="Track AWB (e.g. AD-8849-2041)..."
@@ -214,9 +215,10 @@ export default function Navbar() {
             onChange={(e) => setInputSearch(e.target.value)}
             className="mono"
             aria-label="Track Air Waybill Number"
+            style={{ paddingLeft: '2.85rem', paddingRight: '2.5rem' }}
           />
-          <button type="submit" title="Track Shipment" aria-label="Submit Tracking Search">
-            <Search size={16} />
+          <button type="submit" title="Track Shipment" aria-label="Submit Tracking Search" style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', color: 'var(--primary)', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}>
+            <ChevronRight size={17} />
           </button>
         </form>
       )}
@@ -257,8 +259,8 @@ export default function Navbar() {
                   id="nav-role-driver-btn"
                   className={`landing-role-pill-btn ${landingRole === 'driver' ? 'active' : ''}`}
                   onClick={() => handleRoleToggle('driver')}
-                  title="Courier Driver Portal"
-                  aria-label="Courier Driver Portal"
+                  title="Delivery Captain Portal"
+                  aria-label="Delivery Captain Portal"
                 >
                   <Truck size={16} />
                 </button>

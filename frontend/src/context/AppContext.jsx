@@ -935,19 +935,36 @@ export function AppProvider({ children }) {
     addToast(`Driver ${driverInfo.name} assigned.`, 'info');
   };
 
-  // Driver accepts unassigned parcel request
+  // Driver accepts unassigned parcel request (Enforces: Exactly 1 Active Delivery at a time)
   const acceptDriverOrder = async (awbNumber) => {
+    // 1. Strict single-active delivery rule: Check if captain already has an ongoing consignment
+    const activeOngoingDelivery = shipments.find(s => {
+      const isMyDelivery = (s.assignedDriver && (
+        s.assignedDriver.name?.toLowerCase() === currentUser?.name?.toLowerCase() ||
+        s.assignedDriver.driverId === currentUser?.driverId
+      )) || s.driverId === (currentUser?.driverId || 'DRV-8469');
+
+      const isCompleted = s.currentStatus === 'DELIVERED' || s.status === 'delivered';
+      return isMyDelivery && !isCompleted;
+    });
+
+    if (activeOngoingDelivery) {
+      addToast(`Active Delivery In Progress! You must complete and deliver consignment ${activeOngoingDelivery.awbNumber} before accepting another delivery.`, 'warning');
+      return false;
+    }
+
     const driverId = currentUser?.driverId || `DRV-${(currentUser?.phone || '504').slice(-4)}`;
-    const driverName = currentUser?.name || 'Courier Associate';
+    const driverName = currentUser?.name || 'Rishabh Pandey';
     const driverPhone = currentUser?.phone || '+91 90043 58469';
     const vehicleNumber = currentUser?.vehicleNumber || 'MH-02-EE-8891';
 
     const driverObj = {
       driverId,
       name: driverName,
+      title: 'Delivery Captain',
       phone: driverPhone,
       vehicleNumber,
-      rating: 4.9,
+      rating: 4.98,
       currentLocation: 'Local Logistics Hub'
     };
 
@@ -957,10 +974,10 @@ export function AppProvider({ children }) {
     const acceptEvent = {
       id: `ev-${Date.now()}`,
       status: 'OUT_FOR_DELIVERY',
-      title: `Accepted by Driver (${driverName})`,
+      title: `Accepted by Delivery Captain (${driverName})`,
       location: 'Local Logistics Hub',
       timestamp: formattedTime,
-      notes: `Driver ${driverName} (${driverPhone}) accepted consignment dispatch request.`,
+      notes: `Delivery Captain ${driverName} (${driverPhone}) accepted consignment dispatch request.`,
     };
 
     if (isBackendOnline) {

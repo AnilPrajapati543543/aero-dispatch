@@ -14,6 +14,7 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Eye, 
+  Clock,
   MapPin, 
   Calendar, 
   Download, 
@@ -426,187 +427,231 @@ export default function ShipmentManagementPage() {
       </div>
 
       {/* 5. Detailed Consignment Slide-Over Modal */}
-      {inspectingShipment && (
-        <div 
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0, 0, 0, 0.75)',
-            backdropFilter: 'blur(4px)',
-            zIndex: 1000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '1.5rem'
-          }}
-          onClick={() => setInspectingShipment(null)}
-        >
+      {inspectingShipment && (() => {
+        const sender = typeof inspectingShipment.sender === 'object' && inspectingShipment.sender !== null 
+          ? inspectingShipment.sender 
+          : { name: inspectingShipment.sender || inspectingShipment.senderName || 'Merchant Origin Facility', address: inspectingShipment.senderAddress || 'Terminal Booking Station', city: inspectingShipment.senderCity || 'Origin Hub', state: inspectingShipment.senderState || 'Cargo Hub', pinCode: inspectingShipment.senderPin || '400001', phone: inspectingShipment.senderPhone || '+91 98000 00000' };
+
+        const recipient = typeof inspectingShipment.recipient === 'object' && inspectingShipment.recipient !== null 
+          ? inspectingShipment.recipient 
+          : { name: inspectingShipment.recipient || inspectingShipment.recipientName || 'Delivery Consignee', address: inspectingShipment.recipientAddress || 'Doorstep Delivery Address', city: inspectingShipment.recipientCity || 'Destination Metro', state: inspectingShipment.recipientState || 'Transit Zone', pinCode: inspectingShipment.recipientPin || '500001', phone: inspectingShipment.recipientPhone || '+91 99000 00000' };
+
+        const driver = inspectingShipment.assignedDriver;
+
+        return (
           <div 
-            className="card"
             style={{
-              width: '100%',
-              maxWidth: '720px',
-              maxHeight: '90vh',
-              overflowY: 'auto',
-              padding: '2rem',
-              position: 'relative'
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0, 0, 0, 0.75)',
+              backdropFilter: 'blur(6px)',
+              zIndex: 1000,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '1.5rem'
             }}
-            onClick={(e) => e.stopPropagation()}
+            onClick={() => setInspectingShipment(null)}
           >
-            {/* Close Button */}
-            <button 
-              className="btn btn-sm btn-secondary"
-              onClick={() => setInspectingShipment(null)}
-              style={{ position: 'absolute', right: '1.25rem', top: '1.25rem', padding: '0.4rem' }}
+            <div 
+              className="card"
+              style={{
+                width: '100%',
+                maxWidth: '740px',
+                maxHeight: '90vh',
+                overflowY: 'auto',
+                padding: '2rem',
+                position: 'relative',
+                borderRadius: '24px',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-medium)',
+                boxShadow: '0 20px 60px rgba(0, 0, 0, 0.35)'
+              }}
+              onClick={(e) => e.stopPropagation()}
             >
-              <X size={16} />
-            </button>
-
-            {/* Modal Header */}
-            <div style={{ marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border-subtle)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.4rem' }}>
-                <span className="mono" style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--primary)' }}>
-                  {inspectingShipment.awbNumber}
-                </span>
-                <StatusBadge status={inspectingShipment.currentStatus} />
-              </div>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                {inspectingShipment.serviceTier} • Category: {inspectingShipment.category || 'General Cargo'}
-              </p>
-            </div>
-
-            {/* Sender & Recipient Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.5rem' }}>
-              <div style={{ padding: '1rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-medium)' }}>
-                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Origin &amp; Shipper
-                </span>
-                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', marginTop: '0.35rem' }}>
-                  {inspectingShipment.sender?.name}
-                </div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-                  {inspectingShipment.sender?.address}<br />
-                  {inspectingShipment.sender?.city}, {inspectingShipment.sender?.state} - {inspectingShipment.sender?.pinCode}
-                </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '0.4rem' }}>
-                  Phone: {inspectingShipment.sender?.phone}
-                </div>
-              </div>
-
-              <div style={{ padding: '1rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-medium)' }}>
-                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#EF4444', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Destination &amp; Recipient
-                </span>
-                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', marginTop: '0.35rem' }}>
-                  {inspectingShipment.recipient?.name}
-                </div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-                  {inspectingShipment.recipient?.address}<br />
-                  {inspectingShipment.recipient?.city}, {inspectingShipment.recipient?.state} - {inspectingShipment.recipient?.pinCode}
-                </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '0.4rem' }}>
-                  Phone: {inspectingShipment.recipient?.phone}
-                </div>
-              </div>
-            </div>
-
-            {/* Assigned Driver Card */}
-            {inspectingShipment.assignedDriver ? (
-              <div style={{ padding: '1rem', background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 'var(--radius-sm)', marginBottom: '1.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10B981' }}>
-                      <Truck size={20} />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#10B981', fontWeight: 800 }}>
-                        ✓ Courier Driver Assigned
-                      </div>
-                      <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-main)' }}>
-                        {inspectingShipment.assignedDriver.name}
-                      </div>
-                      <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                        Phone: <strong>{inspectingShipment.assignedDriver.phone || '+91 90043 58469'}</strong> • Vehicle: {inspectingShipment.assignedDriver.vehicleNumber}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <a
-                      href={`tel:${inspectingShipment.assignedDriver.phone || '+919004358469'}`}
-                      className="btn btn-sm btn-secondary"
-                      style={{ padding: '0.45rem 0.85rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem' }}
-                    >
-                      <span>📞 Call Driver</span>
-                    </a>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-primary"
-                      onClick={() => {
-                        setInspectingShipment(null);
-                        openChatbox();
-                      }}
-                      style={{ padding: '0.45rem 0.85rem', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                    >
-                      <span>💬 Chat with Driver</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div style={{ padding: '0.85rem 1rem', background: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.25)', borderRadius: 'var(--radius-sm)', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                <Clock size={16} color="#38BDF8" />
-                <span style={{ fontSize: '0.82rem', color: '#E2E8F0' }}>
-                  Awaiting courier driver acceptance. Broadcast dispatched to nearby fleet associates.
-                </span>
-              </div>
-            )}
-
-            {/* Proof of Delivery (If Delivered) */}
-            {inspectingShipment.proofOfDelivery && (
-              <div style={{ padding: '1rem', background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: 'var(--radius-sm)', marginBottom: '1.5rem' }}>
-                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#10B981', textTransform: 'uppercase' }}>
-                  Proof-of-Delivery Verification
-                </span>
-                <div style={{ fontSize: '0.85rem', color: 'var(--text-main)', marginTop: '0.3rem' }}>
-                  Delivered To: <strong>{inspectingShipment.proofOfDelivery.deliveredTo}</strong>
-                </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                  Verification: {inspectingShipment.proofOfDelivery.verificationMethod} • Time: {inspectingShipment.proofOfDelivery.timestamp}
-                </div>
-              </div>
-            )}
-
-            {/* Milestone History Timeline */}
-            <div>
-              <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.75rem' }}>
-                Milestone Timeline
-              </h4>
-              <TrackingTimeline events={inspectingShipment.events || []} />
-            </div>
-
-            {/* Modal Bottom Actions */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-subtle)' }}>
+              {/* Close Button */}
               <button 
-                className="btn btn-secondary btn-sm"
+                className="btn btn-sm btn-secondary"
                 onClick={() => setInspectingShipment(null)}
+                style={{ position: 'absolute', right: '1.25rem', top: '1.25rem', padding: '0.4rem', borderRadius: '50%' }}
+                title="Close consignment inspector"
               >
-                Close
+                <X size={16} />
               </button>
-              <button 
-                className="btn btn-primary btn-sm"
-                onClick={() => {
-                  setSelectedAwb(inspectingShipment.awbNumber);
-                  setActiveTab('track');
-                  setInspectingShipment(null);
-                }}
-              >
-                Open Full Tracking Screen
-              </button>
+
+              {/* Modal Header */}
+              <div style={{ marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border-subtle)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
+                  <span className="mono" style={{ fontSize: '1.45rem', fontWeight: 900, color: 'var(--primary)' }}>
+                    {inspectingShipment.awbNumber}
+                  </span>
+                  <StatusBadge status={inspectingShipment.currentStatus} />
+                  <span style={{ fontSize: '0.75rem', padding: '3px 10px', borderRadius: '9999px', background: 'var(--bg-secondary)', border: '1px solid var(--border-medium)', color: 'var(--text-muted)', fontWeight: 700 }}>
+                    ORDER: {inspectingShipment.displayOrderId || ('ORD-' + (inspectingShipment.awbNumber || '').replace('AD-', ''))}
+                  </span>
+                </div>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0 }}>
+                  Service Tier: <strong style={{ color: 'var(--text-main)' }}>{inspectingShipment.serviceTier || 'Priority Air'}</strong> • 
+                  Category: <strong style={{ color: 'var(--text-main)' }}>{inspectingShipment.category || 'General Cargo'}</strong> • 
+                  Payment: <strong style={{ color: inspectingShipment.paymentMode === 'COD' ? '#F59E0B' : '#10B981' }}>{inspectingShipment.paymentMode || 'Prepaid'}</strong>
+                </p>
+              </div>
+
+              {/* Sender & Recipient Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.25rem', marginBottom: '1.5rem' }}>
+                <div style={{ padding: '1.25rem', background: 'var(--bg-secondary)', borderRadius: '18px', border: '1px solid var(--border-medium)' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    Origin &amp; Shipper
+                  </span>
+                  <div style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '0.4rem' }}>
+                    {sender.name || 'Merchant Shipper'}
+                  </div>
+                  <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '0.25rem', lineHeight: 1.4 }}>
+                    {sender.address || 'Cargo Facility'}<br />
+                    {sender.city}{sender.state ? `, ${sender.state}` : ''} {sender.pinCode ? `- ${sender.pinCode}` : ''}
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginTop: '0.5rem', fontWeight: 600 }}>
+                    Phone: {sender.phone || '+91 98000 00000'}
+                  </div>
+                </div>
+
+                <div style={{ padding: '1.25rem', background: 'var(--bg-secondary)', borderRadius: '18px', border: '1px solid var(--border-medium)' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#EF4444', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    Destination &amp; Recipient
+                  </span>
+                  <div style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '0.4rem' }}>
+                    {recipient.name || 'Consignee'}
+                  </div>
+                  <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '0.25rem', lineHeight: 1.4 }}>
+                    {recipient.address || 'Delivery Address'}<br />
+                    {recipient.city}{recipient.state ? `, ${recipient.state}` : ''} {recipient.pinCode ? `- ${recipient.pinCode}` : ''}
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginTop: '0.5rem', fontWeight: 600 }}>
+                    Phone: {recipient.phone || '+91 99000 00000'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Assigned Captain Card */}
+              {driver ? (
+                <div style={{ padding: '1.25rem', background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.35)', borderRadius: '18px', marginBottom: '1.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                      <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10B981', flexShrink: 0 }}>
+                        <Truck size={22} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#10B981', fontWeight: 800, letterSpacing: '0.04em' }}>
+                          ✓ Delivery Captain Assigned
+                        </div>
+                        <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                          Captain {driver.name}
+                        </div>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                          Phone: <strong>{driver.phone || '+91 90043 58469'}</strong> • Van: {driver.vehicleNumber || 'MH-02-EV-8469'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <a
+                        href={`tel:${driver.phone || '+919004358469'}`}
+                        className="btn btn-sm btn-secondary"
+                        style={{ padding: '0.45rem 0.85rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem', borderRadius: '9999px' }}
+                      >
+                        <span>📞 Call Captain</span>
+                      </a>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-primary"
+                        onClick={() => {
+                          setInspectingShipment(null);
+                          openChatbox();
+                        }}
+                        style={{ padding: '0.45rem 0.85rem', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '4px', borderRadius: '9999px' }}
+                      >
+                        <span>💬 Chat with Captain</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ padding: '1rem 1.25rem', background: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.25)', borderRadius: '18px', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <Clock size={18} color="#38BDF8" style={{ flexShrink: 0 }} />
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text-main)', fontWeight: 500 }}>
+                    Awaiting Delivery Captain acceptance. Dispatch broadcast active across nearby fleet terminals.
+                  </span>
+                </div>
+              )}
+
+              {/* Consignment Weight & Specs Summary Bar */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                <div style={{ padding: '0.75rem 1rem', background: 'var(--bg-secondary)', borderRadius: '14px', border: '1px solid var(--border-subtle)', textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>Billable Weight</div>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '2px' }}>{inspectingShipment.weightKg || 1.0} kg</div>
+                </div>
+                <div style={{ padding: '0.75rem 1rem', background: 'var(--bg-secondary)', borderRadius: '14px', border: '1px solid var(--border-subtle)', textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>Dimensions</div>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '2px' }}>{inspectingShipment.dimensions || '20 x 15 x 10 cm'}</div>
+                </div>
+                <div style={{ padding: '0.75rem 1rem', background: 'var(--bg-secondary)', borderRadius: '14px', border: '1px solid var(--border-subtle)', textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>Declared Value</div>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '2px' }}>₹{(inspectingShipment.declaredValue || 1500).toLocaleString()}</div>
+                </div>
+                <div style={{ padding: '0.75rem 1rem', background: 'var(--bg-secondary)', borderRadius: '14px', border: '1px solid var(--border-subtle)', textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>Payment Method</div>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 800, color: inspectingShipment.paymentMode === 'COD' ? '#F59E0B' : '#10B981', marginTop: '2px' }}>{inspectingShipment.paymentMode || 'Prepaid'}</div>
+                </div>
+              </div>
+
+              {/* Proof of Delivery (If Delivered) */}
+              {inspectingShipment.proofOfDelivery && (
+                <div style={{ padding: '1rem 1.25rem', background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: '18px', marginBottom: '1.5rem' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#10B981', textTransform: 'uppercase' }}>
+                    Proof-of-Delivery Verification
+                  </span>
+                  <div style={{ fontSize: '0.9rem', color: 'var(--text-main)', marginTop: '0.3rem', fontWeight: 700 }}>
+                    Delivered To: {inspectingShipment.proofOfDelivery.deliveredTo || 'Authorized Recipient'}
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                    Method: {inspectingShipment.proofOfDelivery.verificationMethod || 'Digital OTP & Photo'} • Timestamp: {inspectingShipment.proofOfDelivery.timestamp || 'Recorded'}
+                  </div>
+                </div>
+              )}
+
+              {/* Milestone History Timeline */}
+              <div>
+                <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.75rem' }}>
+                  Consignment Milestone Timeline
+                </h4>
+                <TrackingTimeline events={inspectingShipment.events || []} />
+              </div>
+
+              {/* Modal Bottom Actions */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-subtle)' }}>
+                <button 
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setInspectingShipment(null)}
+                  style={{ borderRadius: '9999px', padding: '0.55rem 1.25rem' }}
+                >
+                  Close
+                </button>
+                <button 
+                  className="btn btn-primary btn-sm"
+                  onClick={() => {
+                    setSelectedAwb(inspectingShipment.awbNumber);
+                    setActiveTab('track');
+                    setInspectingShipment(null);
+                  }}
+                  style={{ borderRadius: '9999px', padding: '0.55rem 1.35rem', fontWeight: 700 }}
+                >
+                  Open Full Tracking Radar ➔
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

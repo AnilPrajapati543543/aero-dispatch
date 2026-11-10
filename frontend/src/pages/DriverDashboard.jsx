@@ -22,8 +22,19 @@ import {
   AlertTriangle,
   LogOut,
   Globe,
-  ShieldCheck
+  ShieldCheck,
+  Navigation,
+  CheckCircle
 } from 'lucide-react';
+
+// Dynamic realistic route estimation per consignment (Never static ~15.2 km)
+export const getEstimatedRoute = (awb, weight = 1.5) => {
+  const numPart = (awb || '').replace(/\D/g, '') || '8469';
+  const seed = parseInt(numPart.slice(-4), 10) || 1234;
+  const km = (3.2 + (seed % 215) / 10).toFixed(1);
+  const mins = Math.round(Number(km) * 2.2 + 8 + (seed % 6));
+  return { km, mins };
+};
 
 export default function DriverDashboard() {
   const { 
@@ -54,7 +65,10 @@ export default function DriverDashboard() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [actionError, setActionError] = useState('');
 
-  // Tab filtering for driver's run sheet
+  // Top-level Captain Dashboard view section: 'assigned' (default) | 'available' | 'completed'
+  const [captainSection, setCaptainSection] = useState('assigned');
+
+  // Tab filtering for captain's run sheet
   const [activeTabFilter, setActiveTabFilter] = useState('ALL');
 
   // Driver Run Sheet Skeleton Loading - strictly 1.0s as requested
@@ -66,52 +80,58 @@ export default function DriverDashboard() {
       setIsDriverLoading(false);
     }, 1000); // 1.0s management skeleton loading
     return () => clearTimeout(timer);
-  }, [activeTabFilter]);
+  }, [activeTabFilter, captainSection]);
 
-  // Filter shipments assigned to current driver or ready for pickup
-  const driverShipments = useMemo(() => {
+  // Filter shipments assigned strictly to current Captain
+  const myAssignedShipments = useMemo(() => {
     const dId = currentUser?.driverId || 'DRV-8469';
     return shipments.filter(s => 
-      (s.assignedDriver && s.assignedDriver.driverId === dId) ||
-      (s.assignedDriver && s.assignedDriver.name?.toLowerCase() === currentUser?.name?.toLowerCase()) ||
-      (!s.assignedDriver && (s.currentStatus === 'BOOKED' || s.currentStatus === 'PICKUP_SCHEDULED'))
+      (s.assignedDriver && (s.assignedDriver.driverId === dId || s.assignedDriver.name?.toLowerCase() === currentUser?.name?.toLowerCase())) ||
+      s.driverId === dId
     );
   }, [shipments, currentUser]);
 
-  // Unassigned shipments waiting for driver pickup / acceptance
+  // Unassigned broadcast shipments waiting for captain acceptance
   const availableOrders = useMemo(() => {
     const dId = currentUser?.driverId || 'DRV-8469';
     return shipments.filter(s => 
       !s.assignedDriver &&
-      (s.currentStatus === 'BOOKED' || s.currentStatus === 'PICKUP_SCHEDULED') &&
+      (s.currentStatus === 'BOOKED' || s.currentStatus === 'PICKUP_SCHEDULED' || s.status === 'booked') &&
       !(s.declinedByDrivers && s.declinedByDrivers.includes(dId))
     );
   }, [shipments, currentUser]);
 
-  const completedCount = driverShipments.filter(s => s.currentStatus === 'DELIVERED').length;
-  const pendingCount = driverShipments.filter(s => s.currentStatus !== 'DELIVERED' && s.currentStatus !== 'FAILED_ATTEMPT').length;
-  const exceptionCount = driverShipments.filter(s => s.currentStatus === 'FAILED_ATTEMPT').length;
+  // Real-world single active delivery constraint: Currently ongoing delivery
+  const activeOngoingDelivery = useMemo(() => {
+    return myAssignedShipments.find(s => 
+      s.currentStatus !== 'DELIVERED' && s.status !== 'delivered'
+    );
+  }, [myAssignedShipments]);
+
+  const completedCount = myAssignedShipments.filter(s => s.currentStatus === 'DELIVERED').length;
+  const pendingCount = myAssignedShipments.filter(s => s.currentStatus !== 'DELIVERED' && s.currentStatus !== 'FAILED_ATTEMPT').length;
+  const exceptionCount = myAssignedShipments.filter(s => s.currentStatus === 'FAILED_ATTEMPT').length;
 
   // Calculate COD cash to collect
   const codToCollect = useMemo(() => {
-    return driverShipments
+    return myAssignedShipments
       .filter(s => s.paymentMode === 'COD' && s.currentStatus !== 'DELIVERED')
       .reduce((acc, curr) => acc + (parseFloat(curr.declaredValue) || 0), 0);
-  }, [driverShipments]);
+  }, [myAssignedShipments]);
 
   // Filtered list based on active tab
   const filteredDriverShipments = useMemo(() => {
     if (activeTabFilter === 'PENDING') {
-      return driverShipments.filter(s => s.currentStatus !== 'DELIVERED' && s.currentStatus !== 'FAILED_ATTEMPT');
+      return myAssignedShipments.filter(s => s.currentStatus !== 'DELIVERED' && s.currentStatus !== 'FAILED_ATTEMPT');
     }
     if (activeTabFilter === 'DELIVERED') {
-      return driverShipments.filter(s => s.currentStatus === 'DELIVERED');
+      return myAssignedShipments.filter(s => s.currentStatus === 'DELIVERED');
     }
     if (activeTabFilter === 'EXCEPTIONS') {
-      return driverShipments.filter(s => s.currentStatus === 'FAILED_ATTEMPT');
+      return myAssignedShipments.filter(s => s.currentStatus === 'FAILED_ATTEMPT');
     }
-    return driverShipments;
-  }, [driverShipments, activeTabFilter]);
+    return myAssignedShipments;
+  }, [myAssignedShipments, activeTabFilter]);
 
   const handleFileChange = (e) => {
     setActionError('');
@@ -222,9 +242,9 @@ export default function DriverDashboard() {
       await updateShipmentStatus(
         awbNumber,
         'OUT_FOR_DELIVERY',
-        'Driver departed facility. Package is out for delivery.'
+        'Delivery Captain departed facility. Consignment is out for delivery with Captain.'
       );
-      addToast(`Package ${awbNumber} is out for delivery!`, 'info');
+      addToast(`Consignment ${awbNumber} is out for delivery with Captain!`, 'info');
     } catch (err) {
       addToast(`Could not start delivery run: ${err.message}`, 'error');
     } finally {
@@ -236,377 +256,652 @@ export default function DriverDashboard() {
 
   return (
     <div>
-      {/* 1. Driver Profile Header (Exact Google Rounded Card Layout with 5 Capsule Stat Pills) */}
+      {/* 1. Captain Profile Header (Exact Google Rounded Card Layout with 5 Capsule Stat Pills) */}
       <div style={{ marginBottom: '1.75rem' }}>
         <ProfileOverviewCard 
           onEditClick={() => setActiveTab('settings')}
           allowInlineEdit={true}
           customStats={[
-            { label: "Today's Stops", value: `${driverShipments.length} Assigned` },
+            { label: "Today's Stops", value: `${myAssignedShipments.length} Assigned` },
             { label: "Delivered", value: `${completedCount} Completed` },
-            { label: "Driver Rating", value: "4.98 ★" },
+            { label: "Captain Rating", value: "4.98 ★" },
             { label: "Assigned Van", value: currentUser?.vehicleNumber || currentUser?.vehicle || 'MH-02-EV-8469' },
             { label: "Base Hub", value: currentUser?.hub || 'BOM-01 Gateway' }
           ]}
         />
       </div>
 
-      {/* Real-time Incoming Dispatch Requests Card (Accept / Decline) */}
-      {availableOrders.length > 0 && (
-        <div 
-          className="card" 
-          style={{ 
-            marginBottom: '2rem', 
-            border: '2px solid rgba(239, 68, 68, 0.45)', 
-            background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(15, 23, 42, 0.5) 100%)',
-            boxShadow: '0 10px 30px rgba(239, 68, 68, 0.15)',
-            padding: '1.5rem',
-            borderRadius: 'var(--radius-lg)'
-          }}
+      {/* 2. Real-World Captain Section Navigation Tabs */}
+      <div 
+        className="card" 
+        style={{ 
+          padding: '0.45rem', 
+          display: 'flex', 
+          gap: '0.45rem', 
+          overflowX: 'auto', 
+          marginBottom: '1.75rem',
+          borderRadius: '9999px',
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border-medium)'
+        }}
+      >
+        <button
+          type="button"
+          className={`btn btn-sm ${captainSection === 'assigned' ? 'btn-primary' : 'btn-secondary'}`}
+          onClick={() => setCaptainSection('assigned')}
+          style={{ flex: 1, minWidth: '190px', borderRadius: '9999px', padding: '0.65rem 1.25rem', fontWeight: 800, fontSize: '0.85rem' }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem', borderBottom: '1px solid rgba(239, 68, 68, 0.2)', paddingBottom: '0.85rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.2)', color: '#EF4444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Package size={22} />
+          <Truck size={16} />
+          <span>Assigned Deliveries ({pendingCount})</span>
+        </button>
+
+        <button
+          type="button"
+          className={`btn btn-sm ${captainSection === 'available' ? 'btn-primary' : 'btn-secondary'}`}
+          onClick={() => setCaptainSection('available')}
+          style={{ flex: 1, minWidth: '190px', borderRadius: '9999px', padding: '0.65rem 1.25rem', fontWeight: 800, fontSize: '0.85rem', position: 'relative' }}
+        >
+          <Package size={16} />
+          <span>Available Pickups ({availableOrders.length})</span>
+          {availableOrders.length > 0 && (
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#EF4444', display: 'inline-block', marginLeft: '6px' }} />
+          )}
+        </button>
+
+        <button
+          type="button"
+          className={`btn btn-sm ${captainSection === 'completed' ? 'btn-primary' : 'btn-secondary'}`}
+          onClick={() => setCaptainSection('completed')}
+          style={{ flex: 1, minWidth: '190px', borderRadius: '9999px', padding: '0.65rem 1.25rem', fontWeight: 800, fontSize: '0.85rem' }}
+        >
+          <CheckCircle2 size={16} />
+          <span>Delivered History ({completedCount})</span>
+        </button>
+      </div>
+
+      {/* =========================================================================
+          SECTION 1: ASSIGNED DELIVERIES & ROUTE RUN SHEET
+          ========================================================================= */}
+      {captainSection === 'assigned' && (
+        <div>
+          {/* Captain Daily Run KPIs */}
+          <div className="grid-cols-4" style={{ marginBottom: '1.75rem' }}>
+            <div className="metric-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Assigned Stops</span>
+                <Package size={18} color="var(--primary)" />
               </div>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>
-                    Incoming Customer Consignments
-                  </h3>
-                  <span style={{ fontSize: '0.72rem', background: '#EF4444', color: '#FFFFFF', padding: '2px 8px', borderRadius: '9999px', fontWeight: 800 }}>
-                    {availableOrders.length} READY FOR PICKUP
-                  </span>
-                </div>
-                <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                  New customer booked shipments waiting for courier acceptance. Review route and accept to add to your delivery run sheet.
-                </p>
+              <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)' }}>{myAssignedShipments.length}</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '0.25rem' }}>Today's Route Plan</div>
+            </div>
+
+            <div className="metric-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Pending Delivery</span>
+                <Clock size={18} color="var(--accent-amber)" />
               </div>
+              <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--accent-amber)' }}>{pendingCount}</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '0.25rem' }}>Awaiting Handover</div>
+            </div>
+
+            <div className="metric-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Delivered &amp; Verified</span>
+                <CheckCircle2 size={18} color="var(--accent-emerald)" />
+              </div>
+              <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--accent-emerald)' }}>{completedCount}</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '0.25rem' }}>Proof Captured</div>
+            </div>
+
+            <div className="metric-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>COD Cash to Collect</span>
+                <IndianRupee size={18} color="var(--accent-cyan)" />
+              </div>
+              <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)' }}>₹{codToCollect.toLocaleString()}</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '0.25rem' }}>Across Pending Stops</div>
             </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {availableOrders.map(order => (
-              <div 
-                key={order.awbNumber || order.orderId}
-                className="card"
-                style={{
-                  background: 'var(--bg-card)',
-                  border: '1px solid var(--border-medium)',
-                  padding: '1.25rem',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
-                  gap: '1.25rem',
-                  borderRadius: 'var(--radius-md)'
-                }}
-              >
-                <div style={{ flex: '1 1 360px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: '0.78rem', padding: '3px 8px', borderRadius: '4px', background: 'rgba(245, 158, 11, 0.15)', color: '#F59E0B', fontWeight: 800 }}>
-                      ORDER ID: {order.displayOrderId || 'ORD-' + (order.awbNumber || '').replace('AD-', '')}
-                    </span>
-                    <span className="mono" style={{ fontSize: '0.92rem', fontWeight: 800, color: '#00F0FF' }}>
-                      AWB: {order.awbNumber}
-                    </span>
-                    <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: '4px', background: 'rgba(56, 189, 248, 0.15)', color: '#38BDF8', fontWeight: 700 }}>
-                      {order.serviceTier || 'Express Air'}
-                    </span>
-                    <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: '4px', background: order.paymentMode === 'COD' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)', color: order.paymentMode === 'COD' ? '#F59E0B' : '#10B981', fontWeight: 700 }}>
-                      {order.paymentMode || 'Prepaid'}
-                    </span>
+          {/* Real-World Spotlight: Single Active Ongoing Consignment Card */}
+          {activeOngoingDelivery && (
+            <div 
+              className="card"
+              style={{
+                marginBottom: '2rem',
+                border: '2px solid var(--accent-emerald)',
+                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(15, 23, 42, 0.5) 100%)',
+                padding: '1.5rem 1.75rem',
+                borderRadius: '24px',
+                boxShadow: '0 10px 30px rgba(16, 185, 129, 0.15)'
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', borderBottom: '1px solid rgba(16, 185, 129, 0.25)', paddingBottom: '0.85rem', marginBottom: '1.25rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.2)', color: 'var(--accent-emerald)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Navigation size={22} />
                   </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.65rem', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                    <div>
-                      <strong style={{ color: 'var(--text-main)' }}>Pickup:</strong> {order.sender?.city || 'Origin'} ({order.sender?.address?.substring(0, 32)}...)
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                      <span style={{ fontSize: '0.75rem', background: 'var(--accent-emerald)', color: '#070B14', fontWeight: 900, padding: '2px 8px', borderRadius: '9999px', letterSpacing: '0.04em' }}>
+                        ACTIVE DELIVERY IN PROGRESS (1 OF 1)
+                      </span>
+                      <span className="mono" style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--primary)' }}>
+                        AWB: {activeOngoingDelivery.awbNumber}
+                      </span>
                     </div>
-                    <div>
-                      <strong style={{ color: 'var(--text-main)' }}>Drop-off:</strong> {order.recipient?.city || 'Destination'} ({order.recipient?.name})
-                    </div>
-                    <div style={{ color: '#00F0FF', fontWeight: 700 }}>
-                      <strong>📍 Est. Route:</strong> ~15.2 km • ~35 mins
-                    </div>
-                    <div>
-                      <strong style={{ color: 'var(--text-main)' }}>Parcel:</strong> {order.category || 'General'} • {order.weightKg} kg (₹{order.declaredValue?.toLocaleString() || 1500})
-                    </div>
+                    <p style={{ margin: '3px 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                      You are currently navigating to deliver this parcel. Complete this delivery before taking another consignment.
+                    </p>
                   </div>
                 </div>
 
-                {/* Accept / Decline Action Buttons */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                {(() => {
+                  const est = getEstimatedRoute(activeOngoingDelivery.awbNumber, activeOngoingDelivery.weightKg);
+                  return (
+                    <div style={{ padding: '0.45rem 1rem', background: 'rgba(0, 240, 255, 0.12)', border: '1px solid rgba(0, 240, 255, 0.3)', borderRadius: '9999px', fontSize: '0.85rem', fontWeight: 800, color: '#00F0FF' }}>
+                      📍 Route: ~{est.km} km • ~{est.mins} mins
+                    </div>
+                  );
+                })()}
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.25rem' }}>
+                <div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                    Drop-off: {activeOngoingDelivery.recipient?.name || 'Customer Recipient'}
+                  </div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <MapPin size={15} color="var(--primary)" />
+                    <span>{activeOngoingDelivery.recipient?.address || 'Delivery Address'}, {activeOngoingDelivery.recipient?.city}</span>
+                  </div>
+                  {activeOngoingDelivery.recipient?.phone && (
+                    <a
+                      href={`tel:${activeOngoingDelivery.recipient.phone}`}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--primary)', textDecoration: 'none', fontSize: '0.82rem', fontWeight: 700, marginTop: '6px' }}
+                    >
+                      <Phone size={13} />
+                      <span>Call Customer: {activeOngoingDelivery.recipient.phone}</span>
+                    </a>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                   <button
                     type="button"
-                    className="btn btn-secondary"
-                    style={{ borderColor: 'rgba(239, 68, 68, 0.4)', color: '#EF4444', fontWeight: 700, padding: '0.6rem 1rem' }}
-                    onClick={() => declineDriverOrder(order.awbNumber)}
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => openDeliveryModal(activeOngoingDelivery.awbNumber, 'exception')}
+                    style={{ borderRadius: '9999px', padding: '0.6rem 1.15rem', color: '#EF4444', borderColor: 'rgba(239, 68, 68, 0.35)' }}
                   >
-                    <X size={15} style={{ marginRight: '4px' }} />
-                    <span>Decline</span>
+                    <AlertCircle size={15} />
+                    <span>Report Exception</span>
                   </button>
 
                   <button
                     type="button"
                     className="btn btn-primary"
-                    style={{ background: '#10B981', borderColor: '#10B981', color: '#FFFFFF', fontWeight: 800, padding: '0.6rem 1.25rem', boxShadow: '0 4px 15px rgba(16, 185, 129, 0.35)' }}
-                    onClick={() => acceptDriverOrder(order.awbNumber)}
+                    onClick={() => openDeliveryModal(activeOngoingDelivery.awbNumber, 'complete')}
+                    style={{ borderRadius: '9999px', padding: '0.65rem 1.45rem', fontWeight: 800, background: '#10B981', borderColor: '#10B981', boxShadow: '0 4px 15px rgba(16, 185, 129, 0.4)' }}
                   >
-                    <Check size={16} style={{ marginRight: '6px' }} />
-                    <span>Accept Consignment ➔</span>
+                    <CheckCircle2 size={16} />
+                    <span>Complete Delivery &amp; Capture POD ➔</span>
                   </button>
                 </div>
               </div>
-            ))}
+            </div>
+          )}
+
+          {/* Manifest Queue Header & Filter Controls */}
+          <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+            <div>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 800 }}>Assigned Deliveries Queue</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Your daily delivery stops and dispatch route plan</p>
+            </div>
+
+            {/* Filter Pills */}
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              {[
+                { id: 'ALL', label: `All (${myAssignedShipments.length})` },
+                { id: 'PENDING', label: `Pending (${pendingCount})` },
+                { id: 'DELIVERED', label: `Delivered (${completedCount})` },
+                { id: 'EXCEPTIONS', label: `Exceptions (${exceptionCount})` },
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  className={`btn btn-sm ${activeTabFilter === tab.id ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => setActiveTabFilter(tab.id)}
+                  style={{ borderRadius: '9999px' }}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           </div>
+
+          {(isLoadingOrders || isDriverLoading) ? (
+            <SkeletonRunSheet count={3} />
+          ) : filteredDriverShipments.length === 0 ? (
+            <div className="card" style={{ textAlign: 'center', padding: '3.5rem 1.5rem', borderRadius: '24px' }}>
+              <Truck size={42} color="var(--text-dim)" style={{ margin: '0 auto 1rem' }} />
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--text-main)', marginBottom: '0.5rem' }}>No Stops in this Category</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', maxWidth: '440px', margin: '0 auto' }}>
+                {activeTabFilter === 'ALL'
+                  ? 'There are currently no deliveries assigned to your route. Check "Available Pickups" to accept new consignments.'
+                  : `No deliveries currently matching "${activeTabFilter}". Switch to "All" to inspect all stops.`}
+              </p>
+            </div>
+          ) : (
+            <div className="driver-cockpit-scroll-container" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', paddingBottom: '2.5rem' }}>
+              {filteredDriverShipments.map((ship, idx) => (
+                <div 
+                  key={ship.awbNumber} 
+                  className="card" 
+                  style={{ 
+                    padding: '1.5rem',
+                    marginBottom: 0,
+                    borderRadius: '20px',
+                    borderLeft: ship.currentStatus === 'DELIVERED' 
+                      ? '5px solid var(--accent-emerald)' 
+                      : ship.currentStatus === 'FAILED_ATTEMPT' 
+                        ? '5px solid var(--accent-rose)' 
+                        : '5px solid var(--accent-amber)' 
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+                    <div style={{ flex: '1 1 320px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
+                        <span style={{ 
+                          width: '26px', 
+                          height: '26px', 
+                          borderRadius: '50%', 
+                          background: 'rgba(255, 255, 255, 0.08)', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          fontSize: '0.75rem', 
+                          fontWeight: 800 
+                        }}>
+                          #{idx + 1}
+                        </span>
+                        <span className="mono" style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--primary)' }}>
+                          {ship.awbNumber}
+                        </span>
+                        <CopyButton text={ship.awbNumber} size="sm" label="" />
+                        <StatusBadge status={ship.currentStatus} />
+                        <span style={{ 
+                          fontSize: '0.75rem', 
+                          fontWeight: 700, 
+                          padding: '2px 8px', 
+                          borderRadius: '9999px',
+                          background: (ship.paymentMode?.toUpperCase() === 'PREPAID') ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.15)',
+                          color: (ship.paymentMode?.toUpperCase() === 'PREPAID') ? 'var(--accent-emerald)' : 'var(--accent-amber)'
+                        }}>
+                          {(ship.paymentMode?.toUpperCase() === 'PREPAID') 
+                            ? 'PREPAID' 
+                            : `COLLECT COD: ₹${ship.codAmount ?? ship.declaredValue ?? 0}`}
+                        </span>
+                      </div>
+
+                      {/* Recipient Details */}
+                      <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)', marginTop: '0.5rem' }}>
+                        {ship.recipient?.name || 'Customer Recipient'}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '0.25rem' }}>
+                        <MapPin size={14} color="var(--primary)" />
+                        <span>{ship.recipient?.address || 'Delivery Address'}, {ship.recipient?.city || 'City'} - {ship.recipient?.pinCode || ''}</span>
+                      </div>
+
+                      {/* Route distance dynamic */}
+                      {(() => {
+                        const est = getEstimatedRoute(ship.awbNumber, ship.weightKg);
+                        return (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginTop: '0.75rem', fontSize: '0.8rem', color: 'var(--text-dim)', flexWrap: 'wrap' }}>
+                            <span style={{ color: '#00F0FF', fontWeight: 700 }}>
+                              📍 ~{est.km} km • ~{est.mins} mins
+                            </span>
+                            <span>Weight: <strong>{ship.weightKg || '1'} kg</strong></span>
+                            <span>Type: <strong>{ship.category || 'General Parcel'}</strong></span>
+                            {ship.recipient?.phone && (
+                              <a 
+                                href={`tel:${ship.recipient.phone}`}
+                                style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: 'var(--primary)', textDecoration: 'none' }}
+                                title="Call Recipient"
+                              >
+                                <Phone size={12} />
+                                <strong>{ship.recipient.phone}</strong>
+                              </a>
+                            )}
+                          </div>
+                        );
+                      })()}
+
+                      {/* Proof of Delivery Details if completed */}
+                      {ship.proofOfDelivery && (
+                        <div style={{ 
+                          marginTop: '0.85rem', 
+                          padding: '0.75rem 1rem', 
+                          background: 'rgba(16, 185, 129, 0.08)', 
+                          border: '1px solid rgba(16, 185, 129, 0.25)', 
+                          borderRadius: '16px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '1rem',
+                          flexWrap: 'wrap'
+                        }}>
+                          <CheckCircle2 size={18} color="var(--accent-emerald)" />
+                          <div style={{ fontSize: '0.8rem' }}>
+                            <strong>Delivered to:</strong> {ship.proofOfDelivery.deliveredTo} • <em>{ship.proofOfDelivery.verificationMethod}</em>
+                          </div>
+                          {ship.proofOfDelivery.photoUrl && (
+                            <button 
+                              type="button"
+                              className="btn btn-secondary btn-sm"
+                              onClick={() => setViewingPhoto({
+                                url: resolvePhotoUrl(ship.proofOfDelivery.photoUrl),
+                                awb: ship.awbNumber,
+                                deliveredTo: ship.proofOfDelivery.deliveredTo,
+                                timestamp: ship.proofOfDelivery.timestamp,
+                                verificationMethod: ship.proofOfDelivery.verificationMethod,
+                                aiConfidence: ship.proofOfDelivery.aiConfidence
+                              })}
+                              style={{ 
+                                fontSize: '0.75rem', 
+                                padding: '0.25rem 0.6rem', 
+                                borderRadius: '9999px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.35rem',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              <Camera size={13} color="var(--primary)" />
+                              <span>View Uploaded Photo</span>
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Action Buttons for Captain */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', minWidth: '180px' }}>
+                      {ship.currentStatus !== 'DELIVERED' ? (
+                        <>
+                          <button
+                            className="btn btn-success"
+                            style={{ width: '100%', borderRadius: '9999px' }}
+                            disabled={isSubmitting}
+                            onClick={() => openDeliveryModal(ship.awbNumber, 'complete')}
+                          >
+                            <CheckCircle2 size={16} />
+                            <span>Deliver with Proof</span>
+                          </button>
+
+                          {ship.currentStatus !== 'OUT_FOR_DELIVERY' && (
+                            <button
+                              className="btn btn-secondary btn-sm"
+                              style={{ width: '100%', borderRadius: '9999px' }}
+                              disabled={isSubmitting}
+                              onClick={() => handleStartRun(ship.awbNumber)}
+                            >
+                              <Truck size={14} />
+                              <span>Start Delivery Run</span>
+                            </button>
+                          )}
+
+                          <button
+                            className="btn btn-danger btn-sm"
+                            style={{ width: '100%', borderRadius: '9999px' }}
+                            disabled={isSubmitting}
+                            onClick={() => openDeliveryModal(ship.awbNumber, 'exception')}
+                          >
+                            <AlertCircle size={14} />
+                            <span>Report Exception</span>
+                          </button>
+                        </>
+                      ) : (
+                        <div style={{ textAlign: 'center', padding: '0.5rem', color: 'var(--accent-emerald)', fontWeight: 700, fontSize: '0.85rem' }}>
+                          ✓ Delivery Complete
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      {/* Driver Daily Run KPIs */}
-      <div className="grid-cols-4" style={{ marginBottom: '2rem' }}>
-        <div className="metric-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Assigned Stops</span>
-            <Package size={18} color="var(--primary)" />
-          </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)' }}>{driverShipments.length}</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '0.25rem' }}>Today's Route Plan</div>
-        </div>
-
-        <div className="metric-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Pending Delivery</span>
-            <Clock size={18} color="var(--accent-amber)" />
-          </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--accent-amber)' }}>{pendingCount}</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '0.25rem' }}>Awaiting Handover</div>
-        </div>
-
-        <div className="metric-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Delivered &amp; Verified</span>
-            <CheckCircle2 size={18} color="var(--accent-emerald)" />
-          </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--accent-emerald)' }}>{completedCount}</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '0.25rem' }}>Proof Captured</div>
-        </div>
-
-        <div className="metric-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>COD Cash to Collect</span>
-            <IndianRupee size={18} color="var(--accent-cyan)" />
-          </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)' }}>₹{codToCollect.toLocaleString()}</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '0.25rem' }}>Across Pending Stops</div>
-        </div>
-      </div>
-
-      {/* Manifest Items List & Tab Controls */}
-      <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+      {/* =========================================================================
+          SECTION 2: AVAILABLE PICKUPS (BROADCAST CUSTOMER CONSIGNMENTS)
+          ========================================================================= */}
+      {captainSection === 'available' && (
         <div>
-          <h2 style={{ fontSize: '1.25rem' }}>Assigned Deliveries</h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Today's delivery stops and route plan</p>
-        </div>
-
-        {/* Filter Pills */}
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          {[
-            { id: 'ALL', label: `All (${driverShipments.length})` },
-            { id: 'PENDING', label: `Pending (${pendingCount})` },
-            { id: 'DELIVERED', label: `Delivered (${completedCount})` },
-            { id: 'EXCEPTIONS', label: `Exceptions (${exceptionCount})` },
-          ].map(tab => (
-            <button
-              key={tab.id}
-              type="button"
-              className={`btn btn-sm ${activeTabFilter === tab.id ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => setActiveTabFilter(tab.id)}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {(isLoadingOrders || isDriverLoading) ? (
-        <SkeletonRunSheet count={3} />
-      ) : filteredDriverShipments.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', padding: '3.5rem 1.5rem' }}>
-          <Truck size={42} color="var(--text-dim)" style={{ margin: '0 auto 1rem' }} />
-          <h3 style={{ fontSize: '1.15rem', color: 'var(--text-main)', marginBottom: '0.5rem' }}>No Stops in this Category</h3>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', maxWidth: '440px', margin: '0 auto' }}>
-            {activeTabFilter === 'ALL'
-              ? 'There are currently no deliveries assigned to your route.'
-              : `No deliveries currently matching "${activeTabFilter}". Switch to "All" to inspect all stops.`}
-          </p>
-        </div>
-      ) : (
-        <div className="driver-cockpit-scroll-container" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', paddingBottom: '2.5rem' }}>
-          {filteredDriverShipments.map((ship, idx) => (
+          {/* Active Delivery Single Lock Banner */}
+          {activeOngoingDelivery && (
             <div 
-              key={ship.awbNumber} 
-              className="card" 
               style={{ 
-                padding: '1.5rem',
-                marginBottom: 0,
-                borderLeft: ship.currentStatus === 'DELIVERED' 
-                  ? '4px solid var(--accent-emerald)' 
-                  : ship.currentStatus === 'FAILED_ATTEMPT' 
-                    ? '4px solid var(--accent-rose)' 
-                    : '4px solid var(--accent-amber)' 
+                padding: '1.15rem 1.5rem', 
+                background: 'rgba(245, 158, 11, 0.12)', 
+                border: '1.5px solid rgba(245, 158, 11, 0.35)', 
+                borderRadius: '20px', 
+                marginBottom: '1.75rem', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '1rem' 
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
-                <div style={{ flex: '1 1 320px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
-                    <span style={{ 
-                      width: '26px', 
-                      height: '26px', 
-                      borderRadius: '50%', 
-                      background: 'rgba(255, 255, 255, 0.08)', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center', 
-                      fontSize: '0.75rem', 
-                      fontWeight: 800 
-                    }}>
-                      #{idx + 1}
-                    </span>
-                    <span className="mono" style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--primary)' }}>
-                      {ship.awbNumber}
-                    </span>
-                    <CopyButton text={ship.awbNumber} size="sm" label="" />
-                    <StatusBadge status={ship.currentStatus} />
-                    <span style={{ 
-                      fontSize: '0.75rem', 
-                      fontWeight: 700, 
-                      padding: '2px 8px', 
-                      borderRadius: 'var(--radius-sm)',
-                      background: (ship.paymentMode?.toUpperCase() === 'PREPAID') ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.15)',
-                      color: (ship.paymentMode?.toUpperCase() === 'PREPAID') ? 'var(--accent-emerald)' : 'var(--accent-amber)'
-                    }}>
-                      {(ship.paymentMode?.toUpperCase() === 'PREPAID') 
-                        ? 'PREPAID' 
-                        : `COLLECT COD: ₹${ship.codAmount ?? ship.declaredValue ?? 0}`}
-                    </span>
-                  </div>
-
-                  {/* Recipient Details */}
-                  <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)', marginTop: '0.5rem' }}>
-                    {ship.recipient?.name || 'Customer Recipient'}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '0.25rem' }}>
-                    <MapPin size={14} color="var(--primary)" />
-                    <span>{ship.recipient?.address || 'Delivery Address'}, {ship.recipient?.city || 'City'} - {ship.recipient?.pinCode || ''}</span>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginTop: '0.75rem', fontSize: '0.8rem', color: 'var(--text-dim)', flexWrap: 'wrap' }}>
-                    <span>Weight: <strong>{ship.weightKg || '1'} kg</strong></span>
-                    <span>Type: <strong>{ship.category || 'General Parcel'}</strong></span>
-                    {ship.recipient?.phone && (
-                      <a 
-                        href={`tel:${ship.recipient.phone}`}
-                        style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: 'var(--primary)', textDecoration: 'none' }}
-                        title="Call Recipient"
-                      >
-                        <Phone size={12} />
-                        <strong>{ship.recipient.phone}</strong>
-                      </a>
-                    )}
-                  </div>
-
-                  {/* Proof of Delivery Details if completed */}
-                  {ship.proofOfDelivery && (
-                    <div style={{ 
-                      marginTop: '0.85rem', 
-                      padding: '0.75rem 1rem', 
-                      background: 'rgba(16, 185, 129, 0.08)', 
-                      border: '1px solid rgba(16, 185, 129, 0.25)', 
-                      borderRadius: 'var(--radius-md)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '1rem',
-                      flexWrap: 'wrap'
-                    }}>
-                      <CheckCircle2 size={18} color="var(--accent-emerald)" />
-                      <div style={{ fontSize: '0.8rem' }}>
-                        <strong>Delivered to:</strong> {ship.proofOfDelivery.deliveredTo} • <em>{ship.proofOfDelivery.verificationMethod}</em>
-                      </div>
-                      {ship.proofOfDelivery.photoUrl && (
-                        <button 
-                          type="button"
-                          className="btn btn-secondary btn-sm"
-                          onClick={() => setViewingPhoto({
-                            url: resolvePhotoUrl(ship.proofOfDelivery.photoUrl),
-                            awb: ship.awbNumber,
-                            deliveredTo: ship.proofOfDelivery.deliveredTo,
-                            timestamp: ship.proofOfDelivery.timestamp,
-                            verificationMethod: ship.proofOfDelivery.verificationMethod,
-                            aiConfidence: ship.proofOfDelivery.aiConfidence
-                          })}
-                          style={{ 
-                            fontSize: '0.75rem', 
-                            padding: '0.25rem 0.6rem', 
-                            borderRadius: '9999px',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.35rem',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          <Camera size={13} color="var(--primary)" />
-                          <span>View Uploaded Photo</span>
-                        </button>
-                      )}
-                    </div>
-                  )}
+              <AlertTriangle size={24} color="#F59E0B" style={{ flexShrink: 0 }} />
+              <div>
+                <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                  Active Delivery in Progress (AWB: {activeOngoingDelivery.awbNumber})
                 </div>
-
-                {/* Action Buttons for Driver */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', minWidth: '180px' }}>
-                  {ship.currentStatus !== 'DELIVERED' ? (
-                    <>
-                      <button
-                        className="btn btn-success"
-                        style={{ width: '100%' }}
-                        disabled={isSubmitting}
-                        onClick={() => openDeliveryModal(ship.awbNumber, 'complete')}
-                      >
-                        <CheckCircle2 size={16} />
-                        <span>Deliver with Proof</span>
-                      </button>
-
-                      {ship.currentStatus !== 'OUT_FOR_DELIVERY' && (
-                        <button
-                          className="btn btn-secondary btn-sm"
-                          style={{ width: '100%' }}
-                          disabled={isSubmitting}
-                          onClick={() => handleStartRun(ship.awbNumber)}
-                        >
-                          <Truck size={14} />
-                          <span>Start Delivery Run</span>
-                        </button>
-                      )}
-
-                      <button
-                        className="btn btn-danger btn-sm"
-                        style={{ width: '100%' }}
-                        disabled={isSubmitting}
-                        onClick={() => openDeliveryModal(ship.awbNumber, 'exception')}
-                      >
-                        <AlertCircle size={14} />
-                        <span>Report Exception</span>
-                      </button>
-                    </>
-                  ) : (
-                    <div style={{ textAlign: 'center', padding: '0.5rem', color: 'var(--accent-emerald)', fontWeight: 700, fontSize: '0.85rem' }}>
-                      ✓ Delivery Complete
-                    </div>
-                  )}
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                  As per fleet policy, captains can handle <strong>only 1 active delivery at a time</strong>. Please complete the ongoing delivery to unlock accepting new broadcast orders.
                 </div>
               </div>
             </div>
-          ))}
+          )}
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
+            <div>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 800 }}>Available Customer Pickups</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Broadcast consignments ready for courier captain acceptance</p>
+            </div>
+            <span style={{ fontSize: '0.8rem', background: '#EF4444', color: '#FFFFFF', padding: '4px 12px', borderRadius: '9999px', fontWeight: 800 }}>
+              {availableOrders.length} CONSIGNMENTS READY
+            </span>
+          </div>
+
+          {availableOrders.length === 0 ? (
+            <div className="card" style={{ textAlign: 'center', padding: '3.5rem 1.5rem', borderRadius: '24px' }}>
+              <Package size={44} color="var(--text-dim)" style={{ margin: '0 auto 1rem' }} />
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--text-main)', marginBottom: '0.5rem' }}>No New Consignments Awaiting Pickup</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', maxWidth: '440px', margin: '0 auto' }}>
+                All customer orders have been dispatched or assigned. New incoming orders will appear here in real time.
+              </p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', paddingBottom: '2.5rem' }}>
+              {availableOrders.map(order => {
+                const est = getEstimatedRoute(order.awbNumber, order.weightKg);
+                return (
+                  <div 
+                    key={order.awbNumber || order.orderId}
+                    className="card"
+                    style={{
+                      background: 'var(--bg-card)',
+                      border: '1px solid var(--border-medium)',
+                      padding: '1.5rem',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: '1.25rem',
+                      borderRadius: '20px'
+                    }}
+                  >
+                    <div style={{ flex: '1 1 360px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '0.78rem', padding: '3px 8px', borderRadius: '6px', background: 'rgba(245, 158, 11, 0.15)', color: '#F59E0B', fontWeight: 800 }}>
+                          ORDER: {order.displayOrderId || 'ORD-' + (order.awbNumber || '').replace('AD-', '')}
+                        </span>
+                        <span className="mono" style={{ fontSize: '1rem', fontWeight: 800, color: '#00F0FF' }}>
+                          AWB: {order.awbNumber}
+                        </span>
+                        <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: '9999px', background: 'rgba(56, 189, 248, 0.15)', color: '#38BDF8', fontWeight: 700 }}>
+                          {order.serviceTier || 'Express Air'}
+                        </span>
+                        <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: '9999px', background: order.paymentMode === 'COD' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)', color: order.paymentMode === 'COD' ? '#F59E0B' : '#10B981', fontWeight: 700 }}>
+                          {order.paymentMode || 'Prepaid'}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.65rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                        <div>
+                          <strong style={{ color: 'var(--text-main)' }}>Pickup:</strong> {order.sender?.city || 'Origin'} ({order.sender?.address?.substring(0, 30)}...)
+                        </div>
+                        <div>
+                          <strong style={{ color: 'var(--text-main)' }}>Drop-off:</strong> {order.recipient?.city || 'Destination'} ({order.recipient?.name})
+                        </div>
+                        <div style={{ color: '#00F0FF', fontWeight: 700 }}>
+                          <strong>📍 Est. Route:</strong> ~{est.km} km • ~{est.mins} mins
+                        </div>
+                        <div>
+                          <strong style={{ color: 'var(--text-main)' }}>Parcel:</strong> {order.category || 'General'} • {order.weightKg} kg (₹{order.declaredValue?.toLocaleString() || 1500})
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Accept / Decline Action Buttons with Single Delivery Lock */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        style={{ borderColor: 'rgba(239, 68, 68, 0.4)', color: '#EF4444', fontWeight: 700, padding: '0.6rem 1.15rem', borderRadius: '9999px' }}
+                        onClick={() => declineDriverOrder(order.awbNumber)}
+                      >
+                        <X size={15} style={{ marginRight: '4px' }} />
+                        <span>Decline</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        disabled={!!activeOngoingDelivery}
+                        style={{ 
+                          background: activeOngoingDelivery ? 'var(--bg-secondary)' : '#10B981', 
+                          borderColor: activeOngoingDelivery ? 'var(--border-medium)' : '#10B981', 
+                          color: activeOngoingDelivery ? 'var(--text-dim)' : '#FFFFFF', 
+                          fontWeight: 800, 
+                          padding: '0.6rem 1.35rem', 
+                          borderRadius: '9999px',
+                          cursor: activeOngoingDelivery ? 'not-allowed' : 'pointer',
+                          opacity: activeOngoingDelivery ? 0.6 : 1,
+                          boxShadow: activeOngoingDelivery ? 'none' : '0 4px 15px rgba(16, 185, 129, 0.35)' 
+                        }}
+                        onClick={() => acceptDriverOrder(order.awbNumber)}
+                        title={activeOngoingDelivery ? `Finish delivery ${activeOngoingDelivery.awbNumber} first` : 'Accept this consignment'}
+                      >
+                        <Check size={16} style={{ marginRight: '6px' }} />
+                        <span>{activeOngoingDelivery ? 'Active Delivery in Progress' : 'Accept Consignment ➔'}</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* =========================================================================
+          SECTION 3: DELIVERED HISTORY & PROOF OF DELIVERY
+          ========================================================================= */}
+      {captainSection === 'completed' && (
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
+            <div>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 800 }}>Delivered Consignments History</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Completed deliveries with digital OTP and photographic proof</p>
+            </div>
+            <span style={{ fontSize: '0.8rem', background: '#10B981', color: '#FFFFFF', padding: '4px 12px', borderRadius: '9999px', fontWeight: 800 }}>
+              {completedCount} DELIVERED SAFELY
+            </span>
+          </div>
+
+          {completedCount === 0 ? (
+            <div className="card" style={{ textAlign: 'center', padding: '3.5rem 1.5rem', borderRadius: '24px' }}>
+              <CheckCircle size={44} color="var(--accent-emerald)" style={{ margin: '0 auto 1rem' }} />
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--text-main)', marginBottom: '0.5rem' }}>No Completed Deliveries Yet</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', maxWidth: '440px', margin: '0 auto' }}>
+                Deliveries that you complete and capture proof for today will appear in this log.
+              </p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', paddingBottom: '2.5rem' }}>
+              {myAssignedShipments.filter(s => s.currentStatus === 'DELIVERED').map(ship => (
+                <div 
+                  key={ship.awbNumber}
+                  className="card"
+                  style={{
+                    padding: '1.5rem',
+                    borderRadius: '20px',
+                    borderLeft: '5px solid var(--accent-emerald)',
+                    background: 'var(--bg-card)'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
+                        <span className="mono" style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--primary)' }}>
+                          {ship.awbNumber}
+                        </span>
+                        <StatusBadge status={ship.currentStatus} />
+                        <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '9999px', background: 'rgba(16, 185, 129, 0.15)', color: '#10B981', fontWeight: 700 }}>
+                          MODE: {ship.paymentMode || 'Prepaid'}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                        Recipient: {ship.recipient?.name || 'Customer'}
+                      </div>
+                      <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                        {ship.recipient?.address}, {ship.recipient?.city}
+                      </div>
+
+                      {ship.proofOfDelivery && (
+                        <div style={{ marginTop: '0.85rem', padding: '0.65rem 1rem', background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: '14px', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                          <CheckCircle2 size={16} color="var(--accent-emerald)" />
+                          <span style={{ fontSize: '0.8rem', color: 'var(--text-main)' }}>
+                            Delivered to: <strong>{ship.proofOfDelivery.deliveredTo}</strong> • Time: {ship.proofOfDelivery.timestamp}
+                          </span>
+                          {ship.proofOfDelivery.photoUrl && (
+                            <button
+                              type="button"
+                              className="btn btn-secondary btn-sm"
+                              onClick={() => setViewingPhoto({
+                                url: resolvePhotoUrl(ship.proofOfDelivery.photoUrl),
+                                awb: ship.awbNumber,
+                                deliveredTo: ship.proofOfDelivery.deliveredTo,
+                                timestamp: ship.proofOfDelivery.timestamp,
+                                verificationMethod: ship.proofOfDelivery.verificationMethod,
+                                aiConfidence: ship.proofOfDelivery.aiConfidence
+                              })}
+                              style={{ borderRadius: '9999px', fontSize: '0.75rem', padding: '0.2rem 0.6rem' }}
+                            >
+                              <Camera size={12} color="var(--primary)" />
+                              <span>View POD Photo</span>
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

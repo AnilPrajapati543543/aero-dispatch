@@ -64,11 +64,12 @@
   --font-mono: 'JetBrains Mono', monospace;
 
   /* Shadows & Radius - Google Material 3 Fully Rounded Design */
-  --radius-sm: 14px;
-  --radius-md: 9999px;
+  --radius-sm: 10px;
+  --radius-md: 16px;
   --radius-lg: 24px;
   --radius-xl: 28px;
   --radius-full: 9999px;
+  --radius-pill: 9999px;
   
   /* Google Material 3 Color Tokens & Shadows */
   --google-blue: #1A73E8;
@@ -2719,7 +2720,7 @@ input[type="search"] {
 .tracking-search-input,
 .google-search-input {
   border-radius: 9999px !important;
-  padding: 0.75rem 3rem 0.75rem 1.4rem !important;
+  padding: 0.75rem 2.8rem 0.75rem 2.85rem !important;
   box-shadow: var(--google-search-shadow) !important;
   border: 1.5px solid var(--border-medium) !important;
   transition: all 0.2s cubic-bezier(0.2, 0, 0, 1) !important;

@@ -163,54 +163,100 @@ export default function CreateOrderPage() {
             Unique Air Waybill barcode generated and registered with nationwide dispatch network.
           </p>
 
-          {/* Delhivery-style Digital Shipping Label */}
+          {/* Professional Digital Air Shipping Label */}
           <div style={{
-            maxWidth: '520px',
+            maxWidth: '540px',
             margin: '0 auto 2rem',
             background: '#FFFFFF',
             color: '#070B14',
-            borderRadius: 'var(--radius-md)',
-            padding: '1.5rem',
+            borderRadius: '16px',
+            border: '2px solid #E2E8F0',
+            padding: '1.75rem 2rem',
             textAlign: 'left',
-            boxShadow: 'var(--shadow-lg)'
+            boxShadow: '0 12px 36px rgba(0, 0, 0, 0.12)'
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid #000000', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #0F172A', paddingBottom: '0.85rem', marginBottom: '1.25rem' }}>
               <div>
-                <span style={{ fontSize: '1.25rem', fontWeight: 900, letterSpacing: '-0.03em' }}>AERODISPATCH</span>
-                <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700 }}>EXPRESS CARGO LINE</span>
+                <span style={{ fontSize: '1.35rem', fontWeight: 900, letterSpacing: '-0.03em', color: '#0F172A' }}>AERODISPATCH</span>
+                <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#475569', letterSpacing: '0.04em' }}>EXPRESS CARGO LINE</span>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <span style={{ fontSize: '0.75rem', fontWeight: 800 }}>SERVICE: {createdOrder.serviceTier.toUpperCase()}</span>
-                <span style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800 }}>MODE: {createdOrder.paymentMode}</span>
+                <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#0F172A' }}>SERVICE: {createdOrder.serviceTier.toUpperCase()}</span>
+                <span style={{ display: 'block', fontSize: '0.88rem', fontWeight: 900, color: createdOrder.paymentMode === 'COD' ? '#D97706' : '#059669' }}>
+                  MODE: {createdOrder.paymentMode}
+                </span>
               </div>
             </div>
 
             {/* Barcode & Identifiers Display */}
-            <div style={{ textAlign: 'center', margin: '1rem 0' }}>
-              <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#475569', letterSpacing: '0.05em', marginBottom: '4px' }}>
+            <div style={{ textAlign: 'center', margin: '1.25rem 0' }}>
+              <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#475569', letterSpacing: '0.05em', marginBottom: '8px' }}>
                 CUSTOMER ORDER ID: <strong>{createdOrder.displayOrderId || 'ORD-' + (createdOrder.awbNumber || '').replace('AD-', '')}</strong>
               </div>
-              <div className="barcode-stripes" style={{ letterSpacing: '4px', fontSize: '1.75rem' }}>||| | |||| | |||||| || | ||</div>
-              <div className="awb-number-display" style={{ fontSize: '1.25rem' }}>AWB: {createdOrder.awbNumber}</div>
-              <div style={{ display: 'inline-block', marginTop: '6px', padding: '3px 10px', background: 'rgba(16, 185, 129, 0.15)', color: '#059669', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 800 }}>
-                ● Awaiting Nearby Courier Associate Acceptance
+              
+              {/* Crisp SVG Barcode */}
+              <div style={{ padding: '6px 0', display: 'flex', justifyContent: 'center' }}>
+                <svg width="280" height="44" viewBox="0 0 280 44" style={{ display: 'block' }}>
+                  <rect x="10" y="0" width="3" height="44" fill="#0F172A" />
+                  <rect x="16" y="0" width="2" height="44" fill="#0F172A" />
+                  <rect x="22" y="0" width="4" height="44" fill="#0F172A" />
+                  <rect x="30" y="0" width="2" height="44" fill="#0F172A" />
+                  <rect x="36" y="0" width="5" height="44" fill="#0F172A" />
+                  <rect x="45" y="0" width="2" height="44" fill="#0F172A" />
+                  <rect x="51" y="0" width="4" height="44" fill="#0F172A" />
+                  <rect x="60" y="0" width="2" height="44" fill="#0F172A" />
+                  <rect x="66" y="0" width="3" height="44" fill="#0F172A" />
+                  <rect x="73" y="0" width="5" height="44" fill="#0F172A" />
+                  <rect x="82" y="0" width="2" height="44" fill="#0F172A" />
+                  <rect x="88" y="0" width="4" height="44" fill="#0F172A" />
+                  <rect x="96" y="0" width="3" height="44" fill="#0F172A" />
+                  <rect x="103" y="0" width="5" height="44" fill="#0F172A" />
+                  <rect x="112" y="0" width="2" height="44" fill="#0F172A" />
+                  <rect x="118" y="0" width="4" height="44" fill="#0F172A" />
+                  <rect x="126" y="0" width="2" height="44" fill="#0F172A" />
+                  <rect x="132" y="0" width="5" height="44" fill="#0F172A" />
+                  <rect x="141" y="0" width="3" height="44" fill="#0F172A" />
+                  <rect x="148" y="0" width="4" height="44" fill="#0F172A" />
+                  <rect x="156" y="0" width="2" height="44" fill="#0F172A" />
+                  <rect x="162" y="0" width="5" height="44" fill="#0F172A" />
+                  <rect x="171" y="0" width="2" height="44" fill="#0F172A" />
+                  <rect x="177" y="0" width="4" height="44" fill="#0F172A" />
+                  <rect x="185" y="0" width="3" height="44" fill="#0F172A" />
+                  <rect x="192" y="0" width="5" height="44" fill="#0F172A" />
+                  <rect x="201" y="0" width="2" height="44" fill="#0F172A" />
+                  <rect x="207" y="0" width="4" height="44" fill="#0F172A" />
+                  <rect x="215" y="0" width="3" height="44" fill="#0F172A" />
+                  <rect x="222" y="0" width="5" height="44" fill="#0F172A" />
+                  <rect x="231" y="0" width="2" height="44" fill="#0F172A" />
+                  <rect x="237" y="0" width="4" height="44" fill="#0F172A" />
+                  <rect x="245" y="0" width="3" height="44" fill="#0F172A" />
+                  <rect x="252" y="0" width="5" height="44" fill="#0F172A" />
+                  <rect x="261" y="0" width="3" height="44" fill="#0F172A" />
+                </svg>
+              </div>
+
+              <div className="awb-number-display" style={{ fontSize: '1.3rem', fontWeight: 900, color: '#0F172A', letterSpacing: '2px', marginTop: '6px' }}>
+                AWB: {createdOrder.awbNumber}
+              </div>
+              <div style={{ display: 'inline-block', marginTop: '8px', padding: '4px 12px', background: 'rgba(16, 185, 129, 0.15)', color: '#059669', borderRadius: '9999px', fontSize: '0.78rem', fontWeight: 800 }}>
+                ● Awaiting Nearby Delivery Captain Acceptance
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', borderTop: '1px solid #CCCCCC', paddingTop: '0.75rem', fontSize: '0.8rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', borderTop: '1px solid #E2E8F0', paddingTop: '1rem', fontSize: '0.85rem' }}>
               <div>
-                <strong>SHIP TO:</strong>
-                <div>{createdOrder.recipient.name}</div>
-                <div>{createdOrder.recipient.address}</div>
-                <div>{createdOrder.recipient.city}, {createdOrder.recipient.pinCode}</div>
-                <div>Contact: {createdOrder.recipient.phone}</div>
+                <strong style={{ color: '#0F172A', fontSize: '0.78rem', letterSpacing: '0.04em' }}>SHIP TO:</strong>
+                <div style={{ fontWeight: 800, color: '#0F172A', marginTop: '3px' }}>{createdOrder.recipient.name}</div>
+                <div style={{ color: '#475569', fontSize: '0.82rem', marginTop: '2px' }}>{createdOrder.recipient.address}</div>
+                <div style={{ color: '#475569', fontSize: '0.82rem' }}>{createdOrder.recipient.city}, {createdOrder.recipient.pinCode}</div>
+                <div style={{ color: '#0F172A', fontWeight: 600, fontSize: '0.8rem', marginTop: '4px' }}>Contact: {createdOrder.recipient.phone}</div>
               </div>
               <div>
-                <strong>ORIGIN:</strong>
-                <div>{createdOrder.sender.name}</div>
-                <div>{createdOrder.sender.city}, {createdOrder.sender.pinCode}</div>
-                <div style={{ marginTop: '0.5rem' }}>
-                  <strong>BILLABLE WEIGHT:</strong> {createdOrder.weightKg} kg
+                <strong style={{ color: '#0F172A', fontSize: '0.78rem', letterSpacing: '0.04em' }}>ORIGIN:</strong>
+                <div style={{ fontWeight: 800, color: '#0F172A', marginTop: '3px' }}>{createdOrder.sender.name}</div>
+                <div style={{ color: '#475569', fontSize: '0.82rem', marginTop: '2px' }}>{createdOrder.sender.city}, {createdOrder.sender.pinCode}</div>
+                <div style={{ marginTop: '0.75rem' }}>
+                  <strong style={{ color: '#0F172A' }}>BILLABLE WEIGHT:</strong> {createdOrder.weightKg} kg
                 </div>
               </div>
             </div>

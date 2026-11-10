@@ -58,7 +58,7 @@ export default function ProfileOverviewCard({
       return [
         { label: "Today's Stops", value: `${driverShipments.length || 8} Stops` },
         { label: "Delivered", value: `${done || 6} Completed` },
-        { label: "Driver Rating", value: "4.98 ★" },
+        { label: "Captain Rating", value: "4.98 ★" },
         { label: "Assigned Van", value: currentUser?.vehicleNumber || "MH-02-EV-8469" },
         { label: "Base Hub", value: currentUser?.hub || "BOM-01 Air Hub" }
       ];
@@ -143,10 +143,13 @@ export default function ProfileOverviewCard({
   const roleTitle = currentRole === 'admin' 
     ? 'Central Operations Admin' 
     : currentRole === 'driver' 
-      ? 'Express Courier Specialist' 
+      ? 'Fleet Delivery Captain' 
       : 'Customer Merchant';
 
-  const userDisplayName = currentUser?.name || 'Operator';
+  const rawName = currentUser?.name || 'Operator';
+  const userDisplayName = currentRole === 'driver' && !rawName.toLowerCase().startsWith('captain')
+    ? `Captain ${rawName}`
+    : rawName;
   const userSubtitle = `Member since 2026 · ${currentUser?.company || currentUser?.hub || 'Mumbai Central Hub'} · ${roleTitle}`;
 
   return (
@@ -520,3 +523,4 @@ export default function ProfileOverviewCard({
     </div>
   );
 }
+
