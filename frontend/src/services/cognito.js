@@ -185,3 +185,4 @@ export async function cognitoConfirmForgotPassword(email, code, newPassword) {
   });
   return true;
 }
+

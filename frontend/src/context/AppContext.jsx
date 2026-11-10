@@ -63,20 +63,7 @@ export function AppProvider({ children }) {
       const saved = localStorage.getItem('aerodispatch_fleet_drivers');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          // Strictly purge demo drivers (deepak, ramesh, anil)
-          const filtered = parsed.filter(d => {
-            const name = (d.name || '').toLowerCase();
-            const email = (d.email || '').toLowerCase();
-            return !name.includes('deepak') && !name.includes('ramesh') && !name.includes('anil') &&
-                   !email.includes('microsofty543') && !email.includes('driver@aerodispatch.io');
-          });
-          const hasRishabh = filtered.some(d => d.email === 'oldmemories021@gmail.com' || d.name?.toLowerCase().includes('rishabh'));
-          if (!hasRishabh) {
-            return [...MOCK_DRIVERS, ...filtered];
-          }
-          return filtered.length > 0 ? filtered : MOCK_DRIVERS;
-        }
+        if (Array.isArray(parsed)) return parsed;
       }
     } catch (e) {}
     return MOCK_DRIVERS;

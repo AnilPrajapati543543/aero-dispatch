@@ -577,11 +577,11 @@ export default function CreateOrderPage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
               <div className="form-group">
                 <label className="form-label" htmlFor="parcel-cat">Parcel Category</label>
-                <select 
-                  id="parcel-cat" 
-                  name="category" 
-                  className="form-select input-field" 
-                  value={formData.category} 
+                <select
+                  id="parcel-cat"
+                  name="category"
+                  className="form-select input-field"
+                  value={formData.category}
                   onChange={handleChange}
                   style={{ backgroundColor: '#0D1527', color: '#F8FAFC' }}
                 >
@@ -607,11 +607,11 @@ export default function CreateOrderPage() {
 
               <div className="form-group">
                 <label className="form-label" htmlFor="payment-mode">Payment Mode</label>
-                <select 
-                  id="payment-mode" 
-                  name="paymentMode" 
-                  className="form-select input-field" 
-                  value={formData.paymentMode} 
+                <select
+                  id="payment-mode"
+                  name="paymentMode"
+                  className="form-select input-field"
+                  value={formData.paymentMode}
                   onChange={handleChange}
                   style={{ backgroundColor: '#0D1527', color: '#F8FAFC' }}
                 >
