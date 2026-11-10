@@ -273,17 +273,17 @@ export default function AnalyticsPage() {
       {/* 4. Driver Performance Comparison Leaderboard */}
       <div className="card" style={{ padding: '1.5rem' }}>
         <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.25rem' }}>
-          Driver Fleet Performance Leaderboard
+          Captain Fleet Performance Leaderboard
         </h3>
         <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
-          Top delivery drivers ranked by on-time SLA rate and completed deliveries
+          Top delivery captains ranked by on-time SLA rate and completed deliveries
         </p>
 
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-medium)', color: 'var(--text-dim)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                <th style={{ padding: '0.65rem 0.5rem' }}>Driver</th>
+                <th style={{ padding: '0.65rem 0.5rem' }}>Captain</th>
                 <th style={{ padding: '0.65rem 0.5rem' }}>Operational Hub &amp; Zone</th>
                 <th style={{ padding: '0.65rem 0.5rem' }}>Assigned Vehicle</th>
                 <th style={{ padding: '0.65rem 0.5rem' }}>Deliveries Completed</th>
@@ -294,7 +294,7 @@ export default function AnalyticsPage() {
               {drivers.length === 0 ? (
                 <tr>
                   <td colSpan={5} style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--text-muted)' }}>
-                    No drivers registered yet. Driver run sheets and performance metrics will populate when drivers register.
+                    No captains registered yet. Captain run sheets and performance metrics will populate when captains register.
                   </td>
                 </tr>
               ) : (

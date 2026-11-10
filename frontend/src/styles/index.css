@@ -1033,7 +1033,7 @@ h1, h2, h3, h4, h5, h6 {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border-medium);
   border-radius: var(--radius-full);
-  padding: 0.6rem 2.5rem 0.6rem 1rem;
+  padding: 0.75rem 2.85rem 0.75rem 3.25rem !important;
   color: #FFFFFF;
   font-size: 0.875rem;
   transition: var(--transition-normal);
@@ -2718,9 +2718,13 @@ input[type="search"] {
 
 .nav-search input,
 .tracking-search-input,
-.google-search-input {
+.google-search-input,
+.search-input-with-icon,
+input[type="search"],
+.search-box-input {
   border-radius: 9999px !important;
-  padding: 0.75rem 2.8rem 0.75rem 2.85rem !important;
+  padding: 0.75rem 2.85rem 0.75rem 3.25rem !important;
+  padding-left: 3.25rem !important;
   box-shadow: var(--google-search-shadow) !important;
   border: 1.5px solid var(--border-medium) !important;
   transition: all 0.2s cubic-bezier(0.2, 0, 0, 1) !important;
@@ -2728,14 +2732,16 @@ input[type="search"] {
 
 .nav-search input:hover,
 .tracking-search-input:hover,
-.google-search-input:hover {
+.google-search-input:hover,
+.search-input-with-icon:hover {
   box-shadow: var(--google-search-shadow-hover) !important;
   border-color: rgba(255, 255, 255, 0.25) !important;
 }
 
 .nav-search input:focus,
 .tracking-search-input:focus,
-.google-search-input:focus {
+.google-search-input:focus,
+.search-input-with-icon:focus {
   outline: none !important;
   border-color: var(--google-blue) !important;
   box-shadow: 0 2px 12px var(--google-blue-glow) !important;
@@ -2743,9 +2749,9 @@ input[type="search"] {
 }
 
 /* 5. All Inputs, Selects, and Form Controls -> Fully Rounded Finish */
-.form-input,
+.form-input:not(.google-search-input):not(.search-input-with-icon),
 .form-select,
-.input-field,
+.input-field:not(.search-input-with-icon):not(.search-box-input),
 select:not([multiple]),
 .custom-select-trigger {
   border-radius: 9999px !important;

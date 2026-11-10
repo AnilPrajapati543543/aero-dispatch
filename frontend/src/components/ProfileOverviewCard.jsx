@@ -70,7 +70,7 @@ export default function ProfileOverviewCard({
       return [
         { label: "National AWBs", value: `${totalAwbs} Total` },
         { label: "Active Linehaul", value: `${inTransit} Flights` },
-        { label: "Fleet Drivers", value: "28 On-Duty" },
+        { label: "Fleet Captains", value: "28 On-Duty" },
         { label: "Network SLA", value: "99.4%" },
         { label: "Ops Clearance", value: "Level 1 Admin" }
       ];

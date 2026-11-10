@@ -3,7 +3,6 @@ import { useApp } from '../context/AppContext';
 import StatusBadge from '../components/StatusBadge';
 import { SkeletonRunSheet } from '../components/SkeletonLoading';
 import CopyButton from '../components/CopyButton';
-import ProfileOverviewCard from '../components/ProfileOverviewCard';
 import { resolvePhotoUrl } from '../services/api';
 import { 
   Truck, 
@@ -256,19 +255,32 @@ export default function DriverDashboard() {
 
   return (
     <div>
-      {/* 1. Captain Profile Header (Exact Google Rounded Card Layout with 5 Capsule Stat Pills) */}
-      <div style={{ marginBottom: '1.75rem' }}>
-        <ProfileOverviewCard 
-          onEditClick={() => setActiveTab('settings')}
-          allowInlineEdit={true}
-          customStats={[
-            { label: "Today's Stops", value: `${myAssignedShipments.length} Assigned` },
-            { label: "Delivered", value: `${completedCount} Completed` },
-            { label: "Captain Rating", value: "4.98 ★" },
-            { label: "Assigned Van", value: currentUser?.vehicleNumber || currentUser?.vehicle || 'MH-02-EV-8469' },
-            { label: "Base Hub", value: currentUser?.hub || 'BOM-01 Gateway' }
-          ]}
-        />
+      {/* Captain Cockpit Header Bar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
+        <div>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '2px 8px', borderRadius: '9999px', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.35rem', background: 'rgba(245, 158, 11, 0.15)', color: '#FBBF24', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+            <Truck size={12} />
+            <span>Delivery Captain Cockpit</span>
+          </div>
+          <h1 style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em', margin: 0 }}>
+            Welcome, Captain {currentUser?.name?.replace(/^captain\s+/i, '') || 'Rishabh Pandey'}
+          </h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', margin: '0.2rem 0 0' }}>
+            Daily run manifest, real-world route navigation, and recipient OTP handover.
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <button 
+            type="button" 
+            className="btn btn-secondary btn-sm"
+            onClick={() => setActiveTab('settings')}
+            style={{ borderRadius: '9999px', padding: '0.5rem 1.15rem' }}
+          >
+            <Settings size={14} />
+            <span>Vehicle &amp; Settings</span>
+          </button>
+        </div>
       </div>
 
       {/* 2. Real-World Captain Section Navigation Tabs */}

@@ -400,7 +400,7 @@ export default function SettingsPage() {
                   <span>Two-Factor Authentication (2FA)</span>
                 </div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-                  Require TOTP authenticator verification on driver assignment and status overrides.
+                  Require TOTP authenticator verification on captain assignment and status overrides.
                 </div>
               </div>
 

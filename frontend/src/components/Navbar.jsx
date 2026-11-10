@@ -213,9 +213,9 @@ export default function Navbar() {
             placeholder="Track AWB (e.g. AD-8849-2041)..."
             value={inputSearch}
             onChange={(e) => setInputSearch(e.target.value)}
-            className="mono"
+            className="mono google-search-input search-input-with-icon"
             aria-label="Track Air Waybill Number"
-            style={{ paddingLeft: '2.85rem', paddingRight: '2.5rem' }}
+            style={{ paddingLeft: '3.25rem', paddingRight: '2.5rem' }}
           />
           <button type="submit" title="Track Shipment" aria-label="Submit Tracking Search" style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', color: 'var(--primary)', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}>
             <ChevronRight size={17} />

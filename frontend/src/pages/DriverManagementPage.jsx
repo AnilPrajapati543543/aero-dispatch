@@ -137,7 +137,7 @@ export default function DriverManagementPage() {
         setDriversList(prev => [newDriverRecord, ...prev]);
       }
 
-      addToast(`Driver ${newDriverName} (${generatedId}) successfully provisioned in AWS Cognito!`, 'success');
+      addToast(`Captain ${newDriverName} (${generatedId}) successfully provisioned in AWS Cognito!`, 'success');
       setIsAddDriverModalOpen(false);
       setNewDriverName('');
       setNewDriverEmail('');
@@ -145,7 +145,7 @@ export default function DriverManagementPage() {
       setNewDriverVehicle('');
       setNewDriverPassword('Driver@123');
     } catch (err) {
-      addToast(err.message || 'Failed to provision driver.', 'error');
+      addToast(err.message || 'Failed to provision captain.', 'error');
     } finally {
       setIsProvisioning(false);
     }
@@ -157,17 +157,17 @@ export default function DriverManagementPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
-            Driver &amp; Fleet Management
+            Captain &amp; Fleet Management
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.2rem' }}>
-            Monitor delivery drivers, vehicle status, route capacity, and driver assignments.
+            Monitor delivery captains, vehicle status, route capacity, and captain assignments.
           </p>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <div style={{ padding: '0.4rem 0.85rem', background: 'rgba(0, 240, 255, 0.08)', border: '1px solid rgba(0, 240, 255, 0.25)', borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
             <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10B981', animation: 'aeroBeaconPing 1.8s infinite' }} />
-            <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>{currentDrivers.filter(d => d.status === 'AVAILABLE').length} Available for Dispatch</span>
+            <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>{currentDrivers.filter(d => d.status === 'AVAILABLE').length} Captains Available for Dispatch</span>
           </div>
 
           <button 
@@ -177,7 +177,7 @@ export default function DriverManagementPage() {
             style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', fontWeight: 800, padding: '0.5rem 0.95rem' }}
           >
             <UserPlus size={15} />
-            <span>+ Provision New Driver</span>
+            <span>+ Provision New Captain</span>
           </button>
         </div>
       </div>
@@ -187,14 +187,14 @@ export default function DriverManagementPage() {
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
           {/* Search Box */}
           <div style={{ position: 'relative', flex: 1, minWidth: '260px' }}>
-            <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
+            <Search size={16} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)', pointerEvents: 'none', zIndex: 2 }} />
             <input 
               type="text"
-              placeholder="Search driver by name, driver ID, vehicle, operational zone..."
+              placeholder="Search captain by name, captain ID, vehicle, operational zone..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="input-field"
-              style={{ paddingLeft: '2.4rem' }}
+              className="input-field google-search-input search-input-with-icon"
+              style={{ paddingLeft: '3.25rem' }}
             />
           </div>
 
@@ -289,10 +289,10 @@ export default function DriverManagementPage() {
             </button>
 
             <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.4rem' }}>
-              Assign Shipment to Driver
+              Assign Consignment to Captain
             </h3>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
-              Allocating delivery to <strong>{selectedDriverForAssign.name}</strong> ({selectedDriverForAssign.id} • {selectedDriverForAssign.vehicle}).
+              Allocating consignment to Captain <strong>{selectedDriverForAssign.name}</strong> ({selectedDriverForAssign.id} • {selectedDriverForAssign.vehicle}).
             </p>
 
             <form onSubmit={handleAssignSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -370,10 +370,10 @@ export default function DriverManagementPage() {
                 </div>
                 <div>
                   <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
-                    Provision Courier Driver
+                    Provision Delivery Captain
                   </h3>
                   <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>
-                    Admin-only authorized driver creation in AWS Cognito
+                    Admin-only authorized captain creation in AWS Cognito
                   </span>
                 </div>
               </div>
@@ -389,7 +389,7 @@ export default function DriverManagementPage() {
 
             <form onSubmit={handleProvisionDriverSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
               <div>
-                <label className="form-label" style={{ fontSize: '0.78rem', marginBottom: '0.25rem' }}>Driver Full Name *</label>
+                <label className="form-label" style={{ fontSize: '0.78rem', marginBottom: '0.25rem' }}>Captain Full Name *</label>
                 <input 
                   type="text"
                   placeholder="e.g. Vikram Singh"
@@ -402,7 +402,7 @@ export default function DriverManagementPage() {
               </div>
 
               <div>
-                <label className="form-label" style={{ fontSize: '0.78rem', marginBottom: '0.25rem' }}>Driver Email Address *</label>
+                <label className="form-label" style={{ fontSize: '0.78rem', marginBottom: '0.25rem' }}>Captain Email Address *</label>
                 <input 
                   type="email"
                   placeholder="vikram.singh@aerodispatch.internal"
@@ -441,7 +441,7 @@ export default function DriverManagementPage() {
               </div>
 
               <div>
-                <label className="form-label" style={{ fontSize: '0.78rem', marginBottom: '0.25rem' }}>Temporary Driver Password *</label>
+                <label className="form-label" style={{ fontSize: '0.78rem', marginBottom: '0.25rem' }}>Temporary Captain Password *</label>
                 <input 
                   type="text"
                   placeholder="Driver@123"
@@ -467,7 +467,7 @@ export default function DriverManagementPage() {
                   className="btn btn-primary btn-sm"
                   style={{ background: '#F59E0B', borderColor: '#F59E0B', color: '#000000', fontWeight: 800 }}
                 >
-                  {isProvisioning ? 'Provisioning in AWS...' : 'Create Driver Account'}
+                  {isProvisioning ? 'Provisioning in AWS...' : 'Create Captain Account'}
                 </button>
               </div>
             </form>
@@ -548,7 +548,7 @@ function DriverFleetCard({ driver, shipments, onAssign, updateDriverStatus }) {
             </div>
             <div>
               <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                <span>{driver.name}</span>
+                <span>Captain {driver.name?.replace(/^captain\s+/i, '')}</span>
                 <span className="mono" style={{ fontSize: '0.72rem', color: '#F43F5E', background: 'rgba(244, 63, 94, 0.12)', border: '1px solid rgba(244, 63, 94, 0.35)', padding: '2px 8px', borderRadius: '4px', fontWeight: 800 }}>
                   ID: {driver.id || driver.driverId || 'DRV-8469'}
                 </span>
@@ -592,7 +592,7 @@ function DriverFleetCard({ driver, shipments, onAssign, updateDriverStatus }) {
           minHeight: 0
         }}
       >
-        {/* Driver Details List */}
+        {/* Captain Details List */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Truck size={14} color="var(--primary)" />

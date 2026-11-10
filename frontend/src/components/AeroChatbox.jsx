@@ -34,7 +34,7 @@ const INITIAL_MESSAGES = [
     quickChips: [
       { label: '📦 Track my Parcel / AWB', query: 'track' },
       { label: '⏱️ Delivery Status & Delay', query: 'delay' },
-      { label: '🚚 Courier Driver Run Sheets', query: 'driver' },
+      { label: '🚚 Delivery Captain Run Sheets', query: 'driver' },
       { label: '👤 Account & Login Help', query: 'account' },
       { label: '💰 Shipping Rates & Booking', query: 'rates' },
       { label: '💬 Talk to Dispatch Agent', query: 'agent' }
@@ -140,16 +140,16 @@ export default function AeroChatbox() {
       }, 450);
 
     } else if (queryType === 'driver') {
-      const userMsg = { id: String(Date.now()), sender: 'user', text: 'I am a Courier Driver', time: timeNow };
+      const userMsg = { id: String(Date.now()), sender: 'user', text: 'I am a Delivery Captain', time: timeNow };
       setMessages(prev => [...prev, userMsg]);
 
       addBotResponseWithTyping({
         id: String(Date.now() + 1),
         sender: 'bot',
-        text: 'Welcome partner! 🚚 Delivery drivers have full self-serve access to daily delivery run sheets, navigation routes, and recipient OTP verification.',
+        text: 'Welcome Captain! 🚚 Delivery Captains have full self-serve access to daily delivery run sheets, navigation routes, and recipient OTP verification.',
         actionButtons: [
-          { label: 'Sign In to Driver Cockpit ➔', action: () => { localStorage.setItem('aerodispatch_auth_role', 'driver'); setActiveTab('auth'); closeChatbox(); } },
-          { label: 'Register as New Courier Driver ➔', action: () => { localStorage.setItem('aerodispatch_auth_role', 'driver'); localStorage.setItem('aerodispatch_auth_mode', 'register'); setActiveTab('auth'); closeChatbox(); } }
+          { label: 'Sign In to Captain Cockpit ➔', action: () => { localStorage.setItem('aerodispatch_auth_role', 'driver'); setActiveTab('auth'); closeChatbox(); } },
+          { label: 'Register as Delivery Captain ➔', action: () => { localStorage.setItem('aerodispatch_auth_role', 'driver'); localStorage.setItem('aerodispatch_auth_mode', 'register'); setActiveTab('auth'); closeChatbox(); } }
         ],
         time: timeNow
       }, 400);
@@ -164,7 +164,7 @@ export default function AeroChatbox() {
         text: 'Which portal do you need help accessing?',
         actionButtons: [
           { label: 'Customer Merchant Desk (Sign In / Register) ➔', action: () => { localStorage.setItem('aerodispatch_auth_role', 'customer'); setActiveTab('auth'); closeChatbox(); } },
-          { label: 'Courier Driver Dispatch (Sign In / Register) ➔', action: () => { localStorage.setItem('aerodispatch_auth_role', 'driver'); setActiveTab('auth'); closeChatbox(); } }
+          { label: 'Delivery Captain Dispatch (Sign In / Register) ➔', action: () => { localStorage.setItem('aerodispatch_auth_role', 'driver'); setActiveTab('auth'); closeChatbox(); } }
         ],
         time: timeNow
       }, 350);
@@ -237,10 +237,10 @@ export default function AeroChatbox() {
       botResponse = {
         id: String(Date.now() + 1),
         sender: 'bot',
-        text: 'AeroDispatch empowers courier drivers with instant self-registration and daily route manifests.',
+        text: 'AeroDispatch empowers delivery captains with instant self-registration and daily route manifests.',
         actionButtons: [
-          { label: 'Sign In to Driver Cockpit ➔', action: () => { localStorage.setItem('aerodispatch_auth_role', 'driver'); setActiveTab('auth'); closeChatbox(); } },
-          { label: 'Register Driver Account ➔', action: () => { localStorage.setItem('aerodispatch_auth_role', 'driver'); localStorage.setItem('aerodispatch_auth_mode', 'register'); setActiveTab('auth'); closeChatbox(); } }
+          { label: 'Sign In to Captain Cockpit ➔', action: () => { localStorage.setItem('aerodispatch_auth_role', 'driver'); setActiveTab('auth'); closeChatbox(); } },
+          { label: 'Register Captain Account ➔', action: () => { localStorage.setItem('aerodispatch_auth_role', 'driver'); localStorage.setItem('aerodispatch_auth_mode', 'register'); setActiveTab('auth'); closeChatbox(); } }
         ],
         time: timeNow
       };

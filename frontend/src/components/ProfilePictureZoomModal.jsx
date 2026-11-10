@@ -172,7 +172,7 @@ export default function ProfilePictureZoomModal({
   const roleTitle = userRole === 'admin' 
     ? 'Operations Command' 
     : userRole === 'driver' 
-    ? 'Courier Associate' 
+    ? 'Delivery Captain' 
     : 'Verified Merchant';
 
   const roleBadgeColor = userRole === 'admin' ? '#EF4444' : userRole === 'driver' ? '#F59E0B' : '#25D366';

@@ -947,7 +947,7 @@ export default function AuthPage() {
                       onClick={() => setAuthRole('driver')}
                     >
                       <Truck size={14} />
-                      <span>Driver Portal</span>
+                      <span>Delivery Captain</span>
                     </button>
                   </div>
                 )}

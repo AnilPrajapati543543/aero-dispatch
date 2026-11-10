@@ -145,17 +145,17 @@ export default function Sidebar() {
         ]
       },
       {
-        group: 'Fleet & Drivers',
+        group: 'Fleet & Captains',
         items: [
           {
             id: 'drivers',
-            label: 'Driver Management',
+            label: 'Captain Fleet Management',
             icon: Users,
             badge: 'Fleet'
           },
           {
             id: 'driver',
-            label: 'Driver Portal',
+            label: 'Captain Cockpit',
             icon: Truck,
             badge: null
           }

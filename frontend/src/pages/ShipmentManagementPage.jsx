@@ -4,7 +4,6 @@ import StatusBadge from '../components/StatusBadge';
 import CopyButton from '../components/CopyButton';
 import TrackingTimeline from '../components/TrackingTimeline';
 import CustomSelect from '../components/CustomSelect';
-import ProfileOverviewCard from '../components/ProfileOverviewCard';
 import { SkeletonTableRows } from '../components/SkeletonLoading';
 import { 
   Package, 
@@ -141,7 +140,7 @@ export default function ShipmentManagementPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '2px 8px', borderRadius: '9999px', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.35rem', background: currentUser?.role === 'admin' ? 'rgba(99, 102, 241, 0.15)' : currentUser?.role === 'driver' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(0, 240, 255, 0.12)', color: currentUser?.role === 'admin' ? '#818CF8' : currentUser?.role === 'driver' ? '#FBBF24' : '#00F0FF', border: `1px solid ${currentUser?.role === 'admin' ? 'rgba(99, 102, 241, 0.3)' : currentUser?.role === 'driver' ? 'rgba(245, 158, 11, 0.3)' : 'rgba(0, 240, 255, 0.25)'}` }}>
-            {currentUser?.role === 'admin' ? 'Admin' : currentUser?.role === 'driver' ? 'Driver Portal' : 'Customer Portal'}
+            {currentUser?.role === 'admin' ? 'Admin' : currentUser?.role === 'driver' ? 'Captain Portal' : 'Customer Portal'}
           </div>
           <h1 style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
             {currentUser?.role === 'customer' ? 'My Shipments & Bookings' : currentUser?.role === 'driver' ? 'Assigned Route Deliveries' : 'National Shipments Database'}
@@ -150,7 +149,7 @@ export default function ShipmentManagementPage() {
             {currentUser?.role === 'customer' 
               ? `Account: ${currentUser?.name || 'Customer Account'} (${currentUser?.company || 'Business Merchant'}). Showing exclusively orders booked by or addressed to your account.`
               : currentUser?.role === 'driver'
-              ? `Assigned deliveries for ${currentUser?.name || 'Courier Associate'} (${currentUser?.driverId || 'DRV-Active'}).`
+              ? `Assigned deliveries for Captain ${currentUser?.name || 'Courier Captain'} (${currentUser?.driverId || 'CPT-Active'}).`
               : 'Filter, search, inspect, and export express shipments across all active hubs.'
             }
           </p>
@@ -187,24 +186,19 @@ export default function ShipmentManagementPage() {
         </div>
       </div>
 
-      {/* 2. Customer Profile Hero Card (Exact Google Rounded Card Layout with 5 Capsule Stat Pills) */}
-      {currentUser?.role === 'customer' && (
-        <ProfileOverviewCard allowInlineEdit={true} />
-      )}
-
-      {/* 3. Filter & Search Control Bar */}
+      {/* 2. Filter & Search Control Bar */}
       <div className="card" style={{ padding: '1.25rem' }}>
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
           {/* Search Box */}
           <div style={{ position: 'relative', flex: 1, minWidth: '260px' }}>
-            <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
+            <Search size={16} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)', pointerEvents: 'none', zIndex: 2 }} />
             <input 
               type="text"
               placeholder="Search by AWB, sender, recipient, city, category..."
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-              className="input-field"
-              style={{ paddingLeft: '2.4rem' }}
+              className="input-field google-search-input search-input-with-icon"
+              style={{ paddingLeft: '3.25rem' }}
             />
           </div>
 
@@ -319,7 +313,7 @@ export default function ShipmentManagementPage() {
                       </div>
                       {s.assignedDriver ? (
                         <div style={{ fontSize: '0.72rem', color: '#10B981', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '3px', marginTop: '2px' }}>
-                          <Truck size={11} /> Driver: {s.assignedDriver.name}
+                          <Truck size={11} /> Captain: {s.assignedDriver.name}
                         </div>
                       ) : (
                         <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>

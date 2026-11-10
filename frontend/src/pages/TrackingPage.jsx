@@ -290,8 +290,8 @@ export default function TrackingPage() {
             />
             <input 
               type="text"
-              className="form-input mono google-search-input"
-              style={{ paddingLeft: '3rem', paddingRight: '1.4rem', fontSize: '1rem', letterSpacing: '0.05em', borderRadius: '9999px', boxShadow: 'var(--google-search-shadow)' }}
+              className="form-input mono google-search-input search-input-with-icon"
+              style={{ paddingLeft: '3.25rem', paddingRight: '1.4rem', fontSize: '1rem', letterSpacing: '0.05em', borderRadius: '9999px', boxShadow: 'var(--google-search-shadow)' }}
               placeholder="Enter AWB (e.g. AD-8849-2041, AD-2910-4491)..."
               value={inputVal}
               onChange={(e) => setInputVal(e.target.value)}
@@ -612,9 +612,9 @@ export default function TrackingPage() {
                   </div>
                 </div>
 
-                {/* Assigned Driver Card */}
+                {/* Assigned Captain Card */}
                 {activeShipment.assignedDriver && (
-                  <div style={{ marginTop: '1.25rem', padding: '1rem', background: 'rgba(16, 185, 129, 0.08)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                  <div style={{ marginTop: '1.25rem', padding: '1rem', background: 'rgba(16, 185, 129, 0.08)', borderRadius: '16px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                         <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10B981' }}>
@@ -622,10 +622,10 @@ export default function TrackingPage() {
                         </div>
                         <div>
                           <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#10B981', fontWeight: 800 }}>
-                            Assigned Courier Associate
+                            Assigned Delivery Captain
                           </div>
                           <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-main)' }}>
-                            {activeShipment.assignedDriver.name}
+                            Captain {activeShipment.assignedDriver.name?.replace(/^captain\s+/i, '')}
                           </div>
                           <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                             Phone: <strong>{activeShipment.assignedDriver.phone || '+91 90043 58469'}</strong> • Vehicle: {activeShipment.assignedDriver.vehicleNumber}
@@ -637,17 +637,17 @@ export default function TrackingPage() {
                         <a
                           href={`tel:${activeShipment.assignedDriver.phone || '+919004358469'}`}
                           className="btn btn-sm btn-secondary"
-                          style={{ padding: '0.4rem 0.75rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.76rem' }}
+                          style={{ padding: '0.4rem 0.85rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.76rem', borderRadius: '9999px' }}
                         >
-                          <span>📞 Call Driver</span>
+                          <span>📞 Call Captain</span>
                         </a>
                         <button
                           type="button"
                           className="btn btn-sm btn-primary"
                           onClick={openChatbox}
-                          style={{ padding: '0.4rem 0.75rem', fontSize: '0.76rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                          style={{ padding: '0.4rem 0.85rem', fontSize: '0.76rem', display: 'inline-flex', alignItems: 'center', gap: '4px', borderRadius: '9999px' }}
                         >
-                          <span>💬 Chat with Driver</span>
+                          <span>💬 Chat with Captain</span>
                         </button>
                       </div>
                     </div>

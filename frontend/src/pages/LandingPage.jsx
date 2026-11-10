@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import AeroLogo from '../components/AeroLogo';
+import AdminPasscodeBoy from '../components/AdminPasscodeBoy';
 import {
   Search,
   Truck,
@@ -59,6 +60,7 @@ export default function LandingPage() {
   const [showAdminCode, setShowAdminCode] = useState(false);
   const [adminLoginLoading, setAdminLoginLoading] = useState(false);
   const [adminLoginError, setAdminLoginError] = useState('');
+  const [isAdminCodeFocused, setIsAdminCodeFocused] = useState(false);
 
   // Floating Hero Card State (tracking & shipping selector)
   const [activeTabMode, setActiveTabMode] = useState('track'); // 'track' | 'ship'
@@ -1468,7 +1470,7 @@ className="landing-hero-headline"
               <div style={{ fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.65rem' }}>Access Portals</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', color: 'var(--text-muted)' }}>
                 <button type="button" onClick={() => setActiveTab('auth')} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', textAlign: 'left', padding: 0, fontWeight: 700 }}>
-                  Customer &amp; Driver Portal ➔
+                  Customer &amp; Delivery Captain Portal ➔
                 </button>
                 <button
                   id="footer-admin-login-btn"
@@ -1507,18 +1509,19 @@ className="landing-hero-headline"
             if (e.target === e.currentTarget) setIsAdminModalOpen(false);
           }}
         >
-          {/* Priority Operations Command Modal Card */}
+          {/* Priority Operations Command Google M3 Rounded Modal Card */}
           <div
             style={{
               position: 'relative',
               width: '100%',
-              maxWidth: '460px',
-              background: 'linear-gradient(145deg, rgba(24, 32, 54, 0.98) 0%, rgba(12, 17, 30, 0.99) 100%)',
-              border: '1.5px solid rgba(239, 68, 68, 0.55)',
-              borderRadius: '24px',
-              padding: '2.5rem 2.25rem 2rem',
-              boxShadow: '0 30px 80px rgba(0, 0, 0, 0.85), 0 0 50px rgba(239, 68, 68, 0.28), inset 0 1px 2px rgba(255, 255, 255, 0.15)',
-              color: '#FFFFFF'
+              maxWidth: '480px',
+              background: 'linear-gradient(145deg, rgba(18, 24, 38, 0.98) 0%, rgba(10, 14, 24, 0.99) 100%)',
+              border: '1.5px solid rgba(239, 68, 68, 0.45)',
+              borderRadius: '32px',
+              padding: '2.5rem 2.25rem 2.25rem',
+              boxShadow: '0 30px 80px rgba(0, 0, 0, 0.85), 0 0 50px rgba(239, 68, 68, 0.25), inset 0 1px 2px rgba(255, 255, 255, 0.12)',
+              color: '#FFFFFF',
+              animation: 'aeroRoleEntrance 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards'
             }}
           >
             {/* Top Priority Exclamation Emblem */}
@@ -1529,13 +1532,13 @@ className="landing-hero-headline"
                 left: '50%',
                 transform: 'translateX(-50%)',
                 background: 'linear-gradient(135deg, #EF4444 0%, #991B1B 100%)',
-                width: '58px',
-                height: '58px',
+                width: '56px',
+                height: '56px',
                 borderRadius: '50%',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                boxShadow: '0 8px 25px rgba(239, 68, 68, 0.65), 0 0 0 6px rgba(12, 17, 30, 0.98)',
+                boxShadow: '0 8px 25px rgba(239, 68, 68, 0.65), 0 0 0 6px rgba(10, 14, 24, 0.98)',
                 color: '#FFFFFF'
               }}
               title="Priority Restricted Access"
@@ -1554,8 +1557,8 @@ className="landing-hero-headline"
                 background: 'rgba(255, 255, 255, 0.08)',
                 border: '1px solid rgba(255, 255, 255, 0.12)',
                 borderRadius: '50%',
-                width: '32px',
-                height: '32px',
+                width: '34px',
+                height: '34px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -1563,22 +1566,33 @@ className="landing-hero-headline"
                 cursor: 'pointer',
                 transition: 'all 0.2s ease'
               }}
-              title="Close"
+              title="Close modal"
+              aria-label="Close admin modal"
             >
               <X size={16} />
             </button>
 
-            {/* Modal Heading */}
-            <div style={{ textAlign: 'center', marginTop: '1.25rem', marginBottom: '1.75rem' }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: '#EF4444', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.35rem' }}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '15px', height: '15px', borderRadius: '50%', background: '#EF4444', color: '#FFFFFF', fontSize: '10px', fontWeight: 900 }}>!</span>
+            {/* Top Security Pill Badge */}
+            <div style={{ textAlign: 'center', marginTop: '0.85rem', marginBottom: '0.5rem' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', padding: '4px 14px', borderRadius: '9999px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.35)', color: '#EF4444', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#EF4444', boxShadow: '0 0 6px #EF4444' }} />
                 <span>Restricted Tier-1 Security Clearance</span>
               </div>
-              <h3 style={{ fontSize: '1.6rem', fontWeight: 900, margin: '0 0 0.35rem', letterSpacing: '-0.02em', color: '#FFFFFF' }}>
-                Priority Operations Command
+            </div>
+
+            {/* Interactive Animated Mascot: Boy hiding eyes when typing passcode / peeking when unmasked */}
+            <AdminPasscodeBoy 
+              state={showAdminCode && adminCode.length > 0 ? 'peeking' : (isAdminCodeFocused || adminCode.length > 0) ? 'hiding' : 'idle'} 
+              codeLength={adminCode.length} 
+            />
+
+            {/* Welcome Sir Header */}
+            <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ fontSize: '1.9rem', fontWeight: 900, margin: '0 0 0.3rem', letterSpacing: '-0.02em', color: '#FFFFFF' }}>
+                Welcome Sir
               </h3>
-              <p style={{ margin: 0, fontSize: '0.85rem', color: '#94A3B8', lineHeight: 1.45 }}>
-                Restricted to authorized system administrators. Fleet operations, sorting hubs, and manifests.
+              <p style={{ margin: 0, fontSize: '0.86rem', color: '#94A3B8', lineHeight: 1.45 }}>
+                Priority Operations Command • Central Dispatch Control
               </p>
             </div>
 
@@ -1588,7 +1602,7 @@ className="landing-hero-headline"
                 style={{
                   background: 'rgba(239, 68, 68, 0.15)',
                   border: '1px solid rgba(239, 68, 68, 0.4)',
-                  borderRadius: '12px',
+                  borderRadius: '16px',
                   padding: '0.75rem 1rem',
                   fontSize: '0.82rem',
                   color: '#FCA5A5',
@@ -1603,18 +1617,25 @@ className="landing-hero-headline"
               </div>
             )}
 
-            {/* Form */}
+            {/* Form with Google Rounded Controls */}
             <form onSubmit={handleAdminModalLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#E2E8F0', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                  Admin Security Access Code
-                </label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 800, color: '#E2E8F0', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <Lock size={13} color="#EF4444" />
+                    <span>Admin Security Access Code</span>
+                  </label>
+                  <span style={{ fontSize: '0.7rem', color: '#EF4444', fontWeight: 800 }}>4-DIGIT PIN</span>
+                </div>
+
                 <div style={{ position: 'relative' }}>
                   <input
                     id="admin-passkey-input"
                     type={showAdminCode ? 'text' : 'password'}
                     value={adminCode}
                     onChange={(e) => setAdminCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 4))}
+                    onFocus={() => setIsAdminCodeFocused(true)}
+                    onBlur={() => setIsAdminCodeFocused(false)}
                     placeholder="••••"
                     maxLength={4}
                     inputMode="numeric"
@@ -1622,27 +1643,19 @@ className="landing-hero-headline"
                     required
                     style={{
                       width: '100%',
-                      padding: '0.85rem 2.85rem 0.85rem 1rem',
+                      padding: '0.9rem 3.2rem 0.9rem 1.5rem',
                       background: 'rgba(15, 23, 42, 0.95)',
-                      border: '1.5px solid rgba(239, 68, 68, 0.45)',
-                      borderRadius: '14px',
+                      border: isAdminCodeFocused ? '2px solid #EF4444' : '1.5px solid rgba(239, 68, 68, 0.45)',
+                      borderRadius: '9999px',
                       color: '#FFFFFF',
-                      fontSize: '1.4rem',
-                      fontWeight: 800,
+                      fontSize: '1.45rem',
+                      fontWeight: 900,
                       fontFamily: 'var(--font-mono, monospace)',
-                      letterSpacing: '0.35em',
+                      letterSpacing: '0.4em',
                       textAlign: 'center',
                       outline: 'none',
-                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4)',
-                      transition: 'border-color 0.2s ease, box-shadow 0.2s ease'
-                    }}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = '#EF4444';
-                      e.target.style.boxShadow = '0 0 16px rgba(239, 68, 68, 0.35)';
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = 'rgba(239, 68, 68, 0.45)';
-                      e.target.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.4)';
+                      boxShadow: isAdminCodeFocused ? '0 0 20px rgba(239, 68, 68, 0.35)' : '0 4px 16px rgba(0, 0, 0, 0.4)',
+                      transition: 'all 0.25s cubic-bezier(0.2, 0, 0, 1)'
                     }}
                   />
                   <button
@@ -1650,53 +1663,56 @@ className="landing-hero-headline"
                     onClick={() => setShowAdminCode(!showAdminCode)}
                     style={{
                       position: 'absolute',
-                      right: '12px',
+                      right: '16px',
                       top: '50%',
                       transform: 'translateY(-50%)',
                       background: 'none',
                       border: 'none',
-                      color: '#94A3B8',
+                      color: showAdminCode ? '#EF4444' : '#94A3B8',
                       cursor: 'pointer',
-                      padding: '4px',
+                      padding: '6px',
                       display: 'flex',
-                      alignItems: 'center'
+                      alignItems: 'center',
+                      borderRadius: '50%',
+                      transition: 'color 0.2s ease'
                     }}
                     title={showAdminCode ? "Hide code" : "Show code"}
+                    aria-label={showAdminCode ? "Hide code" : "Show code"}
                   >
-                    {showAdminCode ? <EyeOff size={18} /> : <Eye size={18} />}
+                    {showAdminCode ? <EyeOff size={19} /> : <Eye size={19} />}
                   </button>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.45rem', fontSize: '0.75rem', color: '#94A3B8' }}>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.45rem', fontSize: '0.74rem', color: '#94A3B8' }}>
                   <span>Restricted Access Only</span>
-                  <span style={{ color: '#64748B' }}>Authorized Dispatchers</span>
+                  <span style={{ color: '#64748B' }}>Authorized Dispatchers (PIN: 8469)</span>
                 </div>
               </div>
 
-
-
-              {/* Submit Button */}
+              {/* Submit Google Rounded Button */}
               <button
                 id="admin-submit-btn"
                 type="submit"
                 disabled={adminLoginLoading}
-                className="btn btn-primary btn-3d"
+                className="btn btn-primary"
                 style={{
                   width: '100%',
                   marginTop: '0.5rem',
-                  padding: '0.85rem',
+                  padding: '0.9rem',
                   fontWeight: 800,
-                  fontSize: '0.95rem',
-                  borderRadius: '14px',
+                  fontSize: '0.96rem',
+                  borderRadius: '9999px',
                   background: 'linear-gradient(135deg, #EF4444 0%, #B91C1C 100%)',
-                  boxShadow: '0 6px 20px rgba(239, 68, 68, 0.4)',
+                  boxShadow: '0 6px 20px rgba(239, 68, 68, 0.45)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '0.5rem'
+                  gap: '0.55rem',
+                  cursor: 'pointer'
                 }}
               >
                 {adminLoginLoading ? (
-                  <span>Authenticating...</span>
+                  <span>Authenticating Clearance...</span>
                 ) : (
                   <>
                     <Lock size={16} />

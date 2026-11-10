@@ -479,11 +479,11 @@ export default function MainDashboard() {
                       {s.assignedDriver ? (
                         <div style={{ fontSize: '0.72rem', color: '#10B981', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '3px' }}>
                           <Truck size={11} />
-                          <span>Driver: {s.assignedDriver.name}</span>
+                          <span>Captain: {s.assignedDriver.name}</span>
                         </div>
                       ) : (
                         <div style={{ fontSize: '0.72rem', color: '#F59E0B', marginTop: '3px' }}>
-                          ● Awaiting Driver Acceptance
+                          ● Awaiting Captain Acceptance
                         </div>
                       )}
                     </td>

@@ -189,7 +189,7 @@ export default function App() {
             <div>
               <strong style={{ color: 'var(--text-main)' }}>AeroDispatch</strong> • Smart Express Logistics Platform
               <div style={{ marginTop: '0.25rem', color: 'var(--text-muted)' }}>
-                Next-generation dispatch network connecting shippers, drivers, and recipients.
+                Next-generation dispatch network connecting shippers, captains, and recipients.
               </div>
             </div>
             <div style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap', fontSize: '0.78rem' }}>
