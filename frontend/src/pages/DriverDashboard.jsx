@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
+import { getCleanDisplayName } from '../utils/userUtils';
 import StatusBadge from '../components/StatusBadge';
 import { SkeletonRunSheet } from '../components/SkeletonLoading';
 import CopyButton from '../components/CopyButton';
@@ -274,7 +275,7 @@ export default function DriverDashboard() {
           <h1 style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em', margin: 0 }}>
             {currentUser?.role === 'admin' 
               ? 'Captain Cockpit (Admin Master View)' 
-              : `Welcome, Captain ${currentUser?.name?.replace(/^captain\s+/i, '') || 'Rishabh Pandey'}`}
+              : `Welcome, ${getCleanDisplayName(currentUser, 'driver')}`}
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', margin: '0.2rem 0 0' }}>
             {currentUser?.role === 'admin'

@@ -35,104 +35,19 @@ export default function SettingsPage() {
     toggleTheme, 
     addToast, 
     switchRole,
-    resetToDefaultMock,
-    updateUserAvatar,
-    updateUserProfile,
-    openProfileZoom
+    resetToDefaultMock 
   } = useApp();
 
-  const fileInputRef = useRef(null);
-  const [avatarPreview, setAvatarPreview] = useState(currentUser?.avatarUrl || null);
-
-  useEffect(() => {
-    if (currentUser?.avatarUrl) {
-      setAvatarPreview(currentUser.avatarUrl);
-    }
-  }, [currentUser]);
-
-  const handlePhotoFileChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 10 * 1024 * 1024) {
-      addToast('Profile image must be less than 10MB', 'error');
-      return;
-    }
-
-    try {
-      const compressed = await compressAvatarImage(file, 320, 320, 0.85);
-      if (compressed) {
-        setAvatarPreview(compressed);
-        if (updateUserAvatar) {
-          updateUserAvatar(compressed);
-        }
-      }
-    } catch (err) {
-      console.warn("Avatar compression failed:", err);
-    }
-  };
-
-  const handleRemovePhoto = () => {
-    setAvatarPreview(null);
-    if (updateUserAvatar) {
-      updateUserAvatar(null);
-    }
-    addToast('Profile photograph removed', 'info');
-  };
-
   const [activeTab, setActiveTab] = useState('profile'); // 'profile' | 'security' | 'notifications' | 'preferences'
-
-  // Profile Form state initialized dynamically based on authenticated user
-  const [profileForm, setProfileForm] = useState({
-    name: currentUser?.name || 'Operator',
-    email: currentUser?.email || 'user@aerodispatch.internal',
-    phone: currentUser?.phone || (currentUser?.role === 'driver' ? '+91 98451 90214' : '+91 99001 88241'),
-    company: currentUser?.company || (currentUser?.role === 'admin' ? 'AeroDispatch National Operations' : currentUser?.role === 'driver' ? 'AeroDispatch Express Fleet' : 'Enterprise Merchant Shipper'),
-    timezone: 'Asia/Kolkata (IST +5:30)',
-    department: currentUser?.role === 'admin' ? 'Central Logistics & Air Dispatch' : currentUser?.role === 'driver' ? 'Field Delivery Operations' : 'Enterprise Merchant Shipper'
-  });
-
-  // Sync profile form when currentUser changes
-  useEffect(() => {
-    if (currentUser) {
-      setProfileForm({
-        name: currentUser.name || '',
-        email: currentUser.email || '',
-        phone: currentUser.phone || (currentUser.role === 'driver' ? '+91 98451 90214' : '+91 99001 88241'),
-        company: currentUser.company || (currentUser.role === 'admin' ? 'AeroDispatch National Operations' : currentUser.role === 'driver' ? 'AeroDispatch Express Fleet' : 'Enterprise Merchant Shipper'),
-        timezone: 'Asia/Kolkata (IST +5:30)',
-        department: currentUser.role === 'admin' ? 'Central Logistics & Air Dispatch' : currentUser.role === 'driver' ? 'Field Delivery Operations' : 'Enterprise Merchant Shipper'
-      });
-    }
-  }, [currentUser]);
-
-  // Security Form state
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(true);
-  const [sessionTimeout, setSessionTimeout] = useState('24h');
-
-  // Notification Preferences
   const [notifPrefs, setNotifPrefs] = useState({
     emailMilestones: true,
     smsExceptions: true,
     webhookDispatches: true,
     dailyDigest: false
   });
-
-  // App Preferences
-  const [units, setUnits] = useState('metric'); // 'metric' (kg/cm) | 'imperial' (lbs/in)
+  const [units, setUnits] = useState('metric');
   const [defaultTier, setDefaultTier] = useState('Express Air');
-
-  const handleProfileSave = (e) => {
-    e.preventDefault();
-    if (updateUserProfile) {
-      updateUserProfile({
-        name: profileForm.name,
-        phone: profileForm.phone,
-        company: profileForm.company
-      });
-    }
-    addToast('Profile and organizational settings saved successfully.', 'success');
-  };
 
   const handleSecuritySave = (e) => {
     e.preventDefault();
@@ -156,11 +71,8 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      {/* 2. Google Rounded Profile Card (Exact Image Layout with 5 Capsule Metric Pills) */}
-      <ProfileOverviewCard allowInlineEdit={true} />
-
-      {/* 3. Settings Nav Tabs */}
-      <div className="card" style={{ padding: '0.5rem', display: 'flex', gap: '0.35rem', overflowX: 'auto' }}>
+      {/* 2. Settings Nav Tabs */}
+      <div className="card" style={{ padding: '0.5rem', display: 'flex', gap: '0.35rem', overflowX: 'auto', borderRadius: '24px' }}>
         {[
           { id: 'profile', label: 'User Profile', icon: User },
           { id: 'security', label: 'Security & 2FA', icon: Shield },
@@ -185,198 +97,11 @@ export default function SettingsPage() {
 
       {/* 3. Tab Contents */}
 
-      {/* Profile Tab */}
+      {/* Profile Tab (Exact Image 1 Google Rounded Card Layout with 5 Capsule Metric Pills) */}
       {activeTab === 'profile' && (
-        <form onSubmit={handleProfileSave} className="card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1.25rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--border-subtle)', flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-              {/* Avatar with Camera & Zoom Click */}
-              <div 
-                style={{ position: 'relative', cursor: 'zoom-in' }}
-                onClick={openProfileZoom}
-                title="Click to view & zoom profile picture"
-              >
-                {avatarPreview ? (
-                  <img 
-                    src={avatarPreview} 
-                    alt="Profile Avatar" 
-                    style={{
-                      width: '72px',
-                      height: '72px',
-                      borderRadius: '50%',
-                      objectFit: 'cover',
-                      border: '3px solid var(--primary)',
-                      boxShadow: '0 4px 15px rgba(0, 0, 0, 0.4)'
-                    }}
-                  />
-                ) : (
-                  <div 
-                    style={{
-                      width: '72px',
-                      height: '72px',
-                      borderRadius: '50%',
-                      background: currentRole === 'admin' ? 'linear-gradient(135deg, #EF4444, #991B1B)' : 
-                                  currentRole === 'driver' ? 'linear-gradient(135deg, #F59E0B, #D97706)' : 
-                                  'linear-gradient(135deg, #EF4444, #E11D48)',
-                      color: '#FFFFFF',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 800,
-                      fontSize: '1.75rem',
-                      boxShadow: '0 4px 15px rgba(0, 0, 0, 0.4)'
-                    }}
-                  >
-                    {profileForm.name?.charAt(0) || 'U'}
-                  </div>
-                )}
-                <div 
-                  style={{
-                    position: 'absolute',
-                    bottom: '-2px',
-                    right: '-2px',
-                    width: '26px',
-                    height: '26px',
-                    borderRadius: '50%',
-                    background: 'var(--primary)',
-                    color: '#070B14',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    border: '2px solid var(--bg-card)',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-                    cursor: 'pointer'
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    fileInputRef.current?.click();
-                  }}
-                  title="Upload new photo"
-                >
-                  <Camera size={13} />
-                </div>
-              </div>
-
-              <div>
-                <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)' }}>
-                  {profileForm.name}
-                </div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                  {profileForm.company} • Role: <strong style={{ color: 'var(--primary)', textTransform: 'capitalize' }}>{currentRole}</strong>
-                </div>
-              </div>
-            </div>
-
-            {/* Photo Upload & Zoom Controls */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-              <input 
-                ref={fileInputRef}
-                type="file" 
-                accept="image/*" 
-                style={{ display: 'none' }} 
-                onChange={handlePhotoFileChange} 
-              />
-              <button
-                type="button"
-                className="btn btn-sm btn-primary"
-                onClick={() => fileInputRef.current?.click()}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78rem' }}
-              >
-                <UploadCloud size={14} />
-                <span>Upload Photo</span>
-              </button>
-
-              <button
-                type="button"
-                className="btn btn-sm btn-secondary"
-                onClick={openProfileZoom}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78rem' }}
-                title="View & zoom profile photo"
-              >
-                <ZoomIn size={14} />
-                <span>View &amp; Zoom</span>
-              </button>
-
-              {avatarPreview && (
-                <button
-                  type="button"
-                  className="btn btn-sm btn-secondary"
-                  onClick={handleRemovePhoto}
-                  style={{ color: '#EF4444', borderColor: 'rgba(239, 68, 68, 0.35)', padding: '0.45rem', fontSize: '0.78rem' }}
-                  title="Remove photo"
-                >
-                  <Trash2 size={14} />
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.25rem' }}>
-            <div>
-              <label className="form-label">Full Name</label>
-              <input 
-                type="text"
-                className="input-field"
-                value={profileForm.name}
-                onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
-                required
-              />
-            </div>
-
-            <div>
-              <label className="form-label">Email Address</label>
-              <input 
-                type="email"
-                className="input-field"
-                value={profileForm.email}
-                onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
-                required
-              />
-            </div>
-
-            <div>
-              <label className="form-label">Phone Number</label>
-              <input 
-                type="text"
-                className="input-field"
-                value={profileForm.phone}
-                onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <label className="form-label">Company / Department</label>
-              <input 
-                type="text"
-                className="input-field"
-                value={profileForm.company}
-                onChange={(e) => setProfileForm({ ...profileForm, company: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <label className="form-label">Default Operating Timezone</label>
-              <select 
-                className="form-select input-field"
-                value={profileForm.timezone}
-                onChange={(e) => setProfileForm({ ...profileForm, timezone: e.target.value })}
-                style={{ backgroundColor: '#0D1527', color: '#F8FAFC' }}
-              >
-                <option value="Asia/Kolkata (IST +5:30)" style={{ backgroundColor: '#0D1527', color: '#F8FAFC' }}>Asia/Kolkata (IST +5:30)</option>
-                <option value="Asia/Dubai (GST +4:00)" style={{ backgroundColor: '#0D1527', color: '#F8FAFC' }}>Asia/Dubai (GST +4:00)</option>
-                <option value="Europe/London (GMT +0:00)" style={{ backgroundColor: '#0D1527', color: '#F8FAFC' }}>Europe/London (GMT +0:00)</option>
-                <option value="America/New_York (EST -5:00)" style={{ backgroundColor: '#0D1527', color: '#F8FAFC' }}>America/New_York (EST -5:00)</option>
-              </select>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', paddingTop: '1rem', borderTop: '1px solid var(--border-subtle)' }}>
-            <button type="submit" className="btn btn-primary">
-              <Save size={15} />
-              <span>Save Profile Changes</span>
-            </button>
-          </div>
-        </form>
+        <div style={{ width: '100%' }}>
+          <ProfileOverviewCard allowInlineEdit={true} />
+        </div>
       )}
 
       {/* Security Tab */}

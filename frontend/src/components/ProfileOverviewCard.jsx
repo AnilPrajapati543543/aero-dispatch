@@ -1,6 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { compressAvatarImage } from '../utils/avatarUtils';
+import { getCleanDisplayName } from '../utils/userUtils';
 import { 
   Camera, 
   UploadCloud, 
@@ -12,7 +13,9 @@ import {
   Building2, 
   Phone, 
   Mail, 
-  ShieldCheck 
+  ShieldCheck,
+  Clock,
+  CheckCircle2
 } from 'lucide-react';
 
 export default function ProfileOverviewCard({ 
@@ -33,15 +36,39 @@ export default function ProfileOverviewCard({
   } = useApp();
 
   const fileInputRef = useRef(null);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(showEditMode);
   const [avatarPreview, setAvatarPreview] = useState(currentUser?.avatarUrl || null);
+
+  // Sync avatarPreview when currentUser changes
+  useEffect(() => {
+    if (currentUser?.avatarUrl) {
+      setAvatarPreview(currentUser.avatarUrl);
+    }
+  }, [currentUser?.avatarUrl]);
+
+  // Clean formatted name guaranteed free of email addresses
+  const userDisplayName = getCleanDisplayName(currentUser, currentRole);
 
   // Editable Form State
   const [editForm, setEditForm] = useState({
-    name: currentUser?.name || '',
-    phone: currentUser?.phone || (currentUser?.role === 'driver' ? '+91 98451 90214' : '+91 99001 88241'),
-    company: currentUser?.company || (currentUser?.role === 'admin' ? 'AeroDispatch National Operations' : currentUser?.role === 'driver' ? 'AeroDispatch Express Fleet' : 'Enterprise Merchant Shipper')
+    name: userDisplayName,
+    email: currentUser?.email || 'user@aerodispatch.internal',
+    phone: currentUser?.phone || (currentRole === 'driver' ? '+91 98451 90214' : '+91 99001 88241'),
+    company: currentUser?.company || (currentRole === 'admin' ? 'AeroDispatch National Operations' : currentRole === 'driver' ? 'AeroDispatch Express Fleet' : 'Enterprise Merchant Shipper'),
+    timezone: currentUser?.timezone || 'Asia/Kolkata (IST +5:30)'
   });
+
+  useEffect(() => {
+    if (currentUser) {
+      setEditForm({
+        name: getCleanDisplayName(currentUser, currentRole),
+        email: currentUser.email || 'user@aerodispatch.internal',
+        phone: currentUser.phone || (currentRole === 'driver' ? '+91 98451 90214' : '+91 99001 88241'),
+        company: currentUser.company || (currentRole === 'admin' ? 'AeroDispatch National Operations' : currentRole === 'driver' ? 'AeroDispatch Express Fleet' : 'Enterprise Merchant Shipper'),
+        timezone: currentUser.timezone || 'Asia/Kolkata (IST +5:30)'
+      });
+    }
+  }, [currentUser, currentRole]);
 
   // Calculate live stats based on role if customStats not provided
   const calculateDefaultStats = () => {
@@ -107,6 +134,7 @@ export default function ProfileOverviewCard({
         if (updateUserAvatar) {
           updateUserAvatar(compressed);
         }
+        addToast('Profile photograph updated successfully!', 'success');
       }
     } catch (err) {
       console.warn("Avatar compression failed:", err);
@@ -133,11 +161,13 @@ export default function ProfileOverviewCard({
       updateUserProfile({
         name: editForm.name.trim(),
         phone: editForm.phone.trim(),
-        company: editForm.company.trim()
+        company: editForm.company.trim(),
+        timezone: editForm.timezone
       });
     }
 
     setIsEditing(false);
+    addToast('Profile updated successfully!', 'success');
   };
 
   const roleTitle = currentRole === 'admin' 
@@ -146,10 +176,6 @@ export default function ProfileOverviewCard({
       ? 'Fleet Delivery Captain' 
       : 'Customer Merchant';
 
-  const rawName = currentUser?.name || 'Operator';
-  const userDisplayName = currentRole === 'driver' && !rawName.toLowerCase().startsWith('captain')
-    ? `Captain ${rawName}`
-    : rawName;
   const userSubtitle = `Member since 2026 · ${currentUser?.company || currentUser?.hub || 'Mumbai Central Hub'} · ${roleTitle}`;
 
   return (
@@ -160,9 +186,10 @@ export default function ProfileOverviewCard({
         padding: '2rem',
         background: 'var(--bg-card)',
         border: '1px solid var(--border-subtle)',
-        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
-        transition: 'all 0.3s ease',
-        position: 'relative'
+        boxShadow: '0 4px 24px rgba(0, 0, 0, 0.06)',
+        transition: 'all 0.3s cubic-bezier(0.2, 0, 0, 1)',
+        position: 'relative',
+        width: '100%'
       }}
     >
       {/* Hidden File Input for Avatar Upload */}
@@ -174,7 +201,7 @@ export default function ProfileOverviewCard({
         onChange={handlePhotoFileChange} 
       />
 
-      {/* Top Row: Avatar + Name & Subtitle + Edit profile Pill Button */}
+      {/* Top Row: Avatar + User Identity + Edit Profile Pill Button */}
       <div 
         style={{ 
           display: 'flex', 
@@ -190,8 +217,8 @@ export default function ProfileOverviewCard({
           <div 
             style={{ 
               position: 'relative', 
-              width: '68px', 
-              height: '68px', 
+              width: '72px', 
+              height: '72px', 
               borderRadius: '50%', 
               cursor: 'pointer',
               flexShrink: 0
@@ -209,7 +236,7 @@ export default function ProfileOverviewCard({
                   borderRadius: '50%',
                   objectFit: 'cover',
                   border: '3px solid var(--primary)',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+                  boxShadow: '0 4px 14px rgba(0, 0, 0, 0.16)'
                 }}
               />
             ) : (
@@ -226,8 +253,8 @@ export default function ProfileOverviewCard({
                   alignItems: 'center',
                   justifyContent: 'center',
                   fontWeight: 800,
-                  fontSize: '1.65rem',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+                  fontSize: '1.75rem',
+                  boxShadow: '0 4px 14px rgba(0, 0, 0, 0.16)'
                 }}
               >
                 {userDisplayName.charAt(0).toUpperCase()}
@@ -240,8 +267,8 @@ export default function ProfileOverviewCard({
                 position: 'absolute',
                 bottom: '-2px',
                 right: '-2px',
-                width: '24px',
-                height: '24px',
+                width: '26px',
+                height: '26px',
                 borderRadius: '50%',
                 background: 'var(--primary)',
                 color: '#070B14',
@@ -258,7 +285,7 @@ export default function ProfileOverviewCard({
               }}
               title="Upload new profile photo"
             >
-              <Camera size={12} />
+              <Camera size={13} />
             </div>
           </div>
 
@@ -266,7 +293,7 @@ export default function ProfileOverviewCard({
           <div>
             <h2 
               style={{ 
-                fontSize: '1.6rem', 
+                fontSize: '1.65rem', 
                 fontWeight: 800, 
                 color: 'var(--text-main)', 
                 margin: 0,
@@ -289,21 +316,25 @@ export default function ProfileOverviewCard({
           </div>
         </div>
 
-        {/* Right: Pill Button "Edit profile" */}
+        {/* Right: Pill Button "Edit profile" (Exact Google rounded pill from Image 1) */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
           {isEditing ? (
             <button
               type="button"
-              className="btn btn-sm btn-secondary google-pill-btn"
+              className="google-pill-btn"
               onClick={() => setIsEditing(false)}
               style={{
                 borderRadius: '9999px',
-                padding: '0.55rem 1.25rem',
-                fontSize: '0.85rem',
+                padding: '0.55rem 1.35rem',
+                fontSize: '0.86rem',
                 fontWeight: 700,
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.4rem'
+                gap: '0.45rem',
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--border-medium)',
+                color: 'var(--text-muted)',
+                cursor: 'pointer'
               }}
             >
               <X size={15} />
@@ -315,11 +346,6 @@ export default function ProfileOverviewCard({
               className="google-pill-btn"
               onClick={() => {
                 if (allowInlineEdit) {
-                  setEditForm({
-                    name: currentUser?.name || '',
-                    phone: currentUser?.phone || (currentUser?.role === 'driver' ? '+91 98451 90214' : '+91 99001 88241'),
-                    company: currentUser?.company || (currentUser?.role === 'admin' ? 'AeroDispatch National Operations' : currentUser?.role === 'driver' ? 'AeroDispatch Express Fleet' : 'Enterprise Merchant Shipper')
-                  });
                   setIsEditing(true);
                 } else if (onEditClick) {
                   onEditClick();
@@ -329,14 +355,15 @@ export default function ProfileOverviewCard({
               }}
               style={{
                 borderRadius: '9999px',
-                padding: '0.55rem 1.45rem',
+                padding: '0.6rem 1.6rem',
                 fontSize: '0.88rem',
                 fontWeight: 700,
                 background: 'var(--bg-secondary)',
                 border: '1px solid var(--border-medium)',
                 color: 'var(--text-main)',
                 cursor: 'pointer',
-                transition: 'all 0.2s cubic-bezier(0.2, 0, 0, 1)'
+                transition: 'all 0.2s cubic-bezier(0.2, 0, 0, 1)',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.04)'
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.borderColor = 'var(--primary)';
@@ -358,19 +385,30 @@ export default function ProfileOverviewCard({
         <form 
           onSubmit={handleSaveProfile} 
           style={{ 
-            marginTop: '1.5rem', 
-            padding: '1.25rem', 
-            borderRadius: '20px', 
+            marginTop: '1.75rem', 
+            padding: '1.5rem', 
+            borderRadius: '24px', 
             background: 'var(--bg-secondary)', 
             border: '1px solid var(--border-subtle)',
             display: 'flex',
             flexDirection: 'column',
-            gap: '1rem'
+            gap: '1.25rem',
+            animation: 'fadeIn 0.25s ease-out'
           }}
         >
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.75rem' }}>
+            <span style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--text-main)' }}>
+              Edit Account Profile Information
+            </span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              Changes take effect immediately across all operational dashboards
+            </span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.15rem' }}>
+            {/* Full Name */}
             <div>
-              <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 700 }}>Full Name</label>
+              <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-main)' }}>Full Name</label>
               <input 
                 type="text"
                 className="input-field"
@@ -378,52 +416,88 @@ export default function ProfileOverviewCard({
                 onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
                 placeholder="Enter your real full name"
                 required
-                style={{ borderRadius: '9999px', padding: '0.55rem 1.15rem' }}
+                style={{ borderRadius: '9999px', padding: '0.65rem 1.25rem', fontSize: '0.88rem' }}
               />
             </div>
 
+            {/* Email Address (Cognito Verified Read-Only) */}
             <div>
-              <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 700 }}>Phone Number</label>
+              <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <span>Email Address</span>
+                <span style={{ fontSize: '0.68rem', color: 'var(--accent-emerald)', fontWeight: 700 }}>✓ Verified</span>
+              </label>
+              <input 
+                type="email"
+                className="input-field"
+                value={editForm.email}
+                disabled
+                title="Cognito Primary Identity Email (Protected)"
+                style={{ borderRadius: '9999px', padding: '0.65rem 1.25rem', fontSize: '0.88rem', opacity: 0.75, cursor: 'not-allowed' }}
+              />
+            </div>
+
+            {/* Phone Number */}
+            <div>
+              <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-main)' }}>Phone Number</label>
               <input 
                 type="text"
                 className="input-field"
                 value={editForm.phone}
                 onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
                 placeholder="+91 XXXXX XXXXX"
-                style={{ borderRadius: '9999px', padding: '0.55rem 1.15rem' }}
+                style={{ borderRadius: '9999px', padding: '0.65rem 1.25rem', fontSize: '0.88rem' }}
               />
             </div>
 
+            {/* Company / Hub */}
             <div>
-              <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 700 }}>Company / Hub</label>
+              <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-main)' }}>Company / Operating Hub</label>
               <input 
                 type="text"
                 className="input-field"
                 value={editForm.company}
                 onChange={(e) => setEditForm({ ...editForm, company: e.target.value })}
                 placeholder="e.g. Mumbai Gateway Hub"
-                style={{ borderRadius: '9999px', padding: '0.55rem 1.15rem' }}
+                style={{ borderRadius: '9999px', padding: '0.65rem 1.25rem', fontSize: '0.88rem' }}
               />
+            </div>
+
+            {/* Operating Timezone */}
+            <div>
+              <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-main)' }}>Default Timezone</label>
+              <select 
+                className="input-field"
+                value={editForm.timezone}
+                onChange={(e) => setEditForm({ ...editForm, timezone: e.target.value })}
+                style={{ borderRadius: '9999px', padding: '0.65rem 1.25rem', fontSize: '0.88rem' }}
+              >
+                <option value="Asia/Kolkata (IST +5:30)">Asia/Kolkata (IST +5:30)</option>
+                <option value="UTC (GMT +0:00)">UTC (GMT +0:00)</option>
+                <option value="America/New_York (EST -5:00)">America/New_York (EST -5:00)</option>
+                <option value="Europe/London (GMT +1:00)">Europe/London (GMT +1:00)</option>
+                <option value="Asia/Singapore (SGT +8:00)">Asia/Singapore (SGT +8:00)</option>
+              </select>
             </div>
           </div>
 
+          {/* Form Actions */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', paddingTop: '0.5rem' }}>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <button
                 type="button"
-                className="btn btn-sm btn-secondary"
+                className="btn btn-sm btn-secondary google-pill-btn"
                 onClick={() => fileInputRef.current?.click()}
-                style={{ borderRadius: '9999px', fontSize: '0.78rem' }}
+                style={{ borderRadius: '9999px', fontSize: '0.8rem', padding: '0.5rem 1rem' }}
               >
                 <UploadCloud size={14} />
-                <span>Change Photo</span>
+                <span>Upload Photograph</span>
               </button>
               {avatarPreview && (
                 <button
                   type="button"
-                  className="btn btn-sm btn-secondary"
+                  className="btn btn-sm btn-secondary google-pill-btn"
                   onClick={handleRemovePhoto}
-                  style={{ borderRadius: '9999px', fontSize: '0.78rem', color: '#EF4444' }}
+                  style={{ borderRadius: '9999px', fontSize: '0.8rem', color: '#EF4444', borderColor: 'rgba(239, 68, 68, 0.35)', padding: '0.5rem 1rem' }}
                 >
                   <Trash2 size={14} />
                   <span>Remove Photo</span>
@@ -431,19 +505,29 @@ export default function ProfileOverviewCard({
               )}
             </div>
 
-            <button 
-              type="submit" 
-              className="btn btn-sm btn-primary"
-              style={{ borderRadius: '9999px', padding: '0.55rem 1.5rem', fontWeight: 700 }}
-            >
-              <Check size={15} />
-              <span>Save Changes</span>
-            </button>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button 
+                type="button"
+                className="btn btn-sm btn-secondary google-pill-btn"
+                onClick={() => setIsEditing(false)}
+                style={{ borderRadius: '9999px', padding: '0.6rem 1.35rem', fontWeight: 600 }}
+              >
+                Cancel
+              </button>
+              <button 
+                type="submit" 
+                className="btn btn-sm btn-primary google-pill-btn"
+                style={{ borderRadius: '9999px', padding: '0.6rem 1.6rem', fontWeight: 700 }}
+              >
+                <Check size={15} />
+                <span>Save Profile Changes</span>
+              </button>
+            </div>
           </div>
         </form>
       )}
 
-      {/* Subtle Hairline Divider (Matching the image) */}
+      {/* Subtle Hairline Divider (Matching Image 1) */}
       <div 
         style={{ 
           height: '1px', 
@@ -452,7 +536,7 @@ export default function ProfileOverviewCard({
         }} 
       />
 
-      {/* Bottom Row: Exactly 5 Pill-Shaped Statistic Tiles */}
+      {/* Bottom Row: Exactly 5 Pill-Shaped Statistic Tiles (Matching Image 1) */}
       <div 
         className="google-profile-stats-row"
         style={{ 
@@ -467,7 +551,7 @@ export default function ProfileOverviewCard({
             className="google-profile-stat-pill"
             style={{
               borderRadius: '9999px',
-              padding: '1rem 0.75rem',
+              padding: '1.15rem 0.85rem',
               background: 'var(--bg-secondary)',
               border: '1px solid var(--border-subtle)',
               textAlign: 'center',
@@ -476,23 +560,26 @@ export default function ProfileOverviewCard({
               justifyContent: 'center',
               alignItems: 'center',
               minWidth: 0,
-              transition: 'transform 0.2s ease, border-color 0.2s ease'
+              transition: 'all 0.25s cubic-bezier(0.2, 0, 0, 1)',
+              boxShadow: '0 2px 6px rgba(0, 0, 0, 0.02)'
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.borderColor = 'var(--primary)';
               e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.08)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.borderColor = 'var(--border-subtle)';
               e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.02)';
             }}
           >
             <span 
               style={{ 
-                fontSize: '0.78rem', 
+                fontSize: '0.8rem', 
                 color: 'var(--text-muted)', 
                 fontWeight: 600,
-                marginBottom: '0.35rem',
+                marginBottom: '0.4rem',
                 textTransform: 'none',
                 letterSpacing: '0.01em',
                 whiteSpace: 'nowrap',
@@ -505,10 +592,10 @@ export default function ProfileOverviewCard({
             </span>
             <span 
               style={{ 
-                fontSize: '1.15rem', 
+                fontSize: '1.2rem', 
                 fontWeight: 800, 
                 color: 'var(--text-main)',
-                letterSpacing: '-0.01em',
+                letterSpacing: '-0.02em',
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -523,4 +610,3 @@ export default function ProfileOverviewCard({
     </div>
   );
 }
-

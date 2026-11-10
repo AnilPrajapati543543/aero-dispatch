@@ -137,8 +137,9 @@ export default function MainDashboard() {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
           <button 
-            className="btn btn-secondary btn-sm"
+            className="btn btn-secondary btn-sm google-pill-btn"
             onClick={() => setActiveTab('settings')}
+            style={{ borderRadius: '9999px', padding: '0.5rem 1.15rem' }}
             title="Administrator Profile & Security Settings"
           >
             <Settings size={14} />

@@ -17,6 +17,7 @@ import {
   getPersistentAvatar, 
   savePersistentAvatar 
 } from '../utils/avatarUtils';
+import { getCleanDisplayName } from '../utils/userUtils';
 
 const AppContext = createContext();
 
@@ -31,9 +32,7 @@ export function AppProvider({ children }) {
           if (restored) parsed.avatarUrl = restored;
         }
         // Clean name if currently stored as raw gmail address or email prefix
-        if (!parsed.name || parsed.name.includes('@') || parsed.name === parsed.email?.split('@')[0]) {
-          parsed.name = extractDisplayName(parsed.email);
-        }
+        parsed.name = getCleanDisplayName(parsed, parsed.role);
         return parsed;
       } catch (e) {}
     }
@@ -287,6 +286,9 @@ export function AppProvider({ children }) {
       ...currentUser,
       ...updatedFields
     };
+    if (nextUser.name) {
+      nextUser.name = getCleanDisplayName(nextUser, nextUser.role);
+    }
 
     setCurrentUser(nextUser);
     try {
@@ -590,9 +592,7 @@ export function AppProvider({ children }) {
       }
 
       // Guarantee clean human Full Name instead of raw email address/handle
-      if (!authUser.name || authUser.name.includes('@') || authUser.name === authUser.email?.split('@')[0]) {
-        authUser.name = extractDisplayName(authUser.email, token);
-      }
+      authUser.name = getCleanDisplayName(authUser, authUser.role);
 
       setAuthToken(token);
       setCurrentRole(authUser.role);
@@ -1017,7 +1017,7 @@ export function AppProvider({ children }) {
   // Driver declines unassigned parcel request
   const declineDriverOrder = async (awbNumber) => {
     const driverId = currentUser?.driverId || 'DRV-8469';
-    const driverName = currentUser?.name || 'Courier Associate';
+    const driverName = getCleanDisplayName(currentUser, 'driver') || 'Delivery Captain';
 
     if (isBackendOnline) {
       try {

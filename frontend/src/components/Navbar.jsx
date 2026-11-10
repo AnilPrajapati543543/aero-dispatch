@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import AeroLogo from './AeroLogo';
+import { getCleanDisplayName } from '../utils/userUtils';
 import {
   Search,
   Bell,
@@ -328,10 +329,10 @@ export default function Navbar() {
                       fontSize: '0.72rem'
                     }}
                   >
-                    {currentUser.name?.charAt(0) || 'U'}
+                    {getCleanDisplayName(currentUser, currentUser.role)?.charAt(0) || 'U'}
                   </div>
                   <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-main)' }}>
-                    {currentUser.name?.split(' ')[0]} ({currentUser.role})
+                    {getCleanDisplayName(currentUser, currentUser.role)?.split(' ')[0]} ({currentUser.role})
                   </span>
                 </div>
 
@@ -407,6 +408,7 @@ export default function Navbar() {
 
             {/* Clean User Profile Avatar & Name Pill (With Zoom Option & Clickable to Settings) */}
             <div
+              className="navbar-user-chip"
               onClick={() => setActiveTab('settings')}
               style={{
                 display: 'flex',
@@ -434,7 +436,7 @@ export default function Navbar() {
                 {currentUser?.avatarUrl ? (
                   <img 
                     src={currentUser.avatarUrl} 
-                    alt={currentUser.name} 
+                    alt={getCleanDisplayName(currentUser, currentRole)} 
                     style={{ 
                       width: '28px', 
                       height: '28px', 
@@ -461,21 +463,20 @@ export default function Navbar() {
                       fontSize: '0.74rem'
                     }}
                   >
-                    {currentUser?.name?.charAt(0) || 'U'}
+                    {getCleanDisplayName(currentUser, currentRole)?.charAt(0) || 'U'}
                   </div>
                 )}
               </div>
 
               <div
-                onClick={() => setActiveTab('settings')}
                 style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15 }}
                 title="Manage account settings"
               >
-                <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-main)', maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {currentUser?.name || 'Operator'}
+                <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-main)', maxWidth: '110px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {getCleanDisplayName(currentUser, currentRole)}
                 </span>
                 <span style={{ fontSize: '0.62rem', color: 'var(--primary)', fontWeight: 600, textTransform: 'capitalize' }}>
-                  {currentRole}
+                  {currentRole === 'driver' ? 'Captain' : currentRole}
                 </span>
               </div>
             </div>

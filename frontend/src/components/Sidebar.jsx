@@ -1,6 +1,7 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
 import AeroLogo from './AeroLogo';
+import { getCleanDisplayName } from '../utils/userUtils';
 import { 
   LayoutDashboard, 
   Package, 
@@ -343,7 +344,7 @@ export default function Sidebar() {
                 {currentUser?.avatarUrl ? (
                   <img 
                     src={currentUser.avatarUrl} 
-                    alt={currentUser.name} 
+                    alt={getCleanDisplayName(currentUser, userRole)} 
                     style={{ 
                       width: '36px', 
                       height: '36px', 
@@ -370,16 +371,16 @@ export default function Sidebar() {
                       color: '#FFFFFF'
                     }}
                   >
-                    {currentUser?.name?.charAt(0) || 'U'}
+                    {getCleanDisplayName(currentUser, userRole)?.charAt(0) || 'U'}
                   </div>
                 )}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                 <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {currentUser?.name || 'User'}
+                  {getCleanDisplayName(currentUser, userRole)}
                 </span>
                 <span style={{ fontSize: '0.68rem', color: 'var(--primary)', fontWeight: 600, textTransform: 'capitalize' }}>
-                  {userRole} • Settings ➔
+                  {userRole === 'driver' ? 'Captain' : userRole} • Settings ➔
                 </span>
               </div>
             </div>

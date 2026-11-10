@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
+import { getCleanDisplayName } from '../utils/userUtils';
 import StatusBadge from '../components/StatusBadge';
 import CopyButton from '../components/CopyButton';
 import TrackingTimeline from '../components/TrackingTimeline';
@@ -147,9 +148,9 @@ export default function ShipmentManagementPage() {
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.2rem' }}>
             {currentUser?.role === 'customer' 
-              ? `Account: ${currentUser?.name || 'Customer Account'} (${currentUser?.company || 'Business Merchant'}). Showing exclusively orders booked by or addressed to your account.`
+              ? `Account: ${getCleanDisplayName(currentUser, 'customer')} (${currentUser?.company || 'Business Merchant'}). Showing exclusively orders booked by or addressed to your account.`
               : currentUser?.role === 'driver'
-              ? `Assigned deliveries for Captain ${currentUser?.name || 'Courier Captain'} (${currentUser?.driverId || 'CPT-Active'}).`
+              ? `Assigned deliveries for ${getCleanDisplayName(currentUser, 'driver')} (${currentUser?.driverId || 'CPT-Active'}).`
               : 'Filter, search, inspect, and export express shipments across all active hubs.'
             }
           </p>
@@ -157,8 +158,9 @@ export default function ShipmentManagementPage() {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
           <button 
-            className="btn btn-secondary btn-sm"
+            className="btn btn-secondary btn-sm google-pill-btn"
             onClick={() => setActiveTab('settings')}
+            style={{ borderRadius: '9999px', padding: '0.5rem 1.15rem' }}
             title="Account & Profile Settings"
           >
             <Settings size={14} />

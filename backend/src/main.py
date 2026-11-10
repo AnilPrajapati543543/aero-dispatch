@@ -899,7 +899,9 @@ def driver_accept_order(
             detail=f"Consignment with ID '{order_id}' was not found.",
         )
     driver_id = user.get("driverId") or "DRV-504"
-    driver_name = user.get("name") or "Courier Associate"
+    driver_name = user.get("name") or "Delivery Captain"
+    if not driver_name.lower().startswith("captain"):
+        driver_name = f"Captain {driver_name}"
     driver_phone = user.get("phoneNumber") or user.get("phone") or "+91 90043 58469"
     vehicle_number = user.get("vehicleNumber") or "MH-02-EE-8891"
 
@@ -915,7 +917,7 @@ def driver_accept_order(
         updated = order_service.update_status(
             order_id=order_id,
             target_status="OUT_FOR_DELIVERY",
-            notes=f"Accepted by courier associate {driver_name} for immediate dispatch.",
+            notes=f"Accepted by delivery captain {driver_name} for immediate dispatch.",
             location=order.get("currentLocation", "Distribution Station"),
         )
     except Exception as e:
