@@ -177,12 +177,12 @@ body.theme-light .card p {
   color: #334155;
 }
 
-body.theme-light h1:not(.landing-hero-headline):not(.banner-maroon-dark *):not(.track-tab-btn-active *),
-body.theme-light h2:not(.landing-hero-headline):not(.banner-maroon-dark *):not(.track-tab-btn-active *),
-body.theme-light h3:not(.landing-hero-headline):not(.banner-maroon-dark *):not(.track-tab-btn-active *),
-body.theme-light h4:not(.landing-hero-headline):not(.banner-maroon-dark *):not(.track-tab-btn-active *),
-body.theme-light h5:not(.landing-hero-headline):not(.banner-maroon-dark *):not(.track-tab-btn-active *),
-body.theme-light h6:not(.landing-hero-headline):not(.banner-maroon-dark *):not(.track-tab-btn-active *) {
+body.theme-light h1:not(.landing-hero-headline):not(.banner-maroon-dark *):not(.track-tab-btn-active *):not(.admin-modal-card *),
+body.theme-light h2:not(.landing-hero-headline):not(.banner-maroon-dark *):not(.track-tab-btn-active *):not(.admin-modal-card *),
+body.theme-light h3:not(.landing-hero-headline):not(.banner-maroon-dark *):not(.track-tab-btn-active *):not(.admin-modal-card *),
+body.theme-light h4:not(.landing-hero-headline):not(.banner-maroon-dark *):not(.track-tab-btn-active *):not(.admin-modal-card *),
+body.theme-light h5:not(.landing-hero-headline):not(.banner-maroon-dark *):not(.track-tab-btn-active *):not(.admin-modal-card *),
+body.theme-light h6:not(.landing-hero-headline):not(.banner-maroon-dark *):not(.track-tab-btn-active *):not(.admin-modal-card *) {
   color: #0F172A !important;
 }
 
@@ -229,6 +229,29 @@ body.theme-light textarea:focus {
 body.theme-light input::placeholder,
 body.theme-light textarea::placeholder {
   color: #94A3B8 !important;
+}
+
+/* Admin Modal Dialog Theme Consistency (Ensures Sleek Dark Aesthetic in Light Mode) */
+.admin-modal-card h3 {
+  color: #FFFFFF !important;
+}
+body.theme-light .admin-modal-card input#admin-passkey-input,
+.admin-modal-card input#admin-passkey-input {
+  background: rgba(15, 23, 42, 0.95) !important;
+  color: #FFFFFF !important;
+  border: 1.5px solid rgba(239, 68, 68, 0.45) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+}
+body.theme-light .admin-modal-card input#admin-passkey-input:focus,
+.admin-modal-card input#admin-passkey-input:focus {
+  background: rgba(15, 23, 42, 0.98) !important;
+  color: #FFFFFF !important;
+  border: 2px solid #EF4444 !important;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.35) !important;
+}
+body.theme-light .admin-modal-card input#admin-passkey-input::placeholder,
+.admin-modal-card input#admin-passkey-input::placeholder {
+  color: rgba(255, 255, 255, 0.35) !important;
 }
 
 body.theme-light .btn-secondary {
