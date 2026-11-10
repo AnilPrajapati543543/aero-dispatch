@@ -161,7 +161,7 @@ export default function LandingPage() {
     setActiveTab('create-order');
   };
 
-  const handleAdminModalLogin = (e) => {
+  const handleAdminModalLogin = async (e) => {
     e.preventDefault();
     const code = adminCode.trim();
     if (!code) {
@@ -175,7 +175,7 @@ export default function LandingPage() {
     setAdminLoginLoading(true);
     setAdminLoginError('');
     try {
-      loginWithAdminCode(code);
+      await loginWithAdminCode(code);
       setIsAdminModalOpen(false);
       setAdminCode('');
       addToast('Logged in as Administrator.', 'success');

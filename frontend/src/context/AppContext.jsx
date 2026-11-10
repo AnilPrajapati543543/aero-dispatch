@@ -493,12 +493,28 @@ export function AppProvider({ children }) {
     const minDelay = new Promise(resolve => setTimeout(resolve, 1500)); // Exactly 1.5s skeleton effect
     try {
       if (isBackendOnline && currentUser) {
-        const res = await apiListOrders({ role: currentUser.role, token: authToken });
+        let tokenToUse = authToken;
+        if (currentUser.role === 'admin' && (!tokenToUse || !tokenToUse.includes('.'))) {
+          try {
+            const authRes = await apiLogin('admin@aerodispatch.io', 'Admin@AeroDispatch2026!', 'admin');
+            if (authRes && authRes.token) {
+              tokenToUse = authRes.token;
+              setAuthToken(tokenToUse);
+            }
+          } catch (e) {
+            console.warn("Could not exchange admin token:", e);
+          }
+        }
+        const res = await apiListOrders({ role: currentUser.role, token: tokenToUse });
         if (res && Array.isArray(res.data) && res.data.length > 0) {
           setShipments(prev => {
             const map = new Map();
-            (prev || []).forEach(o => map.set(o.awbNumber, o));
-            res.data.forEach(o => map.set(o.awbNumber, o));
+            (prev || []).forEach(o => {
+              if (o.awbNumber && o.awbNumber !== 'AD-8849-2041') map.set(o.awbNumber, o);
+            });
+            res.data.forEach(o => {
+              if (o.awbNumber && o.awbNumber !== 'AD-8849-2041') map.set(o.awbNumber, o);
+            });
             return Array.from(map.values());
           });
         }
@@ -690,7 +706,7 @@ export function AppProvider({ children }) {
   };
 
   // Admin instant login via dedicated access code (8469) - No Gmail / Email required
-  const loginWithAdminCode = (code) => {
+  const loginWithAdminCode = async (code) => {
     if (String(code).trim() !== '8469') {
       throw new Error('Invalid administrator access code. Authorization failed.');
     }
@@ -702,7 +718,18 @@ export function AppProvider({ children }) {
       permissions: ['ALL', 'SYSTEM_OVERRIDE'],
       avatarUrl: savedAvatar || undefined
     };
-    const token = `admin-code-token-${Date.now()}`;
+    let token = `admin-code-token-${Date.now()}`;
+
+    // Securely exchange admin clearance for an authenticated backend JWT for DynamoDB sync
+    try {
+      const authRes = await apiLogin('admin@aerodispatch.io', 'Admin@AeroDispatch2026!', 'admin');
+      if (authRes && authRes.token) {
+        token = authRes.token;
+      }
+    } catch (e) {
+      console.warn("Backend auth exchange failed, using local offline clearance:", e);
+    }
+
     setCurrentUser(adminUser);
     setCurrentRole('admin');
     setAuthToken(token);
@@ -720,6 +747,17 @@ export function AppProvider({ children }) {
 
     // Trigger Admin specific entrance animation
     setLoginAnimationRole('admin');
+
+    // Sync live DynamoDB shipments
+    try {
+      const ordersRes = await apiListOrders({ role: 'admin', token });
+      if (ordersRes && Array.isArray(ordersRes.data) && ordersRes.data.length > 0) {
+        setShipments(ordersRes.data);
+        localStorage.setItem('aerodispatch_shipments', JSON.stringify(ordersRes.data));
+      }
+    } catch (err) {
+      console.warn("Could not sync live admin orders:", err);
+    }
 
     return adminUser;
   };

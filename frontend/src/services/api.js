@@ -23,12 +23,17 @@ export {
   cognitoConfirmForgotPassword 
 };
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
+export const API_BASE_URL = (() => {
+  if (typeof window !== 'undefined' && window.location.origin && window.location.origin.includes('aerodispatch.site')) {
+    return window.location.origin;
+  }
+  return import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
+})();
 export const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL || API_BASE_URL.replace(/^http/, 'ws');
 
 export async function checkBackendHealth() {
   try {
-    const res = await fetch(`${API_BASE_URL}/health`, { method: 'GET', signal: AbortSignal.timeout(1500) });
+    const res = await fetch(`${API_BASE_URL}/health`, { method: 'GET', signal: AbortSignal.timeout(3500) });
     if (!res.ok) return false;
     const data = await res.json();
     return data.status === 'ok';
