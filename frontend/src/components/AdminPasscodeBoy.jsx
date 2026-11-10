@@ -6,7 +6,7 @@ import React from 'react';
  * - 'idle': Friendly cartoon smile, blinking, waving gently ("Hey there! What's the secret PIN? 🤫")
  * - 'hiding': Both hands up covering eyes, wiggling fingers, blushing ("I'm not looking, I swear! 🙈")
  * - 'peeking': One eye peeking through fingers with pupil darting, cheeky smirk ("Oho, peeking at the PIN? 👀")
- * - 'wrong': Head wobble, spiral dizzy eyes, bouncing sweat drop ("Oops! Wrong PIN... Try 8469 😅")
+ * - 'wrong': Head wobble, spiral dizzy eyes, bouncing sweat drop ("Oops! Incorrect PIN... Please try again 😅")
  * - 'success': Cheering with hands in the air, smiling eyes, spinning stars ("Boom! You're in! 🚀")
  */
 export default function AdminPasscodeBoy({ state = 'idle', codeLength = 0, hasError = false }) {
@@ -17,7 +17,7 @@ export default function AdminPasscodeBoy({ state = 'idle', codeLength = 0, hasEr
   const isIdle = !isWrong && !isSuccess && !isPeeking && !isHiding;
 
   return (
-    <div 
+    <div
       className="admin-passcode-mascot"
       style={{
         display: 'flex',
@@ -77,35 +77,34 @@ export default function AdminPasscodeBoy({ state = 'idle', codeLength = 0, hasEr
       {/* Funny Interactive Speech Bubble */}
       <div
         style={{
-          background: isWrong 
-            ? 'rgba(239, 68, 68, 0.22)' 
-            : isSuccess 
-            ? 'rgba(16, 185, 129, 0.22)' 
-            : isPeeking 
-            ? 'rgba(245, 158, 11, 0.22)' 
-            : isHiding 
-            ? 'rgba(239, 68, 68, 0.18)' 
-            : 'rgba(59, 130, 246, 0.18)',
-          border: `1.5px solid ${
-            isWrong 
-              ? 'rgba(239, 68, 68, 0.55)' 
-              : isSuccess 
-              ? 'rgba(16, 185, 129, 0.55)' 
-              : isPeeking 
-              ? 'rgba(245, 158, 11, 0.55)' 
-              : isHiding 
-              ? 'rgba(239, 68, 68, 0.45)' 
-              : 'rgba(59, 130, 246, 0.4)'
-          }`,
-          color: isWrong 
-            ? '#FCA5A5' 
-            : isSuccess 
-            ? '#6EE7B7' 
-            : isPeeking 
-            ? '#FCD34D' 
-            : isHiding 
-            ? '#FCA5A5' 
-            : '#93C5FD',
+          background: isWrong
+            ? 'rgba(239, 68, 68, 0.22)'
+            : isSuccess
+              ? 'rgba(16, 185, 129, 0.22)'
+              : isPeeking
+                ? 'rgba(245, 158, 11, 0.22)'
+                : isHiding
+                  ? 'rgba(239, 68, 68, 0.18)'
+                  : 'rgba(59, 130, 246, 0.18)',
+          border: `1.5px solid ${isWrong
+              ? 'rgba(239, 68, 68, 0.55)'
+              : isSuccess
+                ? 'rgba(16, 185, 129, 0.55)'
+                : isPeeking
+                  ? 'rgba(245, 158, 11, 0.55)'
+                  : isHiding
+                    ? 'rgba(239, 68, 68, 0.45)'
+                    : 'rgba(59, 130, 246, 0.4)'
+            }`,
+          color: isWrong
+            ? '#FCA5A5'
+            : isSuccess
+              ? '#6EE7B7'
+              : isPeeking
+                ? '#FCD34D'
+                : isHiding
+                  ? '#FCA5A5'
+                  : '#93C5FD',
           padding: '4px 14px',
           borderRadius: '9999px',
           fontSize: '0.78rem',
@@ -120,7 +119,7 @@ export default function AdminPasscodeBoy({ state = 'idle', codeLength = 0, hasEr
         }}
       >
         <span>
-          {isWrong && "Oops! Wrong PIN... Try 8469 😅"}
+          {isWrong && "Oops! Incorrect PIN... Please try again 😅"}
           {isSuccess && "Boom! You're in! 🚀"}
           {isPeeking && "Oho, peeking at the PIN? 👀"}
           {isHiding && "I'm not looking, I swear! 🙈"}
@@ -147,11 +146,11 @@ export default function AdminPasscodeBoy({ state = 'idle', codeLength = 0, hasEr
           xmlns="http://www.w3.org/2000/svg"
           style={{
             overflow: 'visible',
-            animation: isWrong 
-              ? 'mascotDizzyHead 0.5s ease-in-out infinite' 
-              : isSuccess 
-              ? 'mascotCheerBounce 0.6s ease-in-out infinite' 
-              : 'none'
+            animation: isWrong
+              ? 'mascotDizzyHead 0.5s ease-in-out infinite'
+              : isSuccess
+                ? 'mascotCheerBounce 0.6s ease-in-out infinite'
+                : 'none'
           }}
         >
           {/* Ambient Glow */}
@@ -160,15 +159,15 @@ export default function AdminPasscodeBoy({ state = 'idle', codeLength = 0, hasEr
             cy="55"
             r="46"
             fill={
-              isWrong 
-                ? 'rgba(239, 68, 68, 0.2)' 
-                : isSuccess 
-                ? 'rgba(16, 185, 129, 0.22)' 
-                : isPeeking 
-                ? 'rgba(245, 158, 11, 0.2)' 
-                : isHiding 
-                ? 'rgba(239, 68, 68, 0.16)' 
-                : 'rgba(59, 130, 246, 0.15)'
+              isWrong
+                ? 'rgba(239, 68, 68, 0.2)'
+                : isSuccess
+                  ? 'rgba(16, 185, 129, 0.22)'
+                  : isPeeking
+                    ? 'rgba(245, 158, 11, 0.2)'
+                    : isHiding
+                      ? 'rgba(239, 68, 68, 0.16)'
+                      : 'rgba(59, 130, 246, 0.15)'
             }
             style={{ transition: 'fill 0.3s ease' }}
           />
@@ -248,13 +247,13 @@ export default function AdminPasscodeBoy({ state = 'idle', codeLength = 0, hasEr
           {/* Cute Eyebrows */}
           <path
             d={
-              isWrong 
-                ? "M 44 42 Q 49 46 54 43" 
-                : isPeeking 
-                ? "M 44 41 Q 49 43 54 41" 
-                : isHiding 
-                ? "M 44 39 Q 49 42 54 39" 
-                : "M 44 39 Q 49 36 54 39"
+              isWrong
+                ? "M 44 42 Q 49 46 54 43"
+                : isPeeking
+                  ? "M 44 41 Q 49 43 54 41"
+                  : isHiding
+                    ? "M 44 39 Q 49 42 54 39"
+                    : "M 44 39 Q 49 36 54 39"
             }
             stroke="#1E1B4B"
             strokeWidth="2"
@@ -263,13 +262,13 @@ export default function AdminPasscodeBoy({ state = 'idle', codeLength = 0, hasEr
           />
           <path
             d={
-              isWrong 
-                ? "M 76 43 Q 81 46 86 42" 
-                : isPeeking 
-                ? "M 76 36 Q 81 33 86 36" // Raised arched eyebrow for peeking!
-                : isHiding 
-                ? "M 76 39 Q 81 42 86 39" 
-                : "M 76 39 Q 81 36 86 39"
+              isWrong
+                ? "M 76 43 Q 81 46 86 42"
+                : isPeeking
+                  ? "M 76 36 Q 81 33 86 36" // Raised arched eyebrow for peeking!
+                  : isHiding
+                    ? "M 76 39 Q 81 42 86 39"
+                    : "M 76 39 Q 81 36 86 39"
             }
             stroke="#1E1B4B"
             strokeWidth="2"
@@ -278,23 +277,23 @@ export default function AdminPasscodeBoy({ state = 'idle', codeLength = 0, hasEr
           />
 
           {/* Bright Rosy Blush Cheeks */}
-          <ellipse 
-            cx="41" 
-            cy="60" 
-            rx={isHiding ? 7 : 5} 
-            ry={isHiding ? 4.5 : 3} 
-            fill="#FDA4AF" 
-            opacity={isHiding ? 0.9 : 0.65} 
-            style={{ transition: 'all 0.3s ease' }} 
+          <ellipse
+            cx="41"
+            cy="60"
+            rx={isHiding ? 7 : 5}
+            ry={isHiding ? 4.5 : 3}
+            fill="#FDA4AF"
+            opacity={isHiding ? 0.9 : 0.65}
+            style={{ transition: 'all 0.3s ease' }}
           />
-          <ellipse 
-            cx="89" 
-            cy="60" 
-            rx={isHiding ? 7 : 5} 
-            ry={isHiding ? 4.5 : 3} 
-            fill="#FDA4AF" 
-            opacity={isHiding ? 0.9 : 0.65} 
-            style={{ transition: 'all 0.3s ease' }} 
+          <ellipse
+            cx="89"
+            cy="60"
+            rx={isHiding ? 7 : 5}
+            ry={isHiding ? 4.5 : 3}
+            fill="#FDA4AF"
+            opacity={isHiding ? 0.9 : 0.65}
+            style={{ transition: 'all 0.3s ease' }}
           />
 
           {/* ========================================================
@@ -431,10 +430,10 @@ export default function AdminPasscodeBoy({ state = 'idle', codeLength = 0, hasEr
               transform: isSuccess
                 ? 'translate(-4px, -18px) rotate(-35deg)'
                 : isWrong
-                ? 'translate(6px, -2px) rotate(15deg)'
-                : (isHiding || isPeeking)
-                ? 'translate(0px, 0px)'
-                : 'translate(-8px, 22px)',
+                  ? 'translate(6px, -2px) rotate(15deg)'
+                  : (isHiding || isPeeking)
+                    ? 'translate(0px, 0px)'
+                    : 'translate(-8px, 22px)',
               transformOrigin: '26px 88px',
               transition: 'transform 0.32s cubic-bezier(0.34, 1.4, 0.64, 1)'
             }}
@@ -478,12 +477,12 @@ export default function AdminPasscodeBoy({ state = 'idle', codeLength = 0, hasEr
               transform: isSuccess
                 ? 'translate(4px, -18px) rotate(35deg)'
                 : isWrong
-                ? 'translate(-6px, -2px) rotate(-15deg)'
-                : isPeeking
-                ? 'translate(12px, 16px) rotate(20deg)' // Lowered to peek!
-                : isHiding
-                ? 'translate(0px, 0px)'
-                : 'translate(8px, 22px)',
+                  ? 'translate(-6px, -2px) rotate(-15deg)'
+                  : isPeeking
+                    ? 'translate(12px, 16px) rotate(20deg)' // Lowered to peek!
+                    : isHiding
+                      ? 'translate(0px, 0px)'
+                      : 'translate(8px, 22px)',
               transformOrigin: '104px 88px',
               transition: 'transform 0.32s cubic-bezier(0.34, 1.4, 0.64, 1)'
             }}

@@ -516,10 +516,21 @@ export default function ProfileOverviewCard({
               <button 
                 type="submit" 
                 className="btn btn-sm btn-primary google-pill-btn"
-                style={{ borderRadius: '9999px', padding: '0.6rem 1.6rem', fontWeight: 700 }}
+                style={{ 
+                  borderRadius: '9999px', 
+                  padding: '0.6rem 1.6rem', 
+                  fontWeight: 700,
+                  background: 'linear-gradient(135deg, #BE123C 0%, #E11D48 100%)',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  boxShadow: '0 4px 14px rgba(225, 29, 72, 0.35)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}
               >
-                <Check size={15} />
-                <span>Save Profile Changes</span>
+                <Check size={15} style={{ background: 'transparent' }} />
+                <span style={{ background: 'transparent', color: '#FFFFFF' }}>Save Profile Changes</span>
               </button>
             </div>
           </div>

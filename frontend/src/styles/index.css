@@ -372,9 +372,13 @@ body.theme-light .hero-tracking-card input:focus {
   color: #475569 !important;
 }
 
-body.theme-light .btn-primary,
-body.theme-light .btn-primary * {
+body.theme-light .btn-primary {
   background: linear-gradient(135deg, #BE123C 0%, #E11D48 100%) !important;
+  color: #FFFFFF !important;
+}
+
+body.theme-light .btn-primary * {
+  background: transparent !important;
   color: #FFFFFF !important;
 }
 
@@ -3072,16 +3076,30 @@ body.theme-light .google-profile-stat-pill:hover {
   transition: all 0.2s cubic-bezier(0.2, 0, 0, 1) !important;
 }
 
-body.theme-light .google-pill-btn {
+body.theme-light .google-pill-btn:not(.btn-primary) {
   background: #F1F3F5 !important;
   border-color: #E2E8F0 !important;
   color: #1E293B !important;
 }
 
-body.theme-light .google-pill-btn:hover {
+body.theme-light .google-pill-btn:not(.btn-primary):hover {
   background: #E2E8F0 !important;
   border-color: #1A73E8 !important;
   color: #1A73E8 !important;
+}
+
+body.theme-light .google-pill-btn.btn-primary,
+.google-pill-btn.btn-primary {
+  background: linear-gradient(135deg, #BE123C 0%, #E11D48 100%) !important;
+  color: #FFFFFF !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(225, 29, 72, 0.35) !important;
+}
+
+body.theme-light .google-pill-btn.btn-primary *,
+.google-pill-btn.btn-primary * {
+  background: transparent !important;
+  color: #FFFFFF !important;
 }
 
 @media (max-width: 900px) {

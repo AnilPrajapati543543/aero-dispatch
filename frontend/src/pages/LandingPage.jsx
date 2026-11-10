@@ -169,7 +169,7 @@ export default function LandingPage() {
       return;
     }
     if (code !== '8469') {
-      setAdminLoginError('Incorrect PIN. Please use 8469.');
+      setAdminLoginError('Incorrect PIN. Please try again.');
       return;
     }
     setAdminLoginLoading(true);
@@ -1702,8 +1702,8 @@ className="landing-hero-headline"
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem', fontSize: '0.78rem', color: '#94A3B8' }}>
-                  <span>Admin only</span>
-                  <span style={{ color: '#F87171', fontWeight: 600 }}>Default PIN: 8469</span>
+                  <span>Admin clearance only</span>
+                  <span style={{ color: '#64748B' }}>Authorized access</span>
                 </div>
               </div>
 
