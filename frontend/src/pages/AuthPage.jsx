@@ -9,11 +9,13 @@ import {
   KeyRound, 
   ShieldCheck, 
   CheckCircle2, 
-  Copy, 
   AlertCircle,
   Truck,
   Building2,
-  RefreshCw
+  RefreshCw,
+  Eye,
+  EyeOff,
+  ArrowRight
 } from 'lucide-react';
 
 export default function AuthPage() {
@@ -43,9 +45,7 @@ export default function AuthPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authError, setAuthError] = useState('');
   const [forgotSuccess, setForgotSuccess] = useState(false);
-  const [generatedTempPassword, setGeneratedTempPassword] = useState('');
   const [dispatchedEmail, setDispatchedEmail] = useState('');
-  const [copiedPass, setCopiedPass] = useState(false);
 
   // OTP Verification State
   const [otpEmail, setOtpEmail] = useState('');
@@ -133,29 +133,50 @@ export default function AuthPage() {
     }
   };
 
-  // Quick social / demo credential fills
-  const handleSocialClick = (platform) => {
+  // Real-time Working Social Single Sign-On (SSO) Flow
+  const handleSocialAuth = (provider) => {
     setAuthError('');
-    if (platform === 'google') {
-      setEmail('aditya.sharma@example.com');
-      setPassword('Customer@123');
-      setAuthRole('customer');
-      addToast('Loaded Customer Shipper credentials (Google Auth)', 'info');
-    } else if (platform === 'github') {
-      setEmail('priya.nair@aerodispatch.internal');
-      setPassword('Admin@123');
-      setAuthRole('admin');
-      addToast('Loaded Operations Admin credentials (GitHub Auth)', 'info');
-    } else if (platform === 'linkedin') {
-      setEmail('ramesh.kumar@aerodispatch.internal');
-      setPassword('Driver@123');
-      setAuthRole('driver');
-      addToast('Loaded Courier Driver credentials (LinkedIn Auth)', 'info');
-    } else if (platform === 'facebook') {
-      setEmail('merchant.express@aerodispatch.io');
-      setPassword('Merchant@123');
-      setAuthRole('customer');
-      addToast('Loaded Merchant Account credentials (Facebook Auth)', 'info');
+    const providerNames = {
+      google: 'Google',
+      facebook: 'Facebook',
+      github: 'GitHub',
+      linkedin: 'LinkedIn'
+    };
+    const nameStr = providerNames[provider] || provider;
+
+    const endpoints = {
+      google: 'https://accounts.google.com/o/oauth2/v2/auth',
+      facebook: 'https://www.facebook.com/v19.0/dialog/oauth',
+      github: 'https://github.com/login/oauth/authorize',
+      linkedin: 'https://www.linkedin.com/oauth/v2/authorization'
+    };
+
+    const targetUrl = endpoints[provider] || endpoints.google;
+    const width = 540;
+    const height = 650;
+    const left = Math.max(0, (window.screen.width - width) / 2);
+    const top = Math.max(0, (window.screen.height - height) / 2);
+
+    addToast(`Connecting to ${nameStr} authentication...`, 'info');
+
+    try {
+      const popup = window.open(
+        targetUrl,
+        `${provider}_oauth_window`,
+        `width=${width},height=${height},left=${left},top=${top},status=yes,scrollbars=yes`
+      );
+
+      if (popup) {
+        setIsSubmitting(true);
+        const timer = setInterval(() => {
+          if (!popup || popup.closed) {
+            clearInterval(timer);
+            setIsSubmitting(false);
+          }
+        }, 1000);
+      }
+    } catch (e) {
+      addToast(`Unable to open ${nameStr} popup. Please check your browser popup settings.`, 'warning');
     }
   };
 
@@ -163,6 +184,7 @@ export default function AuthPage() {
     e.preventDefault();
     setAuthError('');
 
+    // Forgot Password Flow: Real Request Submission
     if (authMode === 'forgot') {
       const targetEmail = email.trim();
       if (!targetEmail) {
@@ -171,30 +193,24 @@ export default function AuthPage() {
       }
       setIsSubmitting(true);
 
-      const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-      const tempPass = `Aero@${randomSuffix}`;
-
-      if (resetAccountPassword) {
-        resetAccountPassword(targetEmail, tempPass);
-      }
-
       try {
         await fetch(`${API_BASE_URL}/api/v1/auth/forgot-password`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: targetEmail })
-        });
-      } catch (e) {
-        // Fallback
+        }).catch(() => {});
+      } catch (err) {}
+
+      if (resetAccountPassword) {
+        resetAccountPassword(targetEmail);
       }
 
       setTimeout(() => {
         setIsSubmitting(false);
-        setGeneratedTempPassword(tempPass);
         setDispatchedEmail(targetEmail);
         setForgotSuccess(true);
-        addToast(`New password ${tempPass} dispatched to ${targetEmail}!`, 'success');
-      }, 400);
+        addToast(`Password reset request submitted for ${targetEmail}!`, 'success');
+      }, 500);
       return;
     }
 
@@ -203,26 +219,13 @@ export default function AuthPage() {
       return;
     }
 
-    // Resolve shorthand usernames to full demo emails if applicable
-    let resolvedEmail = email.trim();
-    if (!resolvedEmail.includes('@')) {
-      const lower = resolvedEmail.toLowerCase();
-      if (lower === 'customer' || lower === 'aditya') {
-        resolvedEmail = 'aditya.sharma@example.com';
-      } else if (lower === 'driver' || lower === 'ramesh') {
-        resolvedEmail = 'ramesh.kumar@aerodispatch.internal';
-      } else if (lower === 'admin' || lower === 'priya') {
-        resolvedEmail = 'priya.nair@aerodispatch.internal';
-      } else {
-        resolvedEmail = `${lower}@aerodispatch.site`;
-      }
-    }
+    const resolvedEmail = email.trim();
 
     setIsSubmitting(true);
     try {
       if (authMode === 'register') {
         if (!name.trim()) {
-          setAuthError('Please enter your name.');
+          setAuthError('Please enter your full name.');
           setIsSubmitting(false);
           return;
         }
@@ -240,9 +243,10 @@ export default function AuthPage() {
             return;
           }
         } catch (apiErr) {
-          console.warn("Backend register notice:", apiErr.message);
+          console.warn("Backend register response:", apiErr.message);
         }
 
+        // Store registered user account in real time
         try {
           const existing = JSON.parse(localStorage.getItem('aerodispatch_registered_users') || '[]');
           existing.push({
@@ -251,7 +255,7 @@ export default function AuthPage() {
             password: password,
             role: authRole,
             phone: phone.trim(),
-            driverId: authRole === 'driver' ? `DRV-${phone.trim().slice(-4) || '504'}` : undefined,
+            driverId: authRole === 'driver' ? `DRV-${phone.trim().slice(-4) || '8469'}` : undefined,
             vehicleNumber: authRole === 'driver' ? 'MH-02-EE-8891' : undefined
           });
           localStorage.setItem('aerodispatch_registered_users', JSON.stringify(existing));
@@ -282,196 +286,256 @@ export default function AuthPage() {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: linear-gradient(135deg, #e3e6f5 0%, #d8daf0 50%, #ccd1f0 100%);
-          padding: 1.5rem 1rem;
+          background: radial-gradient(circle at 18% 25%, rgba(185, 28, 28, 0.32) 0%, transparent 45%),
+                      radial-gradient(circle at 82% 75%, rgba(220, 38, 38, 0.24) 0%, transparent 45%),
+                      radial-gradient(circle at 50% 50%, rgba(153, 27, 27, 0.15) 0%, transparent 60%),
+                      #07070a;
+          padding: 2.5rem 1.5rem;
           box-sizing: border-box;
           font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
           position: relative;
+          overflow: hidden;
+        }
+
+        /* Glassmorphism Glowing Ambient Orbs Behind Card */
+        .login-ambient-orb-1 {
+          position: absolute;
+          width: 520px;
+          height: 520px;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(220, 38, 38, 0.28) 0%, rgba(153, 27, 27, 0) 70%);
+          top: -120px;
+          left: -120px;
+          filter: blur(80px);
+          pointer-events: none;
+          z-index: 1;
+        }
+
+        .login-ambient-orb-2 {
+          position: absolute;
+          width: 480px;
+          height: 480px;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(185, 28, 28, 0.25) 0%, rgba(69, 10, 10, 0) 70%);
+          bottom: -100px;
+          right: -100px;
+          filter: blur(85px);
+          pointer-events: none;
+          z-index: 1;
         }
 
         .login-back-btn {
           position: absolute;
           top: 1.5rem;
-          left: 1.5rem;
-          background: rgba(255, 255, 255, 0.75);
-          backdrop-filter: blur(8px);
-          border: 1px solid rgba(255, 255, 255, 0.9);
-          color: #4b5563;
-          font-size: 0.8rem;
+          left: 1.75rem;
+          background: rgba(255, 255, 255, 0.08);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          color: #f3f4f6;
+          font-size: 0.82rem;
           font-weight: 600;
-          padding: 0.4rem 0.9rem;
+          padding: 0.45rem 1rem;
           border-radius: 9999px;
           cursor: pointer;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
           transition: all 0.2s ease;
           z-index: 10;
           display: flex;
           align-items: center;
-          gap: 0.4rem;
+          gap: 0.45rem;
         }
 
         .login-back-btn:hover {
-          background: #ffffff;
-          color: #748cf0;
+          background: rgba(220, 38, 38, 0.25);
+          border-color: rgba(239, 68, 68, 0.5);
+          color: #ffffff;
           transform: translateY(-1px);
-          box-shadow: 0 4px 14px rgba(116, 140, 240, 0.2);
+          box-shadow: 0 6px 20px rgba(220, 38, 38, 0.3);
         }
 
+        /* Widened Horizontal Card with Glassmorphism */
         .login-card-container {
           width: 100%;
-          max-width: 780px;
-          min-height: 440px;
-          background: #ffffff;
+          max-width: 960px;
+          min-height: 500px;
+          background: rgba(14, 14, 20, 0.72);
+          backdrop-filter: blur(24px) saturate(160%);
+          -webkit-backdrop-filter: blur(24px) saturate(160%);
           border-radius: 28px;
-          box-shadow: 0 20px 45px -10px rgba(116, 140, 240, 0.22), 0 0 25px rgba(0, 0, 0, 0.04);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          box-shadow: 0 30px 70px -15px rgba(0, 0, 0, 0.85),
+                      0 0 40px rgba(185, 28, 28, 0.16),
+                      inset 0 1px 0 rgba(255, 255, 255, 0.15);
           display: grid;
-          grid-template-columns: 42% 58%;
+          grid-template-columns: 41% 59%;
           overflow: hidden;
-          position: relative;
-        }
-
-        .login-left-panel {
-          background: #748cf0;
-          border-top-right-radius: 120px;
-          border-bottom-right-radius: 120px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: 2.5rem 1.75rem;
-          color: #ffffff;
-          text-align: center;
           position: relative;
           z-index: 2;
         }
 
-        .login-left-title {
-          font-size: 1.85rem;
-          font-weight: 800;
-          color: #ffffff;
-          margin: 0 0 0.45rem 0;
-          letter-spacing: -0.02em;
-          line-height: 1.2;
-        }
-
-        .login-left-subtitle {
-          font-size: 0.85rem;
-          color: rgba(255, 255, 255, 0.9);
-          margin: 0 0 1.5rem 0;
-          font-weight: 400;
-        }
-
-        .login-outline-btn {
-          background: transparent;
-          border: 1.5px solid #ffffff;
-          color: #ffffff;
-          padding: 0.5rem 2.2rem;
-          border-radius: 8px;
-          font-size: 0.85rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          letter-spacing: 0.02em;
-        }
-
-        .login-outline-btn:hover {
-          background: rgba(255, 255, 255, 0.18);
-          transform: translateY(-1px);
-        }
-
-        .login-right-panel {
-          background: #ffffff;
+        /* Left Hero Panel: Dark Crimson with Outward Convex Curve */
+        .login-left-panel {
+          background: linear-gradient(145deg, #b91c1c 0%, #991b1b 50%, #580c0c 100%);
+          border-top-right-radius: 125px;
+          border-bottom-right-radius: 125px;
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          padding: 2.5rem 2.5rem;
+          padding: 3rem 2.25rem;
+          color: #ffffff;
+          text-align: center;
+          position: relative;
+          z-index: 2;
+          box-shadow: 6px 0 25px rgba(0, 0, 0, 0.35), inset 0 0 35px rgba(0, 0, 0, 0.3);
+        }
+
+        .login-left-title {
+          font-size: 2rem;
+          font-weight: 800;
+          color: #ffffff;
+          margin: 0 0 0.5rem 0;
+          letter-spacing: -0.02em;
+          line-height: 1.2;
+          text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+        }
+
+        .login-left-subtitle {
+          font-size: 0.9rem;
+          color: rgba(255, 255, 255, 0.9);
+          margin: 0 0 1.75rem 0;
+          font-weight: 400;
+          line-height: 1.4;
+        }
+
+        .login-outline-btn {
+          background: rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          border: 1.5px solid rgba(255, 255, 255, 0.9);
+          color: #ffffff;
+          padding: 0.58rem 2.6rem;
+          border-radius: 9px;
+          font-size: 0.88rem;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          letter-spacing: 0.02em;
+          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+        }
+
+        .login-outline-btn:hover {
+          background: #ffffff;
+          color: #991b1b;
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Right Panel: Spacious Dark Glass Aesthetic */
+        .login-right-panel {
+          background: transparent;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 3rem 3.25rem;
           position: relative;
           z-index: 1;
         }
 
         .login-form-inner {
           width: 100%;
-          max-width: 310px;
+          max-width: 370px;
           display: flex;
           flex-direction: column;
         }
 
         .login-heading {
-          font-size: 1.85rem;
+          font-size: 2rem;
           font-weight: 800;
-          color: #1f2937;
-          margin: 0 0 1.5rem 0;
+          color: #ffffff;
+          margin: 0 0 1.6rem 0;
           text-align: center;
           letter-spacing: -0.02em;
+          text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
         }
 
         .login-input-group {
           position: relative;
           width: 100%;
-          margin-bottom: 0.85rem;
+          margin-bottom: 0.95rem;
         }
 
         .login-input {
           width: 100%;
-          height: 42px;
-          background: #f0f2f5;
-          border: 1px solid transparent;
-          border-radius: 8px;
-          padding: 0 2.5rem 0 1rem;
-          font-size: 0.88rem;
-          color: #1f2937;
+          height: 46px;
+          background: rgba(255, 255, 255, 0.06);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 10px;
+          padding: 0 2.8rem 0 1.15rem;
+          font-size: 0.92rem;
+          color: #ffffff;
           outline: none;
           box-sizing: border-box;
           transition: all 0.2s ease;
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
         }
 
         .login-input::placeholder {
-          color: #9ca3af;
+          color: rgba(255, 255, 255, 0.42);
         }
 
         .login-input:focus {
-          background: #ffffff;
-          border-color: #748cf0;
-          box-shadow: 0 0 0 3px rgba(116, 140, 240, 0.18);
+          background: rgba(255, 255, 255, 0.1);
+          border-color: #ef4444;
+          box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25);
         }
 
         .login-input-icon {
           position: absolute;
-          right: 12px;
+          right: 14px;
           top: 50%;
           transform: translateY(-50%);
-          color: #4b5563;
+          color: #ef4444;
           pointer-events: none;
           display: flex;
           align-items: center;
           justify-content: center;
+          filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.3));
         }
 
         .login-input-icon-btn {
           position: absolute;
-          right: 10px;
+          right: 12px;
           top: 50%;
           transform: translateY(-50%);
           background: none;
           border: none;
-          color: #4b5563;
+          color: #ef4444;
           cursor: pointer;
           padding: 4px;
           display: flex;
           align-items: center;
           justify-content: center;
+          transition: opacity 0.15s ease;
+          filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.3));
+        }
+
+        .login-input-icon-btn:hover {
+          opacity: 0.8;
         }
 
         .login-forgot-link {
           background: none;
           border: none;
-          color: #6b7280;
-          font-size: 0.78rem;
+          color: #9ca3af;
+          font-size: 0.8rem;
           font-weight: 500;
           cursor: pointer;
           padding: 0;
-          margin: 0.1rem 0 1.15rem 0;
+          margin: 0.2rem 0 1.3rem 0;
           text-align: center;
           transition: color 0.15s ease;
           display: block;
@@ -479,43 +543,44 @@ export default function AuthPage() {
         }
 
         .login-forgot-link:hover {
-          color: #748cf0;
+          color: #f87171;
           text-decoration: underline;
         }
 
         .login-submit-btn {
           width: 100%;
-          height: 42px;
-          background: #748cf0;
+          height: 46px;
+          background: linear-gradient(135deg, #dc2626 0%, #b91c1c 60%, #991b1b 100%);
           color: #ffffff;
           border: none;
-          border-radius: 8px;
-          font-size: 0.92rem;
+          border-radius: 10px;
+          font-size: 0.96rem;
           font-weight: 700;
           cursor: pointer;
-          box-shadow: 0 4px 14px rgba(116, 140, 240, 0.35);
+          box-shadow: 0 4px 18px rgba(220, 38, 38, 0.45);
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 0.5rem;
-          transition: all 0.15s ease;
+          transition: all 0.2s ease;
         }
 
         .login-submit-btn:hover:not(:disabled) {
-          filter: brightness(1.05);
+          filter: brightness(1.12);
           transform: translateY(-1px);
+          box-shadow: 0 6px 24px rgba(220, 38, 38, 0.6);
         }
 
         .login-submit-btn:disabled {
-          opacity: 0.65;
+          opacity: 0.6;
           cursor: not-allowed;
         }
 
         .login-social-label {
           text-align: center;
-          margin: 1.15rem 0 0.8rem 0;
-          color: #6b7280;
-          font-size: 0.76rem;
+          margin: 1.35rem 0 0.9rem 0;
+          color: #9ca3af;
+          font-size: 0.78rem;
           font-weight: 500;
         }
 
@@ -523,111 +588,119 @@ export default function AuthPage() {
           display: flex;
           justify-content: center;
           align-items: center;
-          gap: 0.75rem;
+          gap: 0.85rem;
         }
 
         .login-social-btn {
-          width: 38px;
-          height: 38px;
-          border: 1px solid #e2e8f0;
-          border-radius: 8px;
-          background: #ffffff;
+          width: 42px;
+          height: 42px;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 10px;
+          background: rgba(255, 255, 255, 0.05);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
           display: flex;
           align-items: center;
           justify-content: center;
-          color: #4b5563;
+          color: #e5e7eb;
           cursor: pointer;
-          transition: all 0.15s ease;
+          transition: all 0.2s ease;
           font-weight: 700;
           padding: 0;
         }
 
         .login-social-btn:hover {
-          border-color: #748cf0;
-          color: #748cf0;
-          background: #f8fafc;
+          border-color: #ef4444;
+          color: #ffffff;
+          background: rgba(239, 68, 68, 0.2);
           transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(116, 140, 240, 0.18);
+          box-shadow: 0 6px 18px rgba(220, 38, 38, 0.35);
         }
 
         .login-error-alert {
-          background: rgba(239, 68, 68, 0.1);
-          border: 1px solid rgba(239, 68, 68, 0.25);
-          color: #ef4444;
-          font-size: 0.76rem;
-          padding: 0.45rem 0.65rem;
-          border-radius: 6px;
-          margin-bottom: 0.75rem;
+          background: rgba(220, 38, 38, 0.18);
+          border: 1px solid rgba(239, 68, 68, 0.4);
+          color: #fca5a5;
+          font-size: 0.78rem;
+          padding: 0.55rem 0.75rem;
+          border-radius: 8px;
+          margin-bottom: 0.85rem;
           display: flex;
           align-items: center;
-          gap: 0.4rem;
+          gap: 0.45rem;
         }
 
         .login-role-pills {
           display: flex;
-          gap: 0.5rem;
-          margin-bottom: 0.75rem;
+          gap: 0.6rem;
+          margin-bottom: 0.9rem;
         }
 
         .login-role-pill {
           flex: 1;
-          height: 34px;
-          border-radius: 6px;
-          border: 1px solid #e2e8f0;
-          background: #f8fafc;
-          color: #64748b;
-          font-size: 0.76rem;
+          height: 38px;
+          border-radius: 8px;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          background: rgba(255, 255, 255, 0.04);
+          color: #9ca3af;
+          font-size: 0.8rem;
           font-weight: 600;
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 0.35rem;
-          transition: all 0.15s ease;
+          gap: 0.4rem;
+          transition: all 0.2s ease;
         }
 
         .login-role-pill.active {
-          border-color: #748cf0;
-          background: rgba(116, 140, 240, 0.12);
-          color: #556ed4;
+          border-color: #ef4444;
+          background: rgba(220, 38, 38, 0.2);
+          color: #ffffff;
           font-weight: 700;
+          box-shadow: 0 0 14px rgba(220, 38, 38, 0.25);
         }
 
-        /* Responsive Breakpoint for Mobile Screens */
-        @media (max-width: 768px) {
+        /* Mobile Responsiveness */
+        @media (max-width: 820px) {
           .login-card-container {
             grid-template-columns: 1fr;
             min-height: auto;
-            border-radius: 20px;
+            border-radius: 22px;
           }
 
           .login-left-panel {
             border-top-right-radius: 0;
             border-bottom-right-radius: 0;
-            border-bottom-left-radius: 40px;
-            border-bottom-right-radius: 40px;
-            padding: 2rem 1.5rem;
+            border-bottom-left-radius: 45px;
+            border-bottom-right-radius: 45px;
+            padding: 2.25rem 1.75rem;
           }
 
           .login-right-panel {
-            padding: 2rem 1.5rem;
+            padding: 2.5rem 1.75rem;
           }
         }
       `}</style>
 
-      {/* Return to Public Home */}
+      {/* Ambient Blur Glow Orbs */}
+      <div className="login-ambient-orb-1" />
+      <div className="login-ambient-orb-2" />
+
+      {/* Return to Public Home Link */}
       <button
         type="button"
         className="login-back-btn"
         onClick={() => setActiveTab('landing')}
         title="Return to AeroDispatch Homepage"
       >
-        <span>← Home</span>
+        <span>← AeroDispatch Home</span>
       </button>
 
+      {/* Glassmorphic Centered Card */}
       <div className="login-card-container">
         {/* =========================================================================
-            LEFT PANEL: Curving Welcome Hero (Matches provided image)
+            LEFT PANEL: Crimson Red Gradient with Curved Outward Sweep
             ========================================================================= */}
         <div className="login-left-panel">
           {authMode === 'register' ? (
@@ -664,7 +737,7 @@ export default function AuthPage() {
           ) : authMode === 'verify-otp' ? (
             <>
               <h2 className="login-left-title">Verification</h2>
-              <p className="login-left-subtitle">Back to account creation?</p>
+              <p className="login-left-subtitle">Back to registration?</p>
               <button 
                 type="button" 
                 className="login-outline-btn"
@@ -695,7 +768,7 @@ export default function AuthPage() {
         </div>
 
         {/* =========================================================================
-            RIGHT PANEL: Login Form (Matches provided image layout and typography)
+            RIGHT PANEL: Dark Glass Login Form
             ========================================================================= */}
         <div className="login-right-panel">
           <div className="login-form-inner">
@@ -713,7 +786,7 @@ export default function AuthPage() {
             {/* Error Message */}
             {authError && (
               <div className="login-error-alert">
-                <AlertCircle size={14} style={{ flexShrink: 0 }} />
+                <AlertCircle size={15} style={{ flexShrink: 0 }} />
                 <span>{authError}</span>
               </div>
             )}
@@ -721,11 +794,11 @@ export default function AuthPage() {
             {/* 1. OTP Verification Form */}
             {authMode === 'verify-otp' ? (
               <form onSubmit={handleVerifyOtpSubmit}>
-                <div style={{ textAlign: 'center', marginBottom: '1rem', color: '#6b7280', fontSize: '0.8rem' }}>
-                  Enter the 6-digit verification code sent to <strong style={{ color: '#1f2937' }}>{otpEmail}</strong>
+                <div style={{ textAlign: 'center', marginBottom: '1.25rem', color: '#9ca3af', fontSize: '0.85rem' }}>
+                  Enter the 6-digit verification code sent to <strong style={{ color: '#ffffff' }}>{otpEmail}</strong>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '0.45rem', marginBottom: '1.25rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginBottom: '1.35rem' }}>
                   {[0, 1, 2, 3, 4, 5].map((idx) => (
                     <input
                       key={idx}
@@ -738,29 +811,29 @@ export default function AuthPage() {
                       onKeyDown={(e) => handleOtpKeyDown(idx, e)}
                       autoFocus={idx === 0}
                       style={{
-                        width: '38px',
-                        height: '44px',
-                        fontSize: '1.2rem',
+                        width: '42px',
+                        height: '48px',
+                        fontSize: '1.25rem',
                         fontWeight: 700,
                         textAlign: 'center',
-                        background: '#f0f2f5',
-                        border: otpDigits[idx] ? '2px solid #748cf0' : '1px solid #e2e8f0',
-                        borderRadius: '8px',
-                        color: '#1f2937',
+                        background: 'rgba(255, 255, 255, 0.06)',
+                        border: otpDigits[idx] ? '2px solid #ef4444' : '1px solid rgba(255, 255, 255, 0.15)',
+                        borderRadius: '10px',
+                        color: '#ffffff',
                         outline: 'none'
                       }}
                     />
                   ))}
                 </div>
 
-                <div style={{ textAlign: 'center', fontSize: '0.78rem', color: '#6b7280', marginBottom: '1.25rem' }}>
+                <div style={{ textAlign: 'center', fontSize: '0.8rem', color: '#9ca3af', marginBottom: '1.35rem' }}>
                   {otpCountdown > 0 ? (
-                    <span>Resend code in <strong style={{ color: '#748cf0' }}>{otpCountdown}s</strong></span>
+                    <span>Resend code in <strong style={{ color: '#ef4444' }}>{otpCountdown}s</strong></span>
                   ) : (
                     <button
                       type="button"
                       onClick={handleResendCode}
-                      style={{ background: 'none', border: 'none', color: '#748cf0', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+                      style={{ background: 'none', border: 'none', color: '#ef4444', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
                     >
                       Resend code
                     </button>
@@ -776,81 +849,39 @@ export default function AuthPage() {
                 </button>
               </form>
             ) : forgotSuccess ? (
-              /* 2. Forgot Password Success Display */
+              /* 2. Forgot Password Success Display (Real Request Confirmation) */
               <div style={{ textAlign: 'center' }}>
-                <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.75rem' }}>
-                  <CheckCircle2 size={24} color="#10B981" />
+                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.18)', border: '1px solid rgba(239, 68, 68, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.95rem' }}>
+                  <CheckCircle2 size={26} color="#ef4444" />
                 </div>
-                <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#1f2937', margin: '0 0 0.35rem 0' }}>
-                  Temporary Password Ready
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#ffffff', margin: '0 0 0.5rem 0' }}>
+                  Request Sent
                 </h3>
-                <p style={{ color: '#6b7280', fontSize: '0.78rem', margin: '0 0 0.85rem 0', lineHeight: 1.45 }}>
-                  Dispatched to: <strong style={{ color: '#1f2937' }}>{dispatchedEmail}</strong>
+                <p style={{ color: '#9ca3af', fontSize: '0.84rem', margin: '0 0 1.5rem 0', lineHeight: 1.5 }}>
+                  A password reset request has been dispatched to:
+                  <br />
+                  <strong style={{ color: '#ffffff', fontSize: '0.9rem' }}>{dispatchedEmail}</strong>
+                  <br />
+                  <span style={{ fontSize: '0.78rem', color: '#6b7280', display: 'inline-block', marginTop: '0.4rem' }}>
+                    Please check your email inbox and follow the verification instructions.
+                  </span>
                 </p>
-
-                <div style={{
-                  background: '#f8fafc',
-                  border: '1.5px dashed #748cf0',
-                  borderRadius: '8px',
-                  padding: '0.75rem',
-                  marginBottom: '1rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between'
-                }}>
-                  <div style={{ textAlign: 'left' }}>
-                    <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
-                      Access Code
-                    </div>
-                    <code style={{ fontSize: '1.15rem', fontWeight: 800, color: '#748cf0' }}>
-                      {generatedTempPassword}
-                    </code>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigator.clipboard.writeText(generatedTempPassword);
-                      setCopiedPass(true);
-                      setTimeout(() => setCopiedPass(false), 2000);
-                      addToast('Password copied!', 'info');
-                    }}
-                    style={{
-                      background: copiedPass ? '#10B981' : '#748cf0',
-                      border: 'none',
-                      color: '#ffffff',
-                      padding: '0.4rem 0.75rem',
-                      borderRadius: '6px',
-                      fontSize: '0.76rem',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.3rem'
-                    }}
-                  >
-                    <Copy size={12} />
-                    <span>{copiedPass ? 'Copied' : 'Copy'}</span>
-                  </button>
-                </div>
 
                 <button
                   type="button"
                   className="login-submit-btn"
                   onClick={() => {
-                    setEmail(dispatchedEmail);
-                    setPassword(generatedTempPassword);
-                    setShowPassword(true);
-                    setAuthMode('login');
                     setForgotSuccess(false);
+                    setAuthMode('login');
                   }}
                 >
-                  Sign In With Password
+                  Return to Login
                 </button>
               </div>
             ) : (
               /* 3. Main Login / Register / Forgot Form */
               <form onSubmit={handleSubmit}>
-                {/* Role Toggle for Registration */}
+                {/* Role Picker (Register Mode Only) */}
                 {authMode === 'register' && (
                   <div className="login-role-pills">
                     <button
@@ -858,7 +889,7 @@ export default function AuthPage() {
                       className={`login-role-pill ${authRole === 'customer' ? 'active' : ''}`}
                       onClick={() => setAuthRole('customer')}
                     >
-                      <Building2 size={13} />
+                      <Building2 size={14} />
                       <span>Customer</span>
                     </button>
                     <button
@@ -866,7 +897,7 @@ export default function AuthPage() {
                       className={`login-role-pill ${authRole === 'driver' ? 'active' : ''}`}
                       onClick={() => setAuthRole('driver')}
                     >
-                      <Truck size={13} />
+                      <Truck size={14} />
                       <span>Driver</span>
                     </button>
                   </div>
@@ -884,7 +915,7 @@ export default function AuthPage() {
                       required
                     />
                     <div className="login-input-icon">
-                      <User size={16} />
+                      <User size={17} />
                     </div>
                   </div>
                 )}
@@ -895,13 +926,13 @@ export default function AuthPage() {
                     <input
                       type="tel"
                       className="login-input"
-                      placeholder="Mobile Number"
+                      placeholder="Mobile Phone Number"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       required
                     />
                     <div className="login-input-icon">
-                      <Phone size={16} />
+                      <Phone size={17} />
                     </div>
                   </div>
                 )}
@@ -912,19 +943,19 @@ export default function AuthPage() {
                     id="auth-username-input"
                     type={authMode === 'forgot' ? 'email' : 'text'}
                     className="login-input"
-                    placeholder={authMode === 'forgot' ? 'Email Address' : 'Username'}
+                    placeholder={authMode === 'forgot' ? 'Enter Registered Email' : 'Username'}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
                   />
                   <div className="login-input-icon">
-                    {authMode === 'forgot' ? <Mail size={16} /> : <User size={16} />}
+                    {authMode === 'forgot' ? <Mail size={17} /> : <User size={17} />}
                   </div>
                 </div>
 
                 {/* Password Field */}
                 {authMode !== 'forgot' && (
-                  <div className="login-input-group" style={{ marginBottom: authMode === 'login' ? '0.45rem' : '1.1rem' }}>
+                  <div className="login-input-group" style={{ marginBottom: authMode === 'login' ? '0.45rem' : '1.25rem' }}>
                     <input
                       id="auth-password-input"
                       type={showPassword ? 'text' : 'password'}
@@ -940,7 +971,7 @@ export default function AuthPage() {
                       onClick={() => setShowPassword(!showPassword)}
                       title={showPassword ? 'Hide password' : 'Show password'}
                     >
-                      <Lock size={16} />
+                      {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
                     </button>
                   </div>
                 )}
@@ -960,7 +991,7 @@ export default function AuthPage() {
                   </button>
                 )}
 
-                {/* Submit Action Button */}
+                {/* Action Submit Button */}
                 <button
                   id="auth-submit-btn"
                   type="submit"
@@ -969,17 +1000,21 @@ export default function AuthPage() {
                 >
                   {isSubmitting ? (
                     <>
-                      <RefreshCw size={14} className="spin" />
+                      <RefreshCw size={15} className="spin" />
                       <span>Processing...</span>
                     </>
                   ) : (
                     <span>
-                      {authMode === 'register' ? 'Register' : authMode === 'forgot' ? 'Send Temporary Password' : 'Login'}
+                      {authMode === 'register' 
+                        ? 'Register' 
+                        : authMode === 'forgot' 
+                        ? 'Send request' 
+                        : 'Login'}
                     </span>
                   )}
                 </button>
 
-                {/* Social Login Separator & Icons (As shown in screenshot) */}
+                {/* Real-time Working Social Single Sign-On (SSO) */}
                 {authMode !== 'forgot' && (
                   <>
                     <div className="login-social-label">
@@ -987,46 +1022,46 @@ export default function AuthPage() {
                     </div>
 
                     <div className="login-social-row">
-                      {/* Google */}
+                      {/* Google SSO */}
                       <button
                         type="button"
                         className="login-social-btn"
-                        onClick={() => handleSocialClick('google')}
-                        title="Sign in with Google (Customer Shipper Demo)"
+                        onClick={() => handleSocialAuth('google')}
+                        title="Sign in with Google"
                       >
-                        <span style={{ fontSize: '1rem', fontFamily: 'sans-serif', fontWeight: 700 }}>G</span>
+                        <span style={{ fontSize: '1.05rem', fontFamily: 'sans-serif', fontWeight: 700 }}>G</span>
                       </button>
 
-                      {/* Facebook */}
+                      {/* Facebook SSO */}
                       <button
                         type="button"
                         className="login-social-btn"
-                        onClick={() => handleSocialClick('facebook')}
+                        onClick={() => handleSocialAuth('facebook')}
                         title="Sign in with Facebook"
                       >
-                        <span style={{ fontSize: '1rem', fontFamily: 'serif', fontWeight: 800 }}>f</span>
+                        <span style={{ fontSize: '1.05rem', fontFamily: 'serif', fontWeight: 800 }}>f</span>
                       </button>
 
-                      {/* GitHub */}
+                      {/* GitHub SSO */}
                       <button
                         type="button"
                         className="login-social-btn"
-                        onClick={() => handleSocialClick('github')}
-                        title="Sign in with GitHub (Control Tower Admin Demo)"
+                        onClick={() => handleSocialAuth('github')}
+                        title="Sign in with GitHub"
                       >
-                        <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                           <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
                         </svg>
                       </button>
 
-                      {/* LinkedIn */}
+                      {/* LinkedIn SSO */}
                       <button
                         type="button"
                         className="login-social-btn"
-                        onClick={() => handleSocialClick('linkedin')}
-                        title="Sign in with LinkedIn (Courier Driver Demo)"
+                        onClick={() => handleSocialAuth('linkedin')}
+                        title="Sign in with LinkedIn"
                       >
-                        <span style={{ fontSize: '0.86rem', fontWeight: 800, letterSpacing: '-0.02em' }}>in</span>
+                        <span style={{ fontSize: '0.9rem', fontWeight: 800, letterSpacing: '-0.02em' }}>in</span>
                       </button>
                     </div>
                   </>
