@@ -22,8 +22,11 @@ import {
   ShieldCheck,
   X,
   Camera,
-  UploadCloud
+  UploadCloud,
+  Eye
 } from 'lucide-react';
+import ParcelDetailModal from '../components/ParcelDetailModal';
+import { getConsignmentPhoto } from '../utils/parcelUtils';
 
 export default function TrackingPage() {
   const { 
@@ -35,7 +38,9 @@ export default function TrackingPage() {
     theme,
     addToast,
     openChatbox,
-    updateShipmentStatus
+    updateShipmentStatus,
+    refreshBackendOrders,
+    isLoadingOrders
   } = useApp();
 
   const initialAwb = (trackingQuery || selectedAwb || '').trim();
@@ -48,6 +53,7 @@ export default function TrackingPage() {
   const [wsConnected, setWsConnected] = useState(false);
   const [copiedAwb, setCopiedAwb] = useState(false);
   const [enlargedPhotoUrl, setEnlargedPhotoUrl] = useState(null);
+  const [viewingParcel, setViewingParcel] = useState(null);
 
   // Delivery Handover Modal State
   const [showDeliveryModal, setShowDeliveryModal] = useState(false);
@@ -307,10 +313,22 @@ export default function TrackingPage() {
             {isSearching ? <RefreshCw size={18} className="pulse" /> : <Search size={18} />}
             <span>{isSearching ? 'Querying...' : 'Track'}</span>
           </button>
+
+          <button 
+            type="button" 
+            className="btn btn-secondary"
+            onClick={refreshBackendOrders}
+            disabled={isLoadingOrders}
+            style={{ padding: '0.75rem 1.4rem', borderRadius: '9999px', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+            title="Refresh database records (1.5s live sync)"
+          >
+            <RefreshCw size={17} className={isLoadingOrders ? 'spin' : ''} />
+            <span>{isLoadingOrders ? 'Refreshing...' : 'Refresh'}</span>
+          </button>
         </form>
       </div>
 
-      {(isSearching || isTrackingLoading) ? (
+      {(isSearching || isTrackingLoading || isLoadingOrders) ? (
         <div className="card" style={{ padding: '2rem', marginBottom: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '40%' }}>
@@ -338,26 +356,45 @@ export default function TrackingPage() {
           {/* Main Hero Status Card */}
           <div className="card" style={{ marginBottom: '2rem', borderColor: 'var(--border-accent)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.5rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '1.5rem', marginBottom: '1.5rem' }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                  <h2 className="mono" style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)' }}>
-                    {activeShipment.awbNumber}
-                  </h2>
-                  <CopyButton text={activeShipment.awbNumber} />
-                  <StatusBadge status={activeShipment.currentStatus} />
-                  <span style={{ 
-                    fontSize: '0.75rem', 
-                    fontWeight: 700, 
-                    padding: '2px 8px', 
-                    borderRadius: 'var(--radius-sm)',
-                    background: 'rgba(255, 255, 255, 0.08)',
-                    color: 'var(--text-muted)'
-                  }}>
-                    {activeShipment.serviceTier}
-                  </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', flexWrap: 'wrap' }}>
+                {/* Clickable Consignment Parcel Thumbnail */}
+                <div
+                  onClick={() => setViewingParcel(activeShipment)}
+                  title="Click to view full consignment dossier & specs"
+                  className="clickable-parcel-thumbnail"
+                  style={{ width: '74px', height: '74px', flexShrink: 0, borderRadius: '18px' }}
+                >
+                  <img 
+                    src={getConsignmentPhoto(activeShipment)} 
+                    alt="Consignment Parcel" 
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                  />
+                  <div className="parcel-zoom-hint">
+                    <Eye size={20} color="#ffffff" />
+                  </div>
                 </div>
-                <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '0.45rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                  <span>Current Location: <strong>{activeShipment.currentLocation}</strong></span>
+
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    <h2 className="mono" style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                      {activeShipment.awbNumber}
+                    </h2>
+                    <CopyButton text={activeShipment.awbNumber} />
+                    <StatusBadge status={activeShipment.currentStatus} />
+                    <span style={{ 
+                      fontSize: '0.75rem', 
+                      fontWeight: 700, 
+                      padding: '2px 8px', 
+                      borderRadius: 'var(--radius-sm)',
+                      background: 'rgba(255, 255, 255, 0.08)',
+                      color: 'var(--text-muted)'
+                    }}>
+                      {activeShipment.serviceTier}
+                    </span>
+                  </div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '0.45rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <span>Current Location: <strong>{activeShipment.currentLocation}</strong></span>
+                  </div>
                 </div>
               </div>
 
@@ -864,6 +901,14 @@ export default function TrackingPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Google Material 3 Consignment Dossier Pop-up Modal */}
+      {viewingParcel && (
+        <ParcelDetailModal 
+          parcel={viewingParcel} 
+          onClose={() => setViewingParcel(null)} 
+        />
       )}
     </div>
   );

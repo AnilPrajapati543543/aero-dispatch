@@ -60,12 +60,13 @@ export default function AccountDropdown({ isOpen, onClose, triggerRef }) {
   );
 
   // When clicking "Add another account", directly route to the registration page 
-  // for a new account based on the active role dashboard (Driver -> Captain, Customer -> Merchant)
+  // with a 1.2s skeleton loading effect based on the active role dashboard
   const handleAddAnotherAccount = () => {
     onClose();
     const targetRole = currentRole === 'driver' ? 'driver' : 'customer';
     localStorage.setItem('aerodispatch_auth_role', targetRole);
     localStorage.setItem('aerodispatch_auth_mode', 'register');
+    sessionStorage.setItem('aerodispatch_auth_skeleton', 'true');
     setActiveTab('auth');
   };
 

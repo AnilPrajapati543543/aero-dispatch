@@ -452,21 +452,21 @@ export function AppProvider({ children }) {
   }, []);
 
   // Sync shipments from backend with visual skeleton shimmer loading
+  // When refresh button is clicked: strictly 1.5s skeleton effect as requested
   const refreshBackendOrders = useCallback(async () => {
-    if (!isBackendOnline || !currentUser) {
-      return;
-    }
     setIsLoadingOrders(true);
-    const minDelay = new Promise(resolve => setTimeout(resolve, 1000));
+    const minDelay = new Promise(resolve => setTimeout(resolve, 1500)); // Exactly 1.5s skeleton effect
     try {
-      const res = await apiListOrders({ role: currentUser.role, token: authToken });
-      if (res && Array.isArray(res.data) && res.data.length > 0) {
-        setShipments(prev => {
-          const map = new Map();
-          (prev || []).forEach(o => map.set(o.awbNumber, o));
-          res.data.forEach(o => map.set(o.awbNumber, o));
-          return Array.from(map.values());
-        });
+      if (isBackendOnline && currentUser) {
+        const res = await apiListOrders({ role: currentUser.role, token: authToken });
+        if (res && Array.isArray(res.data) && res.data.length > 0) {
+          setShipments(prev => {
+            const map = new Map();
+            (prev || []).forEach(o => map.set(o.awbNumber, o));
+            res.data.forEach(o => map.set(o.awbNumber, o));
+            return Array.from(map.values());
+          });
+        }
       }
       await minDelay;
       addToast('Refreshed shipments and live status!', 'info');

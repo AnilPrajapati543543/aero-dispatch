@@ -26,7 +26,8 @@ import {
   User,
   MessageSquare,
   Headphones,
-  ZoomIn
+  ZoomIn,
+  RefreshCw
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -48,7 +49,9 @@ export default function Navbar() {
     theme,
     toggleTheme,
     addToast,
-    openChatbox
+    openChatbox,
+    refreshBackendOrders,
+    isLoadingOrders
   } = useApp();
 
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
@@ -398,6 +401,18 @@ export default function Navbar() {
                 triggerRef={notificationButtonRef}
               />
             </div>
+
+            {/* Quick Live Refresh Button with 1.5s skeleton effect */}
+            <button
+              className="btn btn-sm btn-secondary"
+              onClick={refreshBackendOrders}
+              disabled={isLoadingOrders}
+              style={{ padding: '0.45rem' }}
+              title="Refresh database records (1.5s live sync)"
+              aria-label="Refresh live data"
+            >
+              <RefreshCw size={15} className={isLoadingOrders ? 'spin' : ''} />
+            </button>
 
             {/* Theme Toggle Button */}
             <button

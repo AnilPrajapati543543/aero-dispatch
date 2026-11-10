@@ -3122,3 +3122,58 @@ body.theme-light .google-pill-btn.btn-primary *,
   }
 }
 
+/* =========================================================================
+   CLICKABLE CONSIGNMENT PARCEL THUMBNAIL & DOSSIER MODAL
+   ========================================================================= */
+.clickable-parcel-thumbnail {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  border-radius: 14px;
+  border: 1.5px solid var(--border-medium);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease, border-color 0.22s ease;
+  background-color: rgba(15, 23, 42, 0.5);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.clickable-parcel-thumbnail:hover {
+  transform: scale(1.08) translateY(-2px);
+  border-color: var(--primary) !important;
+  box-shadow: 0 8px 24px rgba(239, 68, 68, 0.35) !important;
+  z-index: 5;
+}
+
+.clickable-parcel-thumbnail .parcel-zoom-hint {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  backdrop-filter: blur(2px);
+}
+
+.clickable-parcel-thumbnail:hover .parcel-zoom-hint {
+  opacity: 1;
+}
+
+body.theme-light .clickable-parcel-thumbnail {
+  background-color: #F8FAFC;
+  border-color: #E2E8F0;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+}
+
+body.theme-light .clickable-parcel-thumbnail:hover {
+  border-color: #BE123C !important;
+  box-shadow: 0 8px 20px rgba(190, 18, 60, 0.25) !important;
+}
+
+body.theme-light .parcel-modal-content {
+  background: #FFFFFF !important;
+  border-color: #E2E8F0 !important;
+  color: #0F172A !important;
+}
+
+

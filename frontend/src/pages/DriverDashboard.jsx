@@ -25,8 +25,11 @@ import {
   ShieldCheck,
   Navigation,
   CheckCircle,
-  Settings
+  Settings,
+  Eye
 } from 'lucide-react';
+import ParcelDetailModal from '../components/ParcelDetailModal';
+import { getConsignmentPhoto } from '../utils/parcelUtils';
 
 // Dynamic realistic route estimation per consignment (Never static ~15.2 km)
 export const getEstimatedRoute = (awb, weight = 1.5) => {
@@ -49,8 +52,12 @@ export default function DriverDashboard() {
     isBackendOnline,
     logoutUser,
     setActiveTab,
+    refreshBackendOrders,
     isLoadingOrders
   } = useApp();
+  
+  // Selected parcel for rounded Google M3 pop-up modal
+  const [viewingParcel, setViewingParcel] = useState(null);
   
   // Selected parcel for delivery action modal
   const [activeModalAwb, setActiveModalAwb] = useState(null);
@@ -283,7 +290,19 @@ export default function DriverDashboard() {
           </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <button 
+            type="button" 
+            className="btn btn-secondary btn-sm"
+            onClick={refreshBackendOrders}
+            disabled={isLoadingOrders}
+            title="Refresh captain manifest and live run sheet (1.5s live sync)"
+            style={{ borderRadius: '9999px', padding: '0.5rem 1.15rem' }}
+          >
+            <RefreshCw size={14} className={isLoadingOrders ? 'spin' : ''} />
+            <span>{isLoadingOrders ? 'Refreshing...' : 'Refresh Manifest'}</span>
+          </button>
+
           <button 
             type="button" 
             className="btn btn-secondary btn-sm"
@@ -432,23 +451,42 @@ export default function DriverDashboard() {
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.25rem' }}>
-                <div>
-                  <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)' }}>
-                    Drop-off: {activeOngoingDelivery.recipient?.name || 'Customer Recipient'}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.15rem' }}>
+                  {/* Clickable Parcel Image */}
+                  <div
+                    onClick={() => setViewingParcel(activeOngoingDelivery)}
+                    title="Click to view full consignment dossier & specs"
+                    className="clickable-parcel-thumbnail"
+                    style={{ width: '68px', height: '68px', flexShrink: 0, borderRadius: '16px' }}
+                  >
+                    <img 
+                      src={getConsignmentPhoto(activeOngoingDelivery)} 
+                      alt="Consignment Parcel" 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    />
+                    <div className="parcel-zoom-hint">
+                      <Eye size={18} color="#ffffff" />
+                    </div>
                   </div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <MapPin size={15} color="var(--primary)" />
-                    <span>{activeOngoingDelivery.recipient?.address || 'Delivery Address'}, {activeOngoingDelivery.recipient?.city}</span>
+
+                  <div>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                      Drop-off: {activeOngoingDelivery.recipient?.name || 'Customer Recipient'}
+                    </div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <MapPin size={15} color="var(--primary)" />
+                      <span>{activeOngoingDelivery.recipient?.address || 'Delivery Address'}, {activeOngoingDelivery.recipient?.city}</span>
+                    </div>
+                    {activeOngoingDelivery.recipient?.phone && (
+                      <a
+                        href={`tel:${activeOngoingDelivery.recipient.phone}`}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--primary)', textDecoration: 'none', fontSize: '0.82rem', fontWeight: 700, marginTop: '6px' }}
+                      >
+                        <Phone size={13} />
+                        <span>Call Customer: {activeOngoingDelivery.recipient.phone}</span>
+                      </a>
+                    )}
                   </div>
-                  {activeOngoingDelivery.recipient?.phone && (
-                    <a
-                      href={`tel:${activeOngoingDelivery.recipient.phone}`}
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--primary)', textDecoration: 'none', fontSize: '0.82rem', fontWeight: 700, marginTop: '6px' }}
-                    >
-                      <Phone size={13} />
-                      <span>Call Customer: {activeOngoingDelivery.recipient.phone}</span>
-                    </a>
-                  )}
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
@@ -534,8 +572,26 @@ export default function DriverDashboard() {
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
-                    <div style={{ flex: '1 1 320px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: '1.15rem', flex: '1 1 340px' }}>
+                      {/* Clickable Parcel Thumbnail */}
+                      <div
+                        onClick={() => setViewingParcel(ship)}
+                        title="Click to view full consignment dossier & specs"
+                        className="clickable-parcel-thumbnail"
+                        style={{ width: '64px', height: '64px', flexShrink: 0, borderRadius: '16px' }}
+                      >
+                        <img 
+                          src={getConsignmentPhoto(ship)} 
+                          alt="Consignment Parcel" 
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                        />
+                        <div className="parcel-zoom-hint">
+                          <Eye size={16} color="#ffffff" />
+                        </div>
+                      </div>
+
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
                         <span style={{ 
                           width: '26px', 
                           height: '26px', 
@@ -646,6 +702,7 @@ export default function DriverDashboard() {
                           )}
                         </div>
                       )}
+                      </div>
                     </div>
 
                     {/* Action Buttons for Captain */}
@@ -767,34 +824,53 @@ export default function DriverDashboard() {
                       borderRadius: '20px'
                     }}
                   >
-                    <div style={{ flex: '1 1 360px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: '0.78rem', padding: '3px 8px', borderRadius: '6px', background: 'rgba(245, 158, 11, 0.15)', color: '#F59E0B', fontWeight: 800 }}>
-                          ORDER: {order.displayOrderId || 'ORD-' + (order.awbNumber || '').replace('AD-', '')}
-                        </span>
-                        <span className="mono" style={{ fontSize: '1rem', fontWeight: 800, color: '#00F0FF' }}>
-                          AWB: {order.awbNumber}
-                        </span>
-                        <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: '9999px', background: 'rgba(56, 189, 248, 0.15)', color: '#38BDF8', fontWeight: 700 }}>
-                          {order.serviceTier || 'Express Air'}
-                        </span>
-                        <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: '9999px', background: order.paymentMode === 'COD' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)', color: order.paymentMode === 'COD' ? '#F59E0B' : '#10B981', fontWeight: 700 }}>
-                          {order.paymentMode || 'Prepaid'}
-                        </span>
+                    <div style={{ display: 'flex', gap: '1.15rem', flex: '1 1 360px', alignItems: 'center' }}>
+                      {/* Clickable Parcel Thumbnail */}
+                      <div
+                        onClick={() => setViewingParcel(order)}
+                        title="Click to view full consignment dossier & specs"
+                        className="clickable-parcel-thumbnail"
+                        style={{ width: '64px', height: '64px', flexShrink: 0, borderRadius: '16px' }}
+                      >
+                        <img 
+                          src={getConsignmentPhoto(order)} 
+                          alt="Consignment Parcel" 
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                        />
+                        <div className="parcel-zoom-hint">
+                          <Eye size={16} color="#ffffff" />
+                        </div>
                       </div>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.65rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                        <div>
-                          <strong style={{ color: 'var(--text-main)' }}>Pickup:</strong> {order.sender?.city || 'Origin'} ({order.sender?.address?.substring(0, 30)}...)
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '0.78rem', padding: '3px 8px', borderRadius: '6px', background: 'rgba(245, 158, 11, 0.15)', color: '#F59E0B', fontWeight: 800 }}>
+                            ORDER: {order.displayOrderId || 'ORD-' + (order.awbNumber || '').replace('AD-', '')}
+                          </span>
+                          <span className="mono" style={{ fontSize: '1rem', fontWeight: 800, color: '#00F0FF' }}>
+                            AWB: {order.awbNumber}
+                          </span>
+                          <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: '9999px', background: 'rgba(56, 189, 248, 0.15)', color: '#38BDF8', fontWeight: 700 }}>
+                            {order.serviceTier || 'Express Air'}
+                          </span>
+                          <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: '9999px', background: order.paymentMode === 'COD' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)', color: order.paymentMode === 'COD' ? '#F59E0B' : '#10B981', fontWeight: 700 }}>
+                            {order.paymentMode || 'Prepaid'}
+                          </span>
                         </div>
-                        <div>
-                          <strong style={{ color: 'var(--text-main)' }}>Drop-off:</strong> {order.recipient?.city || 'Destination'} ({order.recipient?.name})
-                        </div>
-                        <div style={{ color: '#00F0FF', fontWeight: 700 }}>
-                          <strong>📍 Est. Route:</strong> ~{est.km} km • ~{est.mins} mins
-                        </div>
-                        <div>
-                          <strong style={{ color: 'var(--text-main)' }}>Parcel:</strong> {order.category || 'General'} • {order.weightKg} kg (₹{order.declaredValue?.toLocaleString() || 1500})
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.65rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                          <div>
+                            <strong style={{ color: 'var(--text-main)' }}>Pickup:</strong> {order.sender?.city || 'Origin'} ({order.sender?.address?.substring(0, 30)}...)
+                          </div>
+                          <div>
+                            <strong style={{ color: 'var(--text-main)' }}>Drop-off:</strong> {order.recipient?.city || 'Destination'} ({order.recipient?.name})
+                          </div>
+                          <div style={{ color: '#00F0FF', fontWeight: 700 }}>
+                            <strong>📍 Est. Route:</strong> ~{est.km} km • ~{est.mins} mins
+                          </div>
+                          <div>
+                            <strong style={{ color: 'var(--text-main)' }}>Parcel:</strong> {order.category || 'General'} • {order.weightKg} kg (₹{order.declaredValue?.toLocaleString() || 1500})
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -878,22 +954,40 @@ export default function DriverDashboard() {
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
-                        <span className="mono" style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--primary)' }}>
-                          {ship.awbNumber}
-                        </span>
-                        <StatusBadge status={ship.currentStatus} />
-                        <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '9999px', background: 'rgba(16, 185, 129, 0.15)', color: '#10B981', fontWeight: 700 }}>
-                          MODE: {ship.paymentMode || 'Prepaid'}
-                        </span>
+                    <div style={{ display: 'flex', gap: '1.15rem', alignItems: 'flex-start' }}>
+                      {/* Clickable Parcel Thumbnail */}
+                      <div
+                        onClick={() => setViewingParcel(ship)}
+                        title="Click to view full consignment dossier & specs"
+                        className="clickable-parcel-thumbnail"
+                        style={{ width: '64px', height: '64px', flexShrink: 0, borderRadius: '16px' }}
+                      >
+                        <img 
+                          src={getConsignmentPhoto(ship)} 
+                          alt="Consignment Parcel" 
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                        />
+                        <div className="parcel-zoom-hint">
+                          <Eye size={16} color="#ffffff" />
+                        </div>
                       </div>
-                      <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)' }}>
-                        Recipient: {ship.recipient?.name || 'Customer'}
-                      </div>
-                      <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                        {ship.recipient?.address}, {ship.recipient?.city}
-                      </div>
+
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
+                          <span className="mono" style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--primary)' }}>
+                            {ship.awbNumber}
+                          </span>
+                          <StatusBadge status={ship.currentStatus} />
+                          <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '9999px', background: 'rgba(16, 185, 129, 0.15)', color: '#10B981', fontWeight: 700 }}>
+                            MODE: {ship.paymentMode || 'Prepaid'}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                          Recipient: {ship.recipient?.name || 'Customer'}
+                        </div>
+                        <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                          {ship.recipient?.address}, {ship.recipient?.city}
+                        </div>
 
                       {ship.proofOfDelivery && (
                         <div style={{ marginTop: '0.85rem', padding: '0.65rem 1rem', background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: '14px', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
@@ -921,6 +1015,7 @@ export default function DriverDashboard() {
                           )}
                         </div>
                       )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1245,6 +1340,14 @@ export default function DriverDashboard() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Google Material 3 Consignment Dossier Pop-up Modal */}
+      {viewingParcel && (
+        <ParcelDetailModal 
+          parcel={viewingParcel} 
+          onClose={() => setViewingParcel(null)} 
+        />
       )}
     </div>
   );

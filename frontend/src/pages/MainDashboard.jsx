@@ -4,6 +4,8 @@ import StatusBadge from '../components/StatusBadge';
 import CopyButton from '../components/CopyButton';
 import MetricCard from '../components/MetricCard';
 import AeroLogo from '../components/AeroLogo';
+import ParcelDetailModal from '../components/ParcelDetailModal';
+import { getConsignmentPhoto } from '../utils/parcelUtils';
 import { SkeletonMetricsGrid, SkeletonTableRows } from '../components/SkeletonLoading';
 import { 
   Package, 
@@ -24,7 +26,8 @@ import {
   RefreshCw,
   Zap,
   Globe2,
-  Settings
+  Settings,
+  Eye
 } from 'lucide-react';
 
 export default function MainDashboard() {
@@ -43,6 +46,7 @@ export default function MainDashboard() {
 
   const [timeRange, setTimeRange] = useState('7d');
   const [isMainLoading, setIsMainLoading] = React.useState(true);
+  const [viewingParcel, setViewingParcel] = useState(null);
 
   React.useEffect(() => {
     setIsMainLoading(true);
@@ -416,6 +420,7 @@ export default function MainDashboard() {
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border-medium)', color: 'var(--text-dim)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <th style={{ padding: '0.6rem 0.5rem', width: '56px' }}>Parcel</th>
                   <th style={{ padding: '0.6rem 0.5rem' }}>Air Waybill</th>
                   <th style={{ padding: '0.6rem 0.5rem' }}>Origin → Destination</th>
                   <th style={{ padding: '0.6rem 0.5rem' }}>Tier</th>
@@ -425,10 +430,10 @@ export default function MainDashboard() {
               </thead>
               <tbody>
                 {(isLoadingOrders || isMainLoading) ? (
-                  <SkeletonTableRows rows={5} cols={5} />
+                  <SkeletonTableRows rows={5} cols={6} />
                 ) : recentShipments.length === 0 ? (
                   <tr>
-                    <td colSpan={5} style={{ textAlign: 'center', padding: '2.5rem 1rem' }}>
+                    <td colSpan={6} style={{ textAlign: 'center', padding: '2.5rem 1rem' }}>
                       <Package size={32} color="var(--text-dim)" style={{ margin: '0 auto 0.5rem', opacity: 0.6 }} />
                       <div style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: '0.9rem', marginBottom: '0.25rem' }}>
                         No consignments logged yet
@@ -445,6 +450,25 @@ export default function MainDashboard() {
                     style={{ borderBottom: '1px solid var(--border-subtle)', transition: 'background 0.15s ease' }}
                     className="table-row-hover"
                   >
+                    {/* Clickable Parcel Image Column */}
+                    <td style={{ padding: '0.75rem 0.5rem', width: '56px' }}>
+                      <div 
+                        onClick={() => setViewingParcel(s)}
+                        title="Click to view full consignment dossier & specs"
+                        className="clickable-parcel-thumbnail"
+                        style={{ width: '46px', height: '46px' }}
+                      >
+                        <img 
+                          src={getConsignmentPhoto(s)} 
+                          alt="Consignment Parcel" 
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                        />
+                        <div className="parcel-zoom-hint">
+                          <Eye size={13} color="#ffffff" />
+                        </div>
+                      </div>
+                    </td>
+
                     <td style={{ padding: '0.75rem 0.5rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                           <span className="mono" style={{ fontWeight: 700, color: 'var(--primary)' }}>
@@ -678,6 +702,14 @@ export default function MainDashboard() {
           )}
         </div>
       </div>
+
+      {/* Google Material 3 Consignment Dossier Pop-up Modal */}
+      {viewingParcel && (
+        <ParcelDetailModal 
+          parcel={viewingParcel} 
+          onClose={() => setViewingParcel(null)} 
+        />
+      )}
     </div>
   );
 }

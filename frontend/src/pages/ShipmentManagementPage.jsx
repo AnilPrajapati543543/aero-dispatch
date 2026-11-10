@@ -5,6 +5,8 @@ import StatusBadge from '../components/StatusBadge';
 import CopyButton from '../components/CopyButton';
 import TrackingTimeline from '../components/TrackingTimeline';
 import CustomSelect from '../components/CustomSelect';
+import ParcelDetailModal from '../components/ParcelDetailModal';
+import { getConsignmentPhoto } from '../utils/parcelUtils';
 import { SkeletonTableRows } from '../components/SkeletonLoading';
 import { 
   Package, 
@@ -26,7 +28,8 @@ import {
   Truck,
   Layers,
   ArrowUpDown,
-  Settings
+  Settings,
+  RefreshCw
 } from 'lucide-react';
 
 export default function ShipmentManagementPage() {
@@ -37,7 +40,9 @@ export default function ShipmentManagementPage() {
     setActiveTab, 
     setSelectedAwb, 
     addToast,
-    openChatbox
+    openChatbox,
+    refreshBackendOrders,
+    isLoadingOrders
   } = useApp();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -45,6 +50,7 @@ export default function ShipmentManagementPage() {
   const [selectedTier, setSelectedTier] = useState('ALL');
   const [currentPage, setCurrentPage] = useState(1);
   const [inspectingShipment, setInspectingShipment] = useState(null);
+  const [viewingParcel, setViewingParcel] = useState(null);
   const itemsPerPage = 7;
 
   // Management Skeleton Shimmer Loading - strictly 1.0s as requested
@@ -169,6 +175,17 @@ export default function ShipmentManagementPage() {
 
           <button 
             className="btn btn-secondary btn-sm"
+            onClick={refreshBackendOrders}
+            disabled={isLoadingOrders}
+            title="Refresh database records (1.5s live sync)"
+            style={{ borderRadius: '9999px', padding: '0.5rem 1.15rem' }}
+          >
+            <RefreshCw size={14} className={isLoadingOrders ? 'spin' : ''} />
+            <span>{isLoadingOrders ? 'Refreshing...' : 'Refresh'}</span>
+          </button>
+
+          <button 
+            className="btn btn-secondary btn-sm"
             onClick={handleExportCSV}
             title="Download CSV export"
           >
@@ -248,11 +265,12 @@ export default function ShipmentManagementPage() {
           )}
         </div>
 
-        {isManagementLoading ? (
+        {(isLoadingOrders || isManagementLoading) ? (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border-medium)', color: 'var(--text-dim)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  <th style={{ padding: '0.75rem 0.5rem', width: '56px' }}>Parcel</th>
                   <th style={{ padding: '0.75rem 0.5rem' }}>Air Waybill</th>
                   <th style={{ padding: '0.75rem 0.5rem' }}>Sender (Origin)</th>
                   <th style={{ padding: '0.75rem 0.5rem' }}>Recipient (Destination)</th>
@@ -263,7 +281,7 @@ export default function ShipmentManagementPage() {
                 </tr>
               </thead>
               <tbody>
-                <SkeletonTableRows rows={6} cols={7} />
+                <SkeletonTableRows rows={6} cols={8} />
               </tbody>
             </table>
           </div>
@@ -286,6 +304,7 @@ export default function ShipmentManagementPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border-medium)', color: 'var(--text-dim)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  <th style={{ padding: '0.75rem 0.5rem', width: '56px' }}>Parcel</th>
                   <th style={{ padding: '0.75rem 0.5rem' }}>Air Waybill</th>
                   <th style={{ padding: '0.75rem 0.5rem' }}>Sender (Origin)</th>
                   <th style={{ padding: '0.75rem 0.5rem' }}>Recipient (Destination)</th>
@@ -302,6 +321,25 @@ export default function ShipmentManagementPage() {
                     style={{ borderBottom: '1px solid var(--border-subtle)', transition: 'background 0.15s ease' }}
                     className="table-row-hover"
                   >
+                    {/* Clickable Parcel Image Column */}
+                    <td style={{ padding: '0.85rem 0.5rem', width: '56px' }}>
+                      <div 
+                        onClick={() => setViewingParcel(s)}
+                        title="Click to view full consignment dossier & specs"
+                        className="clickable-parcel-thumbnail"
+                        style={{ width: '46px', height: '46px' }}
+                      >
+                        <img 
+                          src={getConsignmentPhoto(s)} 
+                          alt="Consignment Parcel" 
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                        />
+                        <div className="parcel-zoom-hint">
+                          <Eye size={13} color="#ffffff" />
+                        </div>
+                      </div>
+                    </td>
+
                     {/* AWB & Order ID */}
                     <td style={{ padding: '0.85rem 0.5rem' }}>
                       <div style={{ fontSize: '0.72rem', color: '#94A3B8', fontWeight: 700 }}>
@@ -648,6 +686,14 @@ export default function ShipmentManagementPage() {
           </div>
         );
       })()}
+
+      {/* Google Material 3 Consignment Dossier Pop-up Modal */}
+      {viewingParcel && (
+        <ParcelDetailModal 
+          parcel={viewingParcel} 
+          onClose={() => setViewingParcel(null)} 
+        />
+      )}
     </div>
   );
 }

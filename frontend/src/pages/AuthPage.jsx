@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { apiRegister, apiConfirmRegister, apiResendCode, API_BASE_URL } from '../services/api';
+import { SkeletonRegisterCard } from '../components/SkeletonLoading';
 import { 
   User, 
   Lock, 
@@ -20,6 +21,25 @@ import {
 
 export default function AuthPage() {
   const { currentUser, loginUser, resetAccountPassword, addToast, setActiveTab } = useApp();
+
+  // 1.2s Skeleton loading effect when clicking "Add another account"
+  const [isSkeletonLoading, setIsSkeletonLoading] = useState(() => {
+    const needSkeleton = sessionStorage.getItem('aerodispatch_auth_skeleton');
+    if (needSkeleton === 'true') {
+      sessionStorage.removeItem('aerodispatch_auth_skeleton');
+      return true;
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    if (isSkeletonLoading) {
+      const timer = setTimeout(() => {
+        setIsSkeletonLoading(false);
+      }, 1200); // Strictly 1.2s skeleton effect as requested
+      return () => clearTimeout(timer);
+    }
+  }, [isSkeletonLoading]);
 
   const initialMode = React.useMemo(() => {
     const modeKey = localStorage.getItem('aerodispatch_auth_mode');
@@ -684,8 +704,11 @@ export default function AuthPage() {
         <span>← {currentUser ? 'Return to Dashboard' : 'AeroDispatch Home'}</span>
       </button>
 
-      {/* Glassmorphic Centered Card */}
-      <div className="login-card-container">
+      {/* 1.2s Skeleton loading or Glassmorphic Centered Card */}
+      {isSkeletonLoading ? (
+        <SkeletonRegisterCard />
+      ) : (
+        <div className="login-card-container">
         {/* =========================================================================
             LEFT PANEL: Crimson Red Gradient with Curved Outward Sweep
             ========================================================================= */}
@@ -1023,6 +1046,7 @@ export default function AuthPage() {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }

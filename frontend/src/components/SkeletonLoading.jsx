@@ -106,11 +106,69 @@ export function SkeletonMap() {
   );
 }
 
+// Registration Form Skeleton (Add Another Account 1.2s loading effect)
+export function SkeletonRegisterCard() {
+  return (
+    <div className="login-card-container" style={{ pointerEvents: 'none', animation: 'fadeIn 0.2s ease' }}>
+      {/* Left crimson panel skeleton */}
+      <div 
+        className="login-left-panel" 
+        style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          gap: '1.25rem',
+          padding: '2.5rem 1.75rem',
+          textAlign: 'center'
+        }}
+      >
+        <SkeletonBlock width="170px" height="32px" borderRadius="16px" style={{ background: 'rgba(255, 255, 255, 0.25)' }} />
+        <SkeletonBlock width="210px" height="15px" borderRadius="8px" style={{ background: 'rgba(255, 255, 255, 0.18)' }} />
+        <SkeletonBlock width="130px" height="42px" borderRadius="9999px" style={{ marginTop: '0.75rem', background: 'rgba(255, 255, 255, 0.22)' }} />
+      </div>
+
+      {/* Right form panel skeleton */}
+      <div className="login-right-panel" style={{ padding: '2.25rem 2rem' }}>
+        <div className="login-form-inner" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%', maxWidth: '380px', margin: '0 auto' }}>
+          {/* Form heading */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.5rem' }}>
+            <SkeletonBlock width="140px" height="34px" borderRadius="12px" />
+          </div>
+
+          {/* Role selector pills */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.25rem' }}>
+            <SkeletonBlock width="100%" height="40px" borderRadius="9999px" />
+            <SkeletonBlock width="100%" height="40px" borderRadius="9999px" />
+          </div>
+
+          {/* Form input fields */}
+          <SkeletonBlock width="100%" height="46px" borderRadius="12px" />
+          <SkeletonBlock width="100%" height="46px" borderRadius="12px" />
+          <SkeletonBlock width="100%" height="46px" borderRadius="12px" />
+          <SkeletonBlock width="100%" height="46px" borderRadius="12px" />
+
+          {/* Submit button */}
+          <div style={{ marginTop: '0.6rem' }}>
+            <SkeletonBlock width="100%" height="48px" borderRadius="9999px" />
+          </div>
+
+          {/* Helper caption */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.5rem' }}>
+            <SkeletonBlock width="220px" height="13px" borderRadius="7px" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default {
   SkeletonBlock,
   SkeletonMetricsGrid,
   SkeletonTableRows,
   SkeletonRunSheet,
-  SkeletonMap
+  SkeletonMap,
+  SkeletonRegisterCard
 };
 
