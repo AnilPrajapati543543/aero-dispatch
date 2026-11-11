@@ -7,6 +7,9 @@ VALID_SERVICE_TIERS = {
     "AeroExpress Air",
     "AeroSurface Standard",
     "AeroHyperlocal Priority",
+    "Express Air",
+    "Standard Surface",
+    "Same-Day Priority",
 }
 
 PHONE_REGEX = re.compile(r"^\+?[0-9\s\-]{7,20}$")
@@ -146,7 +149,16 @@ def validate_order_payload(payload: Any) -> Tuple[bool, Optional[Dict[str, Any]]
     if payment_mode not in VALID_PAYMENT_MODES:
         errors.append(f"paymentMode must be one of: {', '.join(sorted(VALID_PAYMENT_MODES))}.")
 
-    service_tier = _sanitize_string(payload.get("serviceTier")) or "AeroExpress Air"
+    raw_tier = _sanitize_string(payload.get("serviceTier")) or "AeroExpress Air"
+    tier_map = {
+        "express air": "AeroExpress Air",
+        "aeroexpress air": "AeroExpress Air",
+        "standard surface": "AeroSurface Standard",
+        "aerosurface standard": "AeroSurface Standard",
+        "same-day priority": "AeroHyperlocal Priority",
+        "aerohyperlocal priority": "AeroHyperlocal Priority",
+    }
+    service_tier = tier_map.get(raw_tier.lower(), raw_tier)
     if service_tier not in VALID_SERVICE_TIERS:
         errors.append(f"serviceTier must be one of: {', '.join(sorted(VALID_SERVICE_TIERS))}.")
 

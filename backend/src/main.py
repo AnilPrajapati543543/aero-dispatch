@@ -763,10 +763,12 @@ async def create_order(
             cust_email = (
                 order.get("customerEmail")
                 or (order.get("sender", {}).get("email") if isinstance(order.get("sender"), dict) else None)
+                or (user.get("email") if user else None)
             )
             if cust_email:
                 try:
-                    notification_service.send_order_confirmation_email(cust_email, order)
+                    res = notification_service.send_order_confirmation_email(cust_email, order)
+                    logger.info(f"Order confirmation email result for '{cust_email}': {res}")
                 except Exception as notify_err:
                     logger.warning(f"Note on order confirmation email dispatch: {notify_err}")
 

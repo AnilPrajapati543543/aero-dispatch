@@ -973,7 +973,7 @@ export function AppProvider({ children }) {
         addToast(`Shipment ${finalOrder.awbNumber} created successfully!`, 'success');
       } catch (e) {
         console.warn("Backend order creation error, falling back to local simulation:", e);
-        addToast(`Shipment recorded: ${formData.awbNumber || 'New Order'}`, 'info');
+        addToast(`Order Notice: ${e.message || 'Saved in local mode'}`, 'warning');
       }
     }
 
