@@ -3,6 +3,13 @@
  * safely within browser localStorage quotas (<25KB per avatar).
  */
 
+import adminAvatarAsset from '../assets/admin-avatar.webp';
+
+/**
+ * Universal official administrator avatar asset, accessible across any device, browser, or session.
+ */
+export const ADMIN_DEFAULT_AVATAR = adminAvatarAsset || '/admin-avatar.webp';
+
 export function compressAvatarImage(source, maxWidth = 320, maxHeight = 320, quality = 0.85) {
   return new Promise((resolve) => {
     if (!source) return resolve(null);
@@ -88,7 +95,12 @@ export function getPersistentAvatar(email, role) {
       if (roleDirect) return roleDirect;
     }
 
-    // 4. Registered users table
+    // 4. Universal Admin Profile Picture Fallback (guaranteed cross-browser)
+    if (cleanRole === 'admin' || cleanEmail === 'admin@aerodispatch.io') {
+      return ADMIN_DEFAULT_AVATAR;
+    }
+
+    // 5. Registered users table
     if (cleanEmail) {
       const reg = JSON.parse(localStorage.getItem('aerodispatch_registered_users') || '[]');
       const found = reg.find(u => u.email?.toLowerCase() === cleanEmail);
@@ -105,6 +117,7 @@ export function getPersistentAvatar(email, role) {
     // 6. Global fallback
     return vault['last_uploaded_avatar'] || localStorage.getItem('aerodispatch_avatar_latest') || null;
   } catch (e) {
+    if (role === 'admin' || email === 'admin@aerodispatch.io') return ADMIN_DEFAULT_AVATAR;
     return null;
   }
 }

@@ -24,6 +24,7 @@ import {
   extractDisplayName
 } from '../services/api';
 import { 
+  ADMIN_DEFAULT_AVATAR,
   compressAvatarImage, 
   getPersistentAvatar, 
   savePersistentAvatar 
@@ -41,6 +42,9 @@ export function AppProvider({ children }) {
         if (!parsed.avatarUrl) {
           const restored = getPersistentAvatar(parsed.email, parsed.role);
           if (restored) parsed.avatarUrl = restored;
+        }
+        if (parsed.role === 'admin' && !parsed.avatarUrl) {
+          parsed.avatarUrl = ADMIN_DEFAULT_AVATAR;
         }
         // Clean name if currently stored as raw gmail address or email prefix
         parsed.name = getCleanDisplayName(parsed, parsed.role);
@@ -661,6 +665,8 @@ export function AppProvider({ children }) {
         const savedAvatar = getPersistentAvatar(authUser.email, authUser.role);
         if (savedAvatar) {
           authUser.avatarUrl = savedAvatar;
+        } else if (authUser.role === 'admin' || authUser.email === 'admin@aerodispatch.io') {
+          authUser.avatarUrl = ADMIN_DEFAULT_AVATAR;
         }
       }
 
@@ -726,13 +732,13 @@ export function AppProvider({ children }) {
     if (String(code).trim() !== '8469') {
       throw new Error('Invalid administrator access code. Authorization failed.');
     }
-    const savedAvatar = getPersistentAvatar('admin@aerodispatch.io', 'admin');
+    const savedAvatar = getPersistentAvatar('admin@aerodispatch.io', 'admin') || ADMIN_DEFAULT_AVATAR;
     const adminUser = {
       role: 'admin',
       name: 'System Administrator',
       email: 'admin@aerodispatch.io',
       permissions: ['ALL', 'SYSTEM_OVERRIDE'],
-      avatarUrl: savedAvatar || undefined
+      avatarUrl: savedAvatar || ADMIN_DEFAULT_AVATAR
     };
     let token = `admin-code-token-${Date.now()}`;
 
