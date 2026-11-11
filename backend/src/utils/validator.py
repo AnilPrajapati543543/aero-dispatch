@@ -73,20 +73,20 @@ def validate_order_payload(payload: Any) -> Tuple[bool, Optional[Dict[str, Any]]
     recipient_raw = payload.get("recipient")
     if isinstance(recipient_raw, dict):
         recipient_name = _sanitize_string(recipient_raw.get("name"))
-        recipient_city = _sanitize_string(recipient_raw.get("city"))
-        recipient_pin = _sanitize_string(recipient_raw.get("pinCode") or recipient_raw.get("pin"))
+        recipient_city = _sanitize_string(recipient_raw.get("city") or recipient_raw.get("destinationCity"))
+        recipient_pin = _sanitize_string(recipient_raw.get("pinCode") or recipient_raw.get("pin") or recipient_raw.get("destinationPin"))
         recipient_phone = _sanitize_string(recipient_raw.get("phone"))
-        recipient_address = _sanitize_string(recipient_raw.get("address"))
-        recipient_state = _sanitize_string(recipient_raw.get("state") or "")
+        recipient_address = _sanitize_string(recipient_raw.get("address") or recipient_raw.get("deliveryAddress"))
+        recipient_state = _sanitize_string(recipient_raw.get("state") or recipient_raw.get("destinationState") or "")
         recipient_email = _sanitize_string(recipient_raw.get("email") or payload.get("recipientEmail"))
     else:
-        # Check flat fields
+        # Check flat fields (supports both recipient* and destination*/deliveryAddress)
         recipient_name = _sanitize_string(payload.get("recipientName"))
-        recipient_city = _sanitize_string(payload.get("recipientCity"))
-        recipient_pin = _sanitize_string(payload.get("recipientPin") or payload.get("recipientPinCode"))
+        recipient_city = _sanitize_string(payload.get("recipientCity") or payload.get("destinationCity"))
+        recipient_pin = _sanitize_string(payload.get("recipientPin") or payload.get("recipientPinCode") or payload.get("destinationPin"))
         recipient_phone = _sanitize_string(payload.get("recipientPhone"))
-        recipient_address = _sanitize_string(payload.get("recipientAddress"))
-        recipient_state = _sanitize_string(payload.get("recipientState") or "")
+        recipient_address = _sanitize_string(payload.get("recipientAddress") or payload.get("deliveryAddress"))
+        recipient_state = _sanitize_string(payload.get("recipientState") or payload.get("destinationState") or "")
         recipient_email = _sanitize_string(payload.get("recipientEmail"))
 
     if not recipient_name or len(recipient_name) < 2 or len(recipient_name) > 100:
@@ -145,7 +145,14 @@ def validate_order_payload(payload: Any) -> Tuple[bool, Optional[Dict[str, Any]]
         errors.append("declaredValue must be a valid number.")
 
     # 7. Payment Mode & Service Tier
-    payment_mode = _sanitize_string(payload.get("paymentMode")) or "Prepaid"
+    raw_payment_mode = _sanitize_string(payload.get("paymentMode")) or "Prepaid"
+    pm_lower = raw_payment_mode.lower()
+    if pm_lower in ("prepaid", "online", "paid", "upi", "card"):
+        payment_mode = "Prepaid"
+    elif pm_lower in ("cod", "cash on delivery", "cash_on_delivery"):
+        payment_mode = "COD"
+    else:
+        payment_mode = raw_payment_mode
     if payment_mode not in VALID_PAYMENT_MODES:
         errors.append(f"paymentMode must be one of: {', '.join(sorted(VALID_PAYMENT_MODES))}.")
 

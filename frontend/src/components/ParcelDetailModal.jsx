@@ -435,7 +435,13 @@ export default function ParcelDetailModal({ parcel, onClose }) {
                       <button
                         type="button"
                         className="btn btn-primary btn-sm"
-                        onClick={() => openChatbox()}
+                        onClick={() => openChatbox({
+                          recipientName: customerName,
+                          recipientRole: 'customer',
+                          recipientPhone: customerPhone,
+                          awbNumber: parcel.awbNumber || parcel.orderId,
+                          role: 'driver'
+                        })}
                         style={{ borderRadius: '9999px', padding: '0.45rem 1rem', display: 'flex', alignItems: 'center', gap: '5px' }}
                       >
                         <MessageSquare size={13} />
@@ -477,7 +483,13 @@ export default function ParcelDetailModal({ parcel, onClose }) {
                     <button
                       type="button"
                       className="btn btn-secondary btn-sm"
-                      onClick={() => openChatbox()}
+                      onClick={() => openChatbox({
+                        recipientName: `Captain ${cleanCaptainName}`,
+                        recipientRole: 'driver',
+                        recipientPhone: cleanCaptainPhone,
+                        awbNumber: parcel.awbNumber || parcel.orderId,
+                        role: 'customer'
+                      })}
                       style={{ borderRadius: '9999px', padding: '0.45rem 1rem', display: 'flex', alignItems: 'center', gap: '5px' }}
                     >
                       <MessageSquare size={13} />

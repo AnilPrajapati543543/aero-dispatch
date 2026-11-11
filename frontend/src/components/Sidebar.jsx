@@ -37,7 +37,7 @@ export default function Sidebar() {
     logoutUser
   } = useApp();
 
-  const userRole = currentUser?.role || 'guest';
+  const userRole = currentRole || currentUser?.role || 'guest';
   const myShipmentsCount = visibleShipments ? visibleShipments.length : shipments.length;
   const inTransitCount = shipments.filter(s => s.currentStatus === 'IN_TRANSIT' || s.currentStatus === 'OUT_FOR_DELIVERY').length;
 

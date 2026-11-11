@@ -63,10 +63,49 @@ export default function DriverManagementPage() {
   const [newDriverPassword, setNewDriverPassword] = useState('Driver@123');
   const [isProvisioning, setIsProvisioning] = useState(false);
 
-  const currentDrivers = driversList || drivers;
+  // Purge any legacy demo drivers and ensure verified fleet captain is active
+  const cleanDriverList = useMemo(() => {
+    let list = (driversList || drivers || []).filter(d => 
+      d.id !== 'DRV-8469' && 
+      d.id !== 'DRV-658' && 
+      !(d.phone || '').includes('90042') && 
+      !(d.phone || '').includes('90043') &&
+      !(d.name || '').toLowerCase().includes('pandey')
+    );
+    if (!list.some(d => d.email?.toLowerCase() === 'oldmemories021@gmail.com' || d.id === 'DRV-0214')) {
+      list = [
+        {
+          id: 'DRV-0214',
+          driverId: 'DRV-0214',
+          name: 'Captain Rishabh',
+          email: 'oldmemories021@gmail.com',
+          phone: '+91 98451 90214',
+          vehicle: 'MH-02-EV-0214',
+          vehicleType: 'Express Electric Cargo Van',
+          operationalZone: 'Mumbai Metro & Central Corridor',
+          zone: 'Mumbai Metro & Central Corridor',
+          hub: 'Central Logistics Hub',
+          status: 'AVAILABLE',
+          rating: 5.0,
+          avatarUrl: getPersistentAvatar('oldmemories021@gmail.com', 'driver')
+        },
+        ...list
+      ];
+    }
+    return list;
+  }, [driversList, drivers]);
+
+  const handleDeleteDriver = (driverId) => {
+    const updated = cleanDriverList.filter(d => d.id !== driverId);
+    setDriversList(updated);
+    try {
+      localStorage.setItem('aerodispatch_fleet_drivers', JSON.stringify(updated));
+    } catch (e) {}
+    addToast(`Captain removed from fleet directory.`, 'info');
+  };
 
   // Filter drivers
-  const filteredDrivers = currentDrivers.filter(d => {
+  const filteredDrivers = cleanDriverList.filter(d => {
     if (statusFilter !== 'ALL' && d.status !== statusFilter) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -266,6 +305,7 @@ export default function DriverManagementPage() {
             shipments={shipments}
             onAssign={setSelectedDriverForAssign}
             updateDriverStatus={updateDriverStatus}
+            onDelete={handleDeleteDriver}
           />
         ))}
       </div>
@@ -495,7 +535,7 @@ export default function DriverManagementPage() {
   );
 }
 
-function DriverFleetCard({ driver, shipments, onAssign, updateDriverStatus }) {
+function DriverFleetCard({ driver, shipments, onAssign, updateDriverStatus, onDelete }) {
   const isAvail = driver.status === 'AVAILABLE';
   const isOnRoute = driver.status === 'ON_ROUTE';
   const [activeTab, setActiveTab] = useState('accepted'); // 'accepted' | 'declined'
@@ -578,20 +618,44 @@ function DriverFleetCard({ driver, shipments, onAssign, updateDriverStatus }) {
             </div>
           </div>
 
-          {/* Status Tag */}
-          <span 
-            style={{
-              fontSize: '0.7rem',
-              fontWeight: 800,
-              padding: '3px 10px',
-              borderRadius: '9999px',
-              background: isAvail ? 'rgba(16, 185, 129, 0.15)' : 
-                          isOnRoute ? 'rgba(245, 158, 11, 0.15)' : 'rgba(244, 63, 94, 0.15)',
-              color: isAvail ? '#10B981' : isOnRoute ? '#FBBF24' : '#F43F5E'
-            }}
-          >
-            ● {driver.status?.replace('_', ' ')}
-          </span>
+          {/* Status Tag & Delete Captain Action */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+            <span 
+              style={{
+                fontSize: '0.7rem',
+                fontWeight: 800,
+                padding: '3px 10px',
+                borderRadius: '9999px',
+                background: isAvail ? 'rgba(16, 185, 129, 0.15)' : 
+                            isOnRoute ? 'rgba(245, 158, 11, 0.15)' : 'rgba(244, 63, 94, 0.15)',
+                color: isAvail ? '#10B981' : isOnRoute ? '#FBBF24' : '#F43F5E'
+              }}
+            >
+              ● {driver.status?.replace('_', ' ')}
+            </span>
+            {onDelete && (
+              <button
+                type="button"
+                onClick={() => onDelete(driver.id)}
+                style={{
+                  background: 'rgba(244, 63, 94, 0.08)',
+                  border: '1px solid rgba(244, 63, 94, 0.25)',
+                  color: '#F43F5E',
+                  borderRadius: '50%',
+                  width: '24px',
+                  height: '24px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  padding: 0
+                }}
+                title={`Remove Captain ${driver.name || driver.id} from roster`}
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

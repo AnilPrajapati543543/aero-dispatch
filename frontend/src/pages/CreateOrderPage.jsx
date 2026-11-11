@@ -121,6 +121,18 @@ export default function CreateOrderPage() {
         ...formData,
         senderName: formData.senderName.trim() || 'AeroDispatch Peenya Hub',
         senderPhone: formData.senderPhone.trim() || '+91 98200 11223',
+        senderCity: formData.senderCity.trim(),
+        senderPin: formData.senderPin.trim(),
+        senderAddress: formData.senderAddress.trim(),
+        recipientName: formData.recipientName.trim(),
+        recipientPhone: formData.recipientPhone.trim(),
+        recipientCity: formData.destinationCity.trim(),
+        recipientPin: formData.destinationPin.trim(),
+        recipientAddress: formData.deliveryAddress.trim(),
+        destinationCity: formData.destinationCity.trim(),
+        destinationPin: formData.destinationPin.trim(),
+        deliveryAddress: formData.deliveryAddress.trim(),
+        paymentMode: formData.paymentMode === 'COD' ? 'COD' : 'Prepaid',
         customerEmail: (formData.customerEmail || currentUser?.email || '').trim().toLowerCase()
       };
       const newOrder = await addShipment(submissionData);

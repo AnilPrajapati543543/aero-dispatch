@@ -30,7 +30,12 @@ import {
   Eye,
   Users,
   XCircle,
-  ShieldCheck
+  ShieldCheck,
+  X,
+  Mail,
+  Phone,
+  UserCheck,
+  UserPlus
 } from 'lucide-react';
 
 export default function MainDashboard() {
@@ -40,6 +45,8 @@ export default function MainDashboard() {
     hubs, 
     drivers, 
     currentUser,
+    currentRole,
+    switchRole,
     setActiveTab, 
     setSelectedAwb, 
     isBackendOnline,
@@ -48,12 +55,15 @@ export default function MainDashboard() {
     customerAccountsCount,
     captainAccountsCount,
     completedDeliveriesCount,
-    cancelledOrdersCount
+    cancelledOrdersCount,
+    addToast
   } = useApp();
 
   const [timeRange, setTimeRange] = useState('7d');
   const [isMainLoading, setIsMainLoading] = React.useState(true);
   const [viewingParcel, setViewingParcel] = useState(null);
+  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  const [customerSearchQuery, setCustomerSearchQuery] = useState('');
 
   React.useEffect(() => {
     setIsMainLoading(true);
@@ -124,6 +134,85 @@ export default function MainDashboard() {
     .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
     .slice(0, 6);
 
+  // Consolidated registered and active customer accounts
+  const customerList = React.useMemo(() => {
+    const list = [];
+    const seenEmails = new Set();
+
+    // 1. Registered customer accounts from localStorage
+    try {
+      const reg = JSON.parse(localStorage.getItem('aerodispatch_registered_users') || '[]');
+      if (Array.isArray(reg)) {
+        reg.filter(u => u.role === 'customer').forEach(u => {
+          const em = (u.email || '').toLowerCase().trim();
+          if (em && !seenEmails.has(em)) {
+            seenEmails.add(em);
+            const userOrders = shipments.filter(s => 
+              (s.customerEmail || '').toLowerCase() === em || 
+              (s.sender?.email || '').toLowerCase() === em
+            );
+            list.push({
+              name: u.name || 'Merchant Customer',
+              email: em,
+              phone: u.phone || '+91 84338 26567',
+              role: 'customer',
+              verified: true,
+              ordersCount: userOrders.length,
+              source: 'Cognito Verified'
+            });
+          }
+        });
+      }
+    } catch (e) {}
+
+    // 2. Customers derived from active consignments
+    shipments.forEach(s => {
+      const em = (s.customerEmail || s.sender?.email || '').toLowerCase().trim();
+      if (em && !seenEmails.has(em)) {
+        seenEmails.add(em);
+        const userOrders = shipments.filter(o => 
+          (o.customerEmail || '').toLowerCase() === em || 
+          (o.sender?.email || '').toLowerCase() === em
+        );
+        list.push({
+          name: s.sender?.name || 'Consignment Shipper',
+          email: em,
+          phone: s.sender?.phone || '+91 84338 26567',
+          role: 'customer',
+          verified: true,
+          ordersCount: userOrders.length,
+          source: 'Active Shipper'
+        });
+      }
+    });
+
+    // 3. Fallback: Seed customer Anil Prajapati (microsofty543@gmail.com)
+    if (!seenEmails.has('microsofty543@gmail.com')) {
+      list.unshift({
+        name: 'Anil Prajapati',
+        email: 'microsofty543@gmail.com',
+        phone: '+91 84338 26567',
+        role: 'customer',
+        verified: true,
+        ordersCount: shipments.length,
+        source: 'Primary Merchant'
+      });
+    }
+
+    return list;
+  }, [shipments]);
+
+  // Filtered customer list for modal search
+  const filteredCustomerList = customerList.filter(c => {
+    if (!customerSearchQuery.trim()) return true;
+    const q = customerSearchQuery.toLowerCase();
+    return (
+      c.name.toLowerCase().includes(q) ||
+      c.email.toLowerCase().includes(q) ||
+      (c.phone && c.phone.includes(q))
+    );
+  });
+
   return (
     <div className="dashboard-content" style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
       {/* 1. Header with Title & Quick Actions */}
@@ -147,6 +236,40 @@ export default function MainDashboard() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          {/* Persona Role Switcher: Admin View / Customer View Toggle */}
+          <div 
+            className="portal-view-toggle-pill"
+            style={{ 
+              display: 'inline-flex', 
+              alignItems: 'center', 
+              background: 'rgba(255, 255, 255, 0.05)', 
+              borderRadius: '9999px', 
+              padding: '3px',
+              border: '1px solid var(--border-medium)',
+              gap: '3px'
+            }}
+          >
+            <button
+              type="button"
+              className="btn btn-sm btn-primary"
+              style={{ borderRadius: '9999px', padding: '0.35rem 0.85rem', fontSize: '0.78rem', fontWeight: 800 }}
+              title="Currently viewing Administrator Operations Console"
+            >
+              <ShieldCheck size={13} />
+              <span>Admin View</span>
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm btn-secondary"
+              onClick={() => switchRole('customer')}
+              style={{ borderRadius: '9999px', padding: '0.35rem 0.85rem', fontSize: '0.78rem', fontWeight: 700, color: '#00F0FF', borderColor: 'rgba(0, 240, 255, 0.35)' }}
+              title="Switch to Customer Merchant Portal View"
+            >
+              <Users size={13} />
+              <span>Switch to Customer ➔</span>
+            </button>
+          </div>
+
           <button 
             className="btn btn-secondary btn-sm google-pill-btn"
             onClick={() => setActiveTab('settings')}
@@ -186,11 +309,12 @@ export default function MainDashboard() {
           <div className="grid-cols-4" style={{ gap: '1.25rem' }}>
             <MetricCard 
               title="Customer Accounts"
-              value={customerAccountsCount ?? 0}
+              value={customerAccountsCount ?? customerList.length}
               subtitle="Registered Customer Portals"
               icon={Users}
               color="#00F0FF"
               badge={customerAccountsCount > 0 ? `${customerAccountsCount} Verified` : "Cognito Active"}
+              onClick={() => setIsCustomerModalOpen(true)}
             />
             <MetricCard 
               title="Captain Accounts"
@@ -762,6 +886,274 @@ export default function MainDashboard() {
           )}
         </div>
       </div>
+
+      {/* Customer Accounts Directory Modal (Opened by clicking Customer Accounts tile) */}
+      {isCustomerModalOpen && (
+        <div 
+          className="modal-backdrop"
+          onClick={() => setIsCustomerModalOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.75)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1200,
+            padding: '1rem',
+            animation: 'fadeIn 0.2s ease'
+          }}
+        >
+          <div 
+            className="card"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: '720px',
+              maxHeight: '85vh',
+              display: 'flex',
+              flexDirection: 'column',
+              background: 'var(--bg-card)',
+              borderRadius: '24px',
+              border: '1px solid var(--border-medium)',
+              boxShadow: '0 25px 60px rgba(0, 0, 0, 0.45)',
+              overflow: 'hidden'
+            }}
+          >
+            {/* Modal Header */}
+            <div 
+              style={{
+                padding: '1.25rem 1.5rem',
+                borderBottom: '1px solid var(--border-subtle)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                background: 'rgba(255, 255, 255, 0.02)'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div 
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '12px',
+                    background: 'rgba(0, 240, 255, 0.12)',
+                    color: '#00F0FF',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '1px solid rgba(0, 240, 255, 0.25)'
+                  }}
+                >
+                  <Users size={20} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span>Customer Merchant Accounts</span>
+                    <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: '9999px', background: 'rgba(0, 240, 255, 0.15)', color: '#00F0FF', fontWeight: 700 }}>
+                      {filteredCustomerList.length} Active
+                    </span>
+                  </h3>
+                  <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
+                    AWS Cognito Verified Merchant Profiles &amp; Consignment Senders
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-primary"
+                  onClick={() => {
+                    setIsCustomerModalOpen(false);
+                    switchRole('customer');
+                  }}
+                  style={{ borderRadius: '9999px', padding: '0.4rem 0.95rem', fontSize: '0.76rem', fontWeight: 700 }}
+                  title="Switch to Customer Merchant Portal"
+                >
+                  <span>Switch to Customer View ➔</span>
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-secondary"
+                  onClick={() => setIsCustomerModalOpen(false)}
+                  style={{ padding: '0.4rem', borderRadius: '50%', width: '32px', height: '32px' }}
+                  title="Close Directory"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Search Bar */}
+            <div style={{ padding: '1rem 1.5rem 0.5rem 1.5rem' }}>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <Search size={15} style={{ position: 'absolute', left: '12px', color: 'var(--text-muted)' }} />
+                <input
+                  type="text"
+                  placeholder="Search customer by name, email, or contact phone..."
+                  value={customerSearchQuery}
+                  onChange={(e) => setCustomerSearchQuery(e.target.value)}
+                  className="form-input"
+                  style={{ paddingLeft: '2.4rem', borderRadius: '12px', fontSize: '0.85rem' }}
+                />
+              </div>
+            </div>
+
+            {/* Modal Body: Customer Cards List */}
+            <div 
+              style={{
+                flex: 1,
+                overflowY: 'auto',
+                padding: '0.75rem 1.5rem 1.5rem 1.5rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.75rem'
+              }}
+            >
+              {filteredCustomerList.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: 'var(--text-muted)' }}>
+                  <Users size={32} style={{ margin: '0 auto 0.5rem', opacity: 0.5 }} />
+                  <div style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: '0.95rem' }}>No matching customer portals found</div>
+                  <div style={{ fontSize: '0.8rem', marginTop: '0.25rem' }}>Try adjusting your search query.</div>
+                </div>
+              ) : (
+                filteredCustomerList.map((cust) => (
+                  <div
+                    key={cust.email}
+                    style={{
+                      padding: '1rem 1.15rem',
+                      background: 'var(--bg-secondary)',
+                      borderRadius: '16px',
+                      border: '1px solid var(--border-subtle)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '0.85rem',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', minWidth: 0 }}>
+                      <div 
+                        style={{
+                          width: '42px',
+                          height: '42px',
+                          borderRadius: '50%',
+                          background: 'linear-gradient(135deg, #00F0FF, #0284C7)',
+                          color: '#070B14',
+                          fontWeight: 800,
+                          fontSize: '1.05rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0
+                        }}
+                      >
+                        {cust.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                          <span style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--text-main)' }}>
+                            {cust.name}
+                          </span>
+                          <span 
+                            style={{ 
+                              fontSize: '0.68rem', 
+                              padding: '2px 7px', 
+                              borderRadius: '9999px', 
+                              background: 'rgba(16, 185, 129, 0.12)', 
+                              color: '#10B981', 
+                              border: '1px solid rgba(16, 185, 129, 0.3)',
+                              fontWeight: 700 
+                            }}
+                          >
+                            ✓ {cust.source}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '3px', fontSize: '0.78rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                            <Mail size={12} color="var(--primary)" />
+                            {cust.email}
+                          </span>
+                          {cust.phone && (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                              <Phone size={12} color="var(--text-dim)" />
+                              {cust.phone}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span 
+                        style={{
+                          fontSize: '0.74rem',
+                          fontWeight: 700,
+                          padding: '4px 9px',
+                          borderRadius: '8px',
+                          background: 'rgba(255, 255, 255, 0.04)',
+                          color: 'var(--text-muted)'
+                        }}
+                      >
+                        {cust.ordersCount} Consignments
+                      </span>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-secondary"
+                        onClick={() => {
+                          setIsCustomerModalOpen(false);
+                          setActiveTab('shipments');
+                        }}
+                        style={{ padding: '0.35rem 0.75rem', fontSize: '0.74rem', borderRadius: '9999px' }}
+                      >
+                        <span>View Orders</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-primary"
+                        onClick={() => {
+                          setIsCustomerModalOpen(false);
+                          switchRole('customer');
+                        }}
+                        style={{ padding: '0.35rem 0.75rem', fontSize: '0.74rem', borderRadius: '9999px', fontWeight: 700 }}
+                      >
+                        <span>Switch ➔</span>
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div 
+              style={{
+                padding: '0.85rem 1.5rem',
+                borderTop: '1px solid var(--border-subtle)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                background: 'rgba(255, 255, 255, 0.02)',
+                fontSize: '0.78rem',
+                color: 'var(--text-muted)'
+              }}
+            >
+              <span>Showing <strong>{filteredCustomerList.length}</strong> registered customer profiles</span>
+              <button
+                type="button"
+                className="btn btn-sm btn-secondary"
+                onClick={() => setIsCustomerModalOpen(false)}
+                style={{ padding: '0.35rem 1rem', borderRadius: '9999px' }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Google Material 3 Consignment Dossier Pop-up Modal */}
       {viewingParcel && (

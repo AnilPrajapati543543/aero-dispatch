@@ -867,7 +867,13 @@ export default function TrackingPage() {
                             <button
                               type="button"
                               className="btn btn-sm btn-primary"
-                              onClick={openChatbox}
+                              onClick={() => openChatbox({
+                                recipientName: customerName,
+                                recipientRole: 'customer',
+                                recipientPhone: customerPhone,
+                                awbNumber: activeShipment.awbNumber,
+                                role: 'driver'
+                              })}
                               style={{ padding: '0.4rem 0.85rem', fontSize: '0.76rem', display: 'inline-flex', alignItems: 'center', gap: '4px', borderRadius: '9999px' }}
                             >
                               <span>💬 Chat with Customer</span>
@@ -918,7 +924,13 @@ export default function TrackingPage() {
                             <button
                               type="button"
                               className="btn btn-sm btn-primary"
-                              onClick={openChatbox}
+                              onClick={() => openChatbox({
+                                recipientName: `Captain ${captainName}`,
+                                recipientRole: 'driver',
+                                recipientPhone: captainPhone,
+                                awbNumber: activeShipment.awbNumber,
+                                role: 'customer'
+                              })}
                               style={{ padding: '0.4rem 0.85rem', fontSize: '0.76rem', display: 'inline-flex', alignItems: 'center', gap: '4px', borderRadius: '9999px' }}
                             >
                               <span>💬 Chat with Captain</span>

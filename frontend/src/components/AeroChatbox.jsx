@@ -47,6 +47,8 @@ export default function AeroChatbox() {
   const { 
     isChatboxOpen, 
     closeChatbox, 
+    chatContext,
+    setChatContext,
     shipments, 
     setSelectedAwb, 
     setTrackingQuery, 
@@ -63,6 +65,29 @@ export default function AeroChatbox() {
   };
 
   useEffect(() => {
+    if (chatContext && isChatboxOpen) {
+      const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const counterpart = chatContext.role === 'driver' ? 'Customer' : 'Delivery Captain';
+      setMessages([
+        {
+          id: `ctx-${Date.now()}-1`,
+          sender: 'bot',
+          text: `🟢 Direct Dispatch Channel Connected\n\nConsignment AWB: ${chatContext.awbNumber || 'Active Order'}\nSpeaking with: ${chatContext.recipientName} (${counterpart})${chatContext.recipientPhone ? `\nPhone: ${chatContext.recipientPhone}` : ''}`,
+          time: timeNow
+        },
+        {
+          id: `ctx-${Date.now()}-2`,
+          sender: 'bot',
+          text: chatContext.role === 'driver'
+            ? `Captain, you are in direct contact with consignee ${chatContext.recipientName}. Type below to coordinate delivery time, ask for landmarks, or notify arrival.`
+            : `Hello! You are connected to Delivery Captain ${chatContext.recipientName}. You can give gate access codes, delivery instructions, or request arrival ETA.`,
+          time: timeNow
+        }
+      ]);
+    }
+  }, [chatContext, isChatboxOpen]);
+
+  useEffect(() => {
     if (isChatboxOpen) {
       scrollToBottom();
     }
@@ -71,6 +96,7 @@ export default function AeroChatbox() {
   if (!isChatboxOpen) return null;
 
   const handleResetChat = () => {
+    if (setChatContext) setChatContext(null);
     setMessages(INITIAL_MESSAGES);
     setInputMessage('');
     setIsTyping(false);
@@ -206,6 +232,24 @@ export default function AeroChatbox() {
     setInputMessage('');
     setMessages(prev => [...prev, userMsg]);
 
+    // Handle direct courier dispatch channel conversation
+    if (chatContext) {
+      setIsTyping(true);
+      setTimeout(() => {
+        setIsTyping(false);
+        const replyText = chatContext.role === 'driver'
+          ? `${chatContext.recipientName} (Customer): "Received! Thank you Captain, I am available at the delivery location."`
+          : `${chatContext.recipientName}: "Acknowledged! I have noted your instructions and am proceeding on the delivery route."`;
+        setMessages(prev => [...prev, {
+          id: String(Date.now() + 1),
+          sender: 'bot',
+          text: replyText,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }]);
+      }, 750);
+      return;
+    }
+
     const upperQuery = query.toUpperCase();
     const matchedShipment = shipments?.find(s => 
       s.awb?.toUpperCase() === upperQuery || 
@@ -325,10 +369,10 @@ export default function AeroChatbox() {
           </div>
           <div>
             <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <span>AeroDispatch Support</span>
+              <span>{chatContext ? `Dispatch • ${chatContext.recipientName}` : 'AeroDispatch Support'}</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.7rem', color: '#10B981', fontWeight: 600 }}>
-              <span>AeroBot • Live AI &amp; Dispatch</span>
+              <span>{chatContext ? `AWB: ${chatContext.awbNumber || 'Live'} • Direct Courier Channel` : 'AeroBot • Live AI & Dispatch'}</span>
             </div>
           </div>
         </div>

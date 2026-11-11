@@ -341,7 +341,11 @@ export function AppProvider({ children }) {
     }
   }, []);
 
-  const openChatbox = useCallback(() => setIsChatboxOpen(true), []);
+  const [chatContext, setChatContext] = useState(null);
+  const openChatbox = useCallback((ctx = null) => {
+    if (ctx) setChatContext(ctx);
+    setIsChatboxOpen(true);
+  }, []);
   const closeChatbox = useCallback(() => setIsChatboxOpen(false), []);
   const openProfileZoom = useCallback(() => setIsProfileZoomOpen(true), []);
   const closeProfileZoom = useCallback(() => setIsProfileZoomOpen(false), []);
@@ -1587,6 +1591,8 @@ export function AppProvider({ children }) {
         setStatusFilter,
         isChatboxOpen,
         setIsChatboxOpen,
+        chatContext,
+        setChatContext,
         openChatbox,
         closeChatbox,
         isProfileZoomOpen,
