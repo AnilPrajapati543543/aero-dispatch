@@ -8,6 +8,7 @@ const STATUS_CONFIG = {
   OUT_FOR_DELIVERY: { label: 'Out for Delivery', className: 'out_for_delivery', pulse: true },
   DELIVERED: { label: 'Delivered', className: 'delivered', pulse: false },
   FAILED_ATTEMPT: { label: 'Attempt Failed', className: 'failed_attempt', pulse: false },
+  CANCELLED: { label: 'Cancelled', className: 'cancelled', pulse: false },
 };
 
 export default function StatusBadge({ status }) {

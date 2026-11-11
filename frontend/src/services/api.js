@@ -371,6 +371,23 @@ export async function apiRateOrder(orderId, rating, feedback = '') {
   return res.json();
 }
 
+/**
+ * Fetches real-time system administrative statistics from the backend (Cognito & DynamoDB).
+ */
+export async function apiGetAdminStats() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/v1/admin/stats`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(4500)
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (e) {
+    return null;
+  }
+}
+
 export function createTrackingWebSocket(awbNumber, onMessage, onError = null) {
   try {
     const ws = new WebSocket(`${WS_BASE_URL}/ws/tracking/${encodeURIComponent(awbNumber)}`);

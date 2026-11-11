@@ -1183,6 +1183,80 @@ async def upload_proof_photo(
 # Admin Control Tower Operations
 # ==============================================================================
 
+@app.get("/api/v1/admin/stats")
+def get_admin_system_stats():
+    """Returns aggregated real-time platform statistics for the Admin Dashboard."""
+    customer_count = 0
+    captain_count = 0
+
+    # 1. Accounts count from AWS Cognito Identity Provider
+    try:
+        if auth_service._cognito_client and auth_service.cognito_pool_id:
+            try:
+                c_users = auth_service._cognito_client.list_users_in_group(
+                    UserPoolId=auth_service.cognito_pool_id, GroupName="customer"
+                )
+                customer_count = len(c_users.get("Users", []))
+            except Exception:
+                pass
+
+            try:
+                d_users = auth_service._cognito_client.list_users_in_group(
+                    UserPoolId=auth_service.cognito_pool_id, GroupName="driver"
+                )
+                captain_count = len(d_users.get("Users", []))
+            except Exception:
+                pass
+
+            # Scan overall user pool to identify any un-grouped or direct registrations
+            try:
+                all_users = auth_service._cognito_client.list_users(
+                    UserPoolId=auth_service.cognito_pool_id
+                ).get("Users", [])
+                if len(all_users) > (customer_count + captain_count):
+                    c_found = 0
+                    d_found = 0
+                    for u in all_users:
+                        attrs = {a["Name"]: a["Value"] for a in u.get("Attributes", [])}
+                        prof = attrs.get("profile", "").lower()
+                        email = attrs.get("email", "").lower()
+                        if prof == "driver" or "driver" in email:
+                            d_found += 1
+                        elif prof == "customer" or "admin" not in email:
+                            c_found += 1
+                    customer_count = max(customer_count, c_found)
+                    captain_count = max(captain_count, d_found)
+            except Exception:
+                pass
+    except Exception as e:
+        logger.warning(f"Cognito admin stats notice: {e}")
+
+    # Fallback to local user registry if running offline or local
+    local_cust = len([u for u in auth_service._users.values() if u.get("role") == "customer"])
+    local_drv = len([u for u in auth_service._users.values() if u.get("role") == "driver"])
+    customer_count = max(customer_count, local_cust)
+    captain_count = max(captain_count, local_drv)
+
+    # 2. Orders stats from repository
+    try:
+        orders = order_service.list_orders(limit=500)
+    except Exception:
+        orders = []
+
+    completed_deliveries = len([o for o in orders if o.get("currentStatus") == "DELIVERED"])
+    cancelled_orders = len([o for o in orders if o.get("currentStatus") == "CANCELLED"])
+    total_orders = len(orders)
+
+    return {
+        "status": "ok",
+        "customerAccounts": customer_count,
+        "captainAccounts": captain_count,
+        "completedDeliveries": completed_deliveries,
+        "cancelledOrders": cancelled_orders,
+        "totalShipments": total_orders,
+    }
+
+
 @app.get("/api/v1/admin/orders")
 def get_all_orders_admin(
     status_filter: Optional[str] = Query(None, alias="status"),

@@ -27,7 +27,10 @@ import {
   Zap,
   Globe2,
   Settings,
-  Eye
+  Eye,
+  Users,
+  XCircle,
+  ShieldCheck
 } from 'lucide-react';
 
 export default function MainDashboard() {
@@ -41,7 +44,11 @@ export default function MainDashboard() {
     setSelectedAwb, 
     isBackendOnline,
     refreshBackendOrders,
-    isLoadingOrders 
+    isLoadingOrders,
+    customerAccountsCount,
+    captainAccountsCount,
+    completedDeliveriesCount,
+    cancelledOrdersCount
   } = useApp();
 
   const [timeRange, setTimeRange] = useState('7d');
@@ -170,51 +177,103 @@ export default function MainDashboard() {
         </div>
       </div>
 
-      {/* 2. Top Metric Cards (5 Cards with Skeleton Loading) */}
+      {/* 2. Top Metric Cards (Dedicated Platform & Fleet Metric Tiles) */}
       {(isLoadingOrders || isMainLoading) ? (
-        <SkeletonMetricsGrid count={5} />
+        <SkeletonMetricsGrid count={4} />
       ) : (
-        <div className="grid grid-cols-5" style={{ gap: '1rem' }}>
-          <MetricCard 
-            title="Total Shipments"
-            value={totalCount}
-            subtitle="Active Database Records"
-            icon={Package}
-            color="#00F0FF"
-            badge={totalCount > 0 ? `${totalCount} Logged` : null}
-          />
-          <MetricCard 
-            title="Pending / Booked"
-            value={bookedCount}
-            subtitle="First-Mile Pickup Pending"
-            icon={Clock}
-            color="#6366F1"
-            badge={bookedCount > 0 ? `${bookedCount} Pending` : null}
-          />
-          <MetricCard 
-            title="Active Linehaul"
-            value={inTransitCount + outForDeliveryCount}
-            subtitle={`${inTransitCount} Air • ${outForDeliveryCount} Last-Mile`}
-            icon={Truck}
-            color="#F59E0B"
-            badge={inTransitCount + outForDeliveryCount > 0 ? "In Transit" : null}
-          />
-          <MetricCard 
-            title="Delivered Successfully"
-            value={deliveredCount}
-            subtitle="Proof-of-Delivery Verified"
-            icon={CheckCircle2}
-            color="#10B981"
-            badge={totalCount > 0 ? `${Math.round((deliveredCount / totalCount) * 100)}% Delivered` : null}
-          />
-          <MetricCard 
-            title="Exceptions & Delays"
-            value={delayedCount}
-            subtitle="Address / Access Issues"
-            icon={AlertTriangle}
-            color="#F43F5E"
-            badge={delayedCount > 0 ? "Action Req." : null}
-          />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          {/* 2A. The 4 Dedicated Core Metric Tiles */}
+          <div className="grid-cols-4" style={{ gap: '1.25rem' }}>
+            <MetricCard 
+              title="Customer Accounts"
+              value={customerAccountsCount ?? 0}
+              subtitle="Registered Customer Portals"
+              icon={Users}
+              color="#00F0FF"
+              badge={customerAccountsCount > 0 ? `${customerAccountsCount} Verified` : "Cognito Active"}
+            />
+            <MetricCard 
+              title="Captain Accounts"
+              value={captainAccountsCount ?? 0}
+              subtitle="Active Delivery Fleet"
+              icon={ShieldCheck}
+              color="#F59E0B"
+              badge={captainAccountsCount > 0 ? `${captainAccountsCount} Couriers` : "Fleet Ready"}
+              onClick={() => setActiveTab('drivers')}
+            />
+            <MetricCard 
+              title="Completed Deliveries"
+              value={completedDeliveriesCount ?? deliveredCount}
+              subtitle="Proof-of-Delivery Verified"
+              icon={CheckCircle2}
+              color="#10B981"
+              badge={totalCount > 0 ? `${Math.round(((completedDeliveriesCount ?? deliveredCount) / totalCount) * 100)}% Fulfilled` : "100% Target"}
+              onClick={() => setActiveTab('shipments')}
+            />
+            <MetricCard 
+              title="Cancelled Orders"
+              value={cancelledOrdersCount ?? 0}
+              subtitle="Terminated Consignments"
+              icon={XCircle}
+              color="#F43F5E"
+              badge={cancelledOrdersCount > 0 ? `${cancelledOrdersCount} Cancelled` : "0 Exceptions"}
+              onClick={() => setActiveTab('shipments')}
+            />
+          </div>
+
+          {/* 2B. Real-Time Freight & Transit Pipeline Ribbon */}
+          <div 
+            className="card"
+            style={{
+              padding: '1rem 1.25rem',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+              gap: '1rem',
+              alignItems: 'center',
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.02) 0%, rgba(0,240,255,0.03) 100%)',
+              border: '1px solid var(--border-subtle)'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div style={{ width: '38px', height: '38px', borderRadius: 'var(--radius-sm)', background: 'rgba(0, 240, 255, 0.1)', color: '#00F0FF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Package size={18} />
+              </div>
+              <div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Total Shipments</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)' }}>{totalCount}</div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div style={{ width: '38px', height: '38px', borderRadius: 'var(--radius-sm)', background: 'rgba(99, 102, 241, 0.1)', color: '#6366F1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Clock size={18} />
+              </div>
+              <div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Pending / Booked</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)' }}>{bookedCount}</div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div style={{ width: '38px', height: '38px', borderRadius: 'var(--radius-sm)', background: 'rgba(245, 158, 11, 0.1)', color: '#F59E0B', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Truck size={18} />
+              </div>
+              <div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Active Linehaul</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)' }}>{inTransitCount + outForDeliveryCount}</div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div style={{ width: '38px', height: '38px', borderRadius: 'var(--radius-sm)', background: 'rgba(244, 63, 94, 0.1)', color: '#F43F5E', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <AlertTriangle size={18} />
+              </div>
+              <div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Exceptions &amp; Delays</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)' }}>{delayedCount}</div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -359,6 +418,7 @@ export default function MainDashboard() {
                 { label: 'In Linehaul Transit', count: inTransitCount, color: '#00F0FF', total: totalCount },
                 { label: 'Booked / Processing', count: bookedCount, color: '#6366F1', total: totalCount },
                 { label: 'Exceptions / Delayed', count: delayedCount, color: '#F43F5E', total: totalCount },
+                ...(cancelledOrdersCount > 0 ? [{ label: 'Cancelled Orders', count: cancelledOrdersCount, color: '#64748B', total: totalCount }] : [])
               ].map(st => {
                 const pct = totalCount > 0 ? Math.round((st.count / totalCount) * 100) : 0;
                 return (

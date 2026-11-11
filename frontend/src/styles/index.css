@@ -1377,6 +1377,13 @@ h1, h2, h3, h4, h5, h6 {
 }
 .status-badge.failed_attempt .status-dot { background: #F43F5E; }
 
+.status-badge.cancelled {
+  background: rgba(244, 63, 94, 0.12);
+  color: #F43F5E;
+  border: 1px solid rgba(244, 63, 94, 0.3);
+}
+.status-badge.cancelled .status-dot { background: #F43F5E; }
+
 /* Grid Layouts */
 .grid-cols-4 {
   display: grid;

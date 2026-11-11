@@ -21,7 +21,8 @@ import {
   apiDriverDeclineOrder,
   apiLogin,
   apiUploadProofPhoto,
-  extractDisplayName
+  extractDisplayName,
+  apiGetAdminStats
 } from '../services/api';
 import { 
   ADMIN_DEFAULT_AVATAR,
@@ -189,6 +190,18 @@ export function AppProvider({ children }) {
   const [loginAnimationRole, setLoginAnimationRole] = useState(null);
   const [isChatboxOpen, setIsChatboxOpen] = useState(false);
   const [isProfileZoomOpen, setIsProfileZoomOpen] = useState(false);
+  const [adminStats, setAdminStats] = useState(null);
+
+  const fetchAdminStats = useCallback(async () => {
+    try {
+      const data = await apiGetAdminStats();
+      if (data && data.status === 'ok') {
+        setAdminStats(data);
+      }
+    } catch (e) {
+      console.warn("Could not fetch admin stats:", e);
+    }
+  }, []);
 
   const openChatbox = useCallback(() => setIsChatboxOpen(true), []);
   const closeChatbox = useCallback(() => setIsChatboxOpen(false), []);
@@ -512,6 +525,9 @@ export function AppProvider({ children }) {
     setIsLoadingOrders(true);
     const minDelay = new Promise(resolve => setTimeout(resolve, 1500)); // Exactly 1.5s skeleton effect
     try {
+      if (currentUser?.role === 'admin') {
+        fetchAdminStats().catch(() => {});
+      }
       if (isBackendOnline && currentUser) {
         let tokenToUse = authToken;
         if (currentUser.role === 'admin' && (!tokenToUse || !tokenToUse.includes('.'))) {
@@ -1329,9 +1345,48 @@ export function AppProvider({ children }) {
     }));
   }, [shipments]);
 
+  // Dedicated Metric Tile Counts for the Admin Dashboard
+  const customerAccountsCount = React.useMemo(() => {
+    let localCount = 0;
+    try {
+      const reg = JSON.parse(localStorage.getItem('aerodispatch_registered_users') || '[]');
+      localCount = reg.filter(u => u.role === 'customer').length;
+    } catch (e) {}
+    return Math.max(adminStats?.customerAccounts ?? 0, localCount);
+  }, [adminStats]);
+
+  const captainAccountsCount = React.useMemo(() => {
+    let localCount = 0;
+    try {
+      const reg = JSON.parse(localStorage.getItem('aerodispatch_registered_users') || '[]');
+      localCount = reg.filter(u => u.role === 'driver').length;
+    } catch (e) {}
+    return Math.max(adminStats?.captainAccounts ?? 0, driversList.length, localCount);
+  }, [adminStats, driversList]);
+
+  const completedDeliveriesCount = React.useMemo(() => {
+    return shipments.filter(s => s.currentStatus === 'DELIVERED' || s.status === 'delivered').length;
+  }, [shipments]);
+
+  const cancelledOrdersCount = React.useMemo(() => {
+    return shipments.filter(s => s.currentStatus === 'CANCELLED' || s.status === 'cancelled').length;
+  }, [shipments]);
+
+  useEffect(() => {
+    if (currentUser?.role === 'admin') {
+      fetchAdminStats();
+    }
+  }, [currentUser, fetchAdminStats]);
+
   return (
     <AppContext.Provider
       value={{
+        adminStats,
+        fetchAdminStats,
+        customerAccountsCount,
+        captainAccountsCount,
+        completedDeliveriesCount,
+        cancelledOrdersCount,
         shipments,
         allShipments: shipments,
         visibleShipments,

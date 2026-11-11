@@ -77,7 +77,8 @@ export async function cognitoSignUp(name, email, password, phone = '', role = 'c
 
   const userAttributes = [
     { Name: 'email', Value: normalizedEmail },
-    { Name: 'name', Value: (name || '').trim() || normalizedEmail.split('@')[0] }
+    { Name: 'name', Value: (name || '').trim() || normalizedEmail.split('@')[0] },
+    { Name: 'profile', Value: role || 'customer' }
   ];
 
   let rawPhone = (phone || '').trim().replace(/[\s-]/g, '');
