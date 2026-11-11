@@ -7,6 +7,8 @@ import AeroChatbox from './components/AeroChatbox';
 import LoginRoleAnimation from './components/LoginRoleAnimation';
 import FullPageSkeleton from './components/FullPageSkeleton';
 import CookieConsentBanner from './components/CookieConsentBanner';
+import AddressBookModal from './components/AddressBookModal';
+import SupportTicketModal from './components/SupportTicketModal';
 
 // 10 Required Pages & Landing
 import LandingPage from './pages/LandingPage';
@@ -32,7 +34,12 @@ export default function App() {
     isProfileZoomOpen,
     closeProfileZoom,
     updateUserAvatar,
-    addToast
+    addToast,
+    isAddressBookOpen,
+    closeAddressBook,
+    isSupportModalOpen,
+    closeSupportModal,
+    shipments
   } = useApp();
 
   // Full page reload skeleton state - strictly 2.0 seconds as requested
@@ -156,6 +163,21 @@ export default function App() {
 
       {/* Floating Customer & Care Support Assistant */}
       <AeroChatbox />
+
+      {/* Merchant Address Book Modal */}
+      <AddressBookModal
+        isOpen={isAddressBookOpen}
+        onClose={closeAddressBook}
+        mode="manage"
+      />
+
+      {/* Customer Support & Help Desk Modal */}
+      <SupportTicketModal
+        isOpen={isSupportModalOpen}
+        onClose={closeSupportModal}
+        shipments={shipments}
+        currentUser={currentUser}
+      />
 
       {/* Floating GDPR & DPDP Cookie Consent Banner (New Visitors Only) */}
       <CookieConsentBanner />

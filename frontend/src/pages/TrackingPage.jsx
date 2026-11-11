@@ -25,9 +25,11 @@ import {
   UploadCloud,
   Eye,
   Star,
-  User
+  User,
+  FileText
 } from 'lucide-react';
 import ParcelDetailModal from '../components/ParcelDetailModal';
+import InvoiceModal from '../components/InvoiceModal';
 import { getConsignmentPhoto } from '../utils/parcelUtils';
 
 export default function TrackingPage() {
@@ -63,6 +65,7 @@ export default function TrackingPage() {
   const [copiedAwb, setCopiedAwb] = useState(false);
   const [enlargedPhotoUrl, setEnlargedPhotoUrl] = useState(null);
   const [viewingParcel, setViewingParcel] = useState(null);
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
 
   // Delivery Handover Modal State
   const [showDeliveryModal, setShowDeliveryModal] = useState(false);
@@ -450,11 +453,23 @@ export default function TrackingPage() {
                 </div>
               </div>
 
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Estimated Delivery SLA</div>
-                <div style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--primary)', marginTop: '0.2rem' }}>
-                  {new Date(activeShipment.estimatedDelivery).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.45rem' }}>
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Estimated Delivery SLA</div>
+                  <div style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--primary)', marginTop: '0.2rem' }}>
+                    {new Date(activeShipment.estimatedDelivery).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </div>
                 </div>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setIsInvoiceModalOpen(true)}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '0.75rem', padding: '0.35rem 0.85rem', borderRadius: '9999px' }}
+                  title="View and download official GST tax invoice"
+                >
+                  <FileText size={13} />
+                  <span>Tax Invoice / Receipt</span>
+                </button>
               </div>
             </div>
 
@@ -1163,6 +1178,13 @@ export default function TrackingPage() {
           onClose={() => setViewingParcel(null)} 
         />
       )}
+
+      {/* Official Tax Invoice & Waybill Receipt Modal */}
+      <InvoiceModal
+        isOpen={isInvoiceModalOpen}
+        onClose={() => setIsInvoiceModalOpen(false)}
+        order={activeShipment}
+      />
     </div>
   );
 }

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import StatusBadge from './StatusBadge';
 import CopyButton from './CopyButton';
+import InvoiceModal from './InvoiceModal';
+import { printInvoiceDocument } from '../utils/invoiceGenerator';
 import { getConsignmentPhoto, formatINR } from '../utils/parcelUtils';
 import {
   X,
@@ -27,6 +29,7 @@ import {
 export default function ParcelDetailModal({ parcel, onClose }) {
   const { setActiveTab, setSelectedAwb, setTrackingQuery, openChatbox, addToast, currentUser, currentRole } = useApp();
   const [isPhotoZoomed, setIsPhotoZoomed] = useState(false);
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
 
   useEffect(() => {
     function handleKeyDown(e) {
@@ -61,7 +64,7 @@ export default function ParcelDetailModal({ parcel, onClose }) {
   };
 
   const handlePrint = () => {
-    window.print();
+    printInvoiceDocument(parcel, 'RECEIPT');
   };
 
   const handleShare = () => {
@@ -575,13 +578,23 @@ export default function ParcelDetailModal({ parcel, onClose }) {
             gap: '0.75rem'
           }}
         >
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => setIsInvoiceModalOpen(true)}
+              style={{ borderRadius: '9999px', padding: '0.5rem 1rem', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+              title="View and download official GST Tax Invoice"
+            >
+              <FileText size={14} />
+              <span>Tax Invoice</span>
+            </button>
             <button
               type="button"
               className="btn btn-secondary btn-sm"
               onClick={handlePrint}
               style={{ borderRadius: '9999px', padding: '0.5rem 1rem' }}
-              title="Print official shipping waybill"
+              title="Print official shipping waybill receipt"
             >
               <Printer size={14} />
               <span>Print Waybill</span>
@@ -650,6 +663,13 @@ export default function ParcelDetailModal({ parcel, onClose }) {
           />
         </div>
       )}
+
+      {/* Official Tax Invoice & Waybill Receipt Modal */}
+      <InvoiceModal
+        isOpen={isInvoiceModalOpen}
+        onClose={() => setIsInvoiceModalOpen(false)}
+        order={parcel}
+      />
     </div>
   );
 }

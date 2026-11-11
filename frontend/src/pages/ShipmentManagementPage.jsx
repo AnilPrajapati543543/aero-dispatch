@@ -6,6 +6,8 @@ import CopyButton from '../components/CopyButton';
 import TrackingTimeline from '../components/TrackingTimeline';
 import CustomSelect from '../components/CustomSelect';
 import ParcelDetailModal from '../components/ParcelDetailModal';
+import InvoiceModal from '../components/InvoiceModal';
+import { exportToCSV, formatOrderForCSV, SHIPMENT_CSV_HEADERS } from '../utils/invoiceGenerator';
 import { getConsignmentPhoto } from '../utils/parcelUtils';
 import { SkeletonTableRows } from '../components/SkeletonLoading';
 import { 
@@ -22,6 +24,7 @@ import {
   Download, 
   ExternalLink,
   Printer,
+  FileText,
   CheckCircle2,
   X,
   User,
@@ -52,6 +55,7 @@ export default function ShipmentManagementPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [inspectingShipment, setInspectingShipment] = useState(null);
   const [viewingParcel, setViewingParcel] = useState(null);
+  const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState(null);
   const itemsPerPage = 7;
 
   // Management Skeleton Shimmer Loading - strictly 1.0s as requested
@@ -254,16 +258,36 @@ export default function ShipmentManagementPage() {
 
       {/* 3. Main Shipments Table */}
       <div className="card" style={{ padding: '1.25rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
           <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
             Showing <strong>{filteredShipments.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}</strong> - <strong>{Math.min(currentPage * itemsPerPage, filteredShipments.length)}</strong> of <strong>{filteredShipments.length}</strong> shipments
           </span>
-          {isManagementLoading && (
-            <span style={{ fontSize: '0.75rem', color: '#10B981', display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', animation: 'aeroBeaconPing 1s infinite' }} />
-              Updating Shipment Manifest (2.5s)
-            </span>
-          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => {
+                if (!filteredShipments.length) {
+                  addToast('No consignments available to export.', 'warning');
+                  return;
+                }
+                const rows = filteredShipments.map(formatOrderForCSV);
+                exportToCSV('AeroDispatch_Consignments_Manifest', rows, SHIPMENT_CSV_HEADERS);
+                addToast(`Exported ${rows.length} consignments to CSV.`, 'success');
+              }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', padding: '0.35rem 0.85rem' }}
+              title="Download CSV spreadsheet of current consignments"
+            >
+              <Download size={14} />
+              <span>Export CSV</span>
+            </button>
+            {isManagementLoading && (
+              <span style={{ fontSize: '0.75rem', color: '#10B981', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', animation: 'aeroBeaconPing 1s infinite' }} />
+                Updating Manifest
+              </span>
+            )}
+          </div>
         </div>
 
         {(isLoadingOrders || isManagementLoading) ? (
@@ -403,6 +427,14 @@ export default function ShipmentManagementPage() {
                     {/* Actions */}
                     <td style={{ padding: '0.85rem 0.5rem', textAlign: 'right' }}>
                       <div style={{ display: 'inline-flex', gap: '0.35rem' }}>
+                        <button
+                          className="btn btn-sm btn-secondary"
+                          onClick={() => setSelectedInvoiceOrder(s)}
+                          style={{ padding: '0.3rem 0.55rem' }}
+                          title="View and download official GST tax invoice"
+                        >
+                          <FileText size={14} />
+                        </button>
                         <button
                           className="btn btn-sm btn-secondary"
                           onClick={() => setInspectingShipment(s)}
@@ -736,6 +768,14 @@ export default function ShipmentManagementPage() {
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-subtle)' }}>
                 <button 
                   className="btn btn-secondary btn-sm"
+                  onClick={() => setSelectedInvoiceOrder(inspectingShipment)}
+                  style={{ borderRadius: '9999px', padding: '0.55rem 1.25rem', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                >
+                  <FileText size={14} />
+                  <span>Tax Invoice</span>
+                </button>
+                <button 
+                  className="btn btn-secondary btn-sm"
                   onClick={() => setInspectingShipment(null)}
                   style={{ borderRadius: '9999px', padding: '0.55rem 1.25rem' }}
                 >
@@ -765,6 +805,13 @@ export default function ShipmentManagementPage() {
           onClose={() => setViewingParcel(null)} 
         />
       )}
+
+      {/* Official Tax Invoice & Waybill Receipt Modal */}
+      <InvoiceModal
+        isOpen={!!selectedInvoiceOrder}
+        onClose={() => setSelectedInvoiceOrder(null)}
+        order={selectedInvoiceOrder}
+      />
     </div>
   );
 }

@@ -35,7 +35,9 @@ import {
   Mail,
   Phone,
   UserCheck,
-  UserPlus
+  UserPlus,
+  BookOpen,
+  HelpCircle
 } from 'lucide-react';
 
 export default function MainDashboard() {
@@ -56,6 +58,8 @@ export default function MainDashboard() {
     captainAccountsCount,
     completedDeliveriesCount,
     cancelledOrdersCount,
+    openAddressBook,
+    openSupportModal,
     addToast
   } = useApp();
 
@@ -269,6 +273,26 @@ export default function MainDashboard() {
               <span>Switch to Customer ➔</span>
             </button>
           </div>
+
+          <button 
+            className="btn btn-secondary btn-sm google-pill-btn"
+            onClick={openAddressBook}
+            style={{ borderRadius: '9999px', padding: '0.5rem 1rem' }}
+            title="Merchant Address Book & Saved Locations"
+          >
+            <BookOpen size={14} />
+            <span>Address Book</span>
+          </button>
+
+          <button 
+            className="btn btn-secondary btn-sm google-pill-btn"
+            onClick={openSupportModal}
+            style={{ borderRadius: '9999px', padding: '0.5rem 1rem' }}
+            title="Customer Support & Help Desk Tickets"
+          >
+            <HelpCircle size={14} />
+            <span>Support Tickets</span>
+          </button>
 
           <button 
             className="btn btn-secondary btn-sm google-pill-btn"

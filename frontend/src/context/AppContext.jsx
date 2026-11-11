@@ -395,6 +395,14 @@ export function AppProvider({ children }) {
   const openProfileZoom = useCallback(() => setIsProfileZoomOpen(true), []);
   const closeProfileZoom = useCallback(() => setIsProfileZoomOpen(false), []);
 
+  const [isAddressBookOpen, setIsAddressBookOpen] = useState(false);
+  const openAddressBook = useCallback(() => setIsAddressBookOpen(true), []);
+  const closeAddressBook = useCallback(() => setIsAddressBookOpen(false), []);
+
+  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
+  const openSupportModal = useCallback(() => setIsSupportModalOpen(true), []);
+  const closeSupportModal = useCallback(() => setIsSupportModalOpen(false), []);
+
   const toggleSidebar = () => {
     if (typeof window !== 'undefined' && window.innerWidth <= 960) {
       setIsMobileSidebarOpen(prev => !prev);
@@ -1643,6 +1651,14 @@ export function AppProvider({ children }) {
         isProfileZoomOpen,
         openProfileZoom,
         closeProfileZoom,
+        isAddressBookOpen,
+        setIsAddressBookOpen,
+        openAddressBook,
+        closeAddressBook,
+        isSupportModalOpen,
+        setIsSupportModalOpen,
+        openSupportModal,
+        closeSupportModal,
         hubs: dynamicHubs,
         metrics: computedMetrics,
       }}

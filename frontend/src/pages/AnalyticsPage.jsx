@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { exportToCSV, formatOrderForCSV, SHIPMENT_CSV_HEADERS } from '../utils/invoiceGenerator';
 import { 
   BarChart3, 
   TrendingUp, 
@@ -34,7 +35,48 @@ export default function AnalyticsPage() {
   const handleExport = (e) => {
     e.preventDefault();
     setIsExportModalOpen(false);
-    addToast(`Generated and downloaded ${exportFormat.toUpperCase()} logistics report for period: ${dateRange.toUpperCase()}`, 'success');
+
+    const nowStr = new Date().toISOString().slice(0, 10);
+
+    if (exportFormat === 'csv') {
+      const rows = shipments.map(formatOrderForCSV);
+      exportToCSV(`AeroDispatch_Analytics_${dateRange.toUpperCase()}_${nowStr}`, rows, SHIPMENT_CSV_HEADERS);
+      addToast(`Downloaded CSV logistics report (${rows.length} records).`, 'success');
+      return;
+    }
+
+    if (exportFormat === 'json') {
+      const payload = {
+        generatedAt: new Date().toISOString(),
+        dateRange: dateRange,
+        kpis: {
+          totalConsignments: totalCount,
+          delivered: deliveredCount,
+          inTransit: inTransitCount,
+          exceptions: exceptionCount,
+          onTimeSlaPercentage: onTimeSla,
+          totalWeightKg: totalWeightKg
+        },
+        consignments: shipments
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `AeroDispatch_Analytics_${nowStr}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      addToast(`Downloaded JSON intelligence report.`, 'success');
+      return;
+    }
+
+    if (exportFormat === 'pdf') {
+      window.print();
+      addToast(`Print preview dispatched for PDF export.`, 'info');
+      return;
+    }
   };
 
   return (

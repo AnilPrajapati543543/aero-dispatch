@@ -19,7 +19,9 @@ import {
   Sparkles,
   LogOut,
   User,
-  Globe
+  Globe,
+  BookOpen,
+  HelpCircle
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -33,6 +35,8 @@ export default function Sidebar() {
     isMobileSidebarOpen,
     closeMobileSidebar,
     isSidebarCollapsed,
+    openAddressBook,
+    openSupportModal,
     currentUser,
     logoutUser
   } = useApp();
@@ -66,6 +70,25 @@ export default function Sidebar() {
             label: 'Track Package',
             icon: Search,
             badge: null
+          }
+        ]
+      },
+      {
+        group: 'Tools & Support',
+        items: [
+          {
+            id: 'address-book',
+            label: 'Address Book',
+            icon: BookOpen,
+            badge: null,
+            onClick: openAddressBook
+          },
+          {
+            id: 'support-tickets',
+            label: 'Support Tickets',
+            icon: HelpCircle,
+            badge: null,
+            onClick: openSupportModal
           }
         ]
       },
@@ -180,6 +203,25 @@ export default function Sidebar() {
         ]
       },
       {
+        group: 'Tools & Support',
+        items: [
+          {
+            id: 'address-book',
+            label: 'Address Directory',
+            icon: BookOpen,
+            badge: null,
+            onClick: openAddressBook
+          },
+          {
+            id: 'support-tickets',
+            label: 'Help & Support Desk',
+            icon: HelpCircle,
+            badge: null,
+            onClick: openSupportModal
+          }
+        ]
+      },
+      {
         group: 'Settings',
         items: [
           {
@@ -273,7 +315,15 @@ export default function Sidebar() {
                       borderRadius: 'var(--radius-sm)',
                       transition: 'all 0.15s ease'
                     }}
-                    onClick={() => setActiveTab(item.id)}
+                    onClick={() => {
+                      if (item.onClick) {
+                        item.onClick();
+                        closeMobileSidebar();
+                      } else {
+                        setActiveTab(item.id);
+                        closeMobileSidebar();
+                      }
+                    }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
                       <IconComponent size={16} />

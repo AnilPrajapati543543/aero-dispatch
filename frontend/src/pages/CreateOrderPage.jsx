@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import InvoiceModal from '../components/InvoiceModal';
+import AddressBookModal from '../components/AddressBookModal';
 import {
   Package,
   MapPin,
@@ -8,7 +10,9 @@ import {
   ArrowRight,
   Calculator,
   Printer,
-  Sparkles
+  Sparkles,
+  BookOpen,
+  FileText
 } from 'lucide-react';
 
 const QUICK_DESTINATIONS = [
@@ -50,6 +54,41 @@ export default function CreateOrderPage() {
   const [createdOrder, setCreatedOrder] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState({});
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+  const [isAddressBookOpen, setIsAddressBookOpen] = useState(false);
+  const [addressBookTarget, setAddressBookTarget] = useState('recipient'); // 'sender' | 'recipient'
+  const [saveToAddressBook, setSaveToAddressBook] = useState(false);
+
+  const openAddressBook = (target) => {
+    setAddressBookTarget(target);
+    setIsAddressBookOpen(true);
+  };
+
+  const handleSelectFromAddressBook = (addr) => {
+    if (addressBookTarget === 'sender') {
+      setFormData(prev => ({
+        ...prev,
+        senderName: addr.name || prev.senderName,
+        senderPhone: addr.phone || prev.senderPhone,
+        senderCity: addr.city || prev.senderCity,
+        senderState: addr.state || prev.senderState,
+        senderPin: addr.pin || prev.senderPin,
+        senderAddress: addr.address || prev.senderAddress
+      }));
+      addToast(`Applied sender address: ${addr.label} (${addr.city})`, 'info');
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        recipientName: addr.name || prev.recipientName,
+        recipientPhone: addr.phone || prev.recipientPhone,
+        recipientCity: addr.city || prev.recipientCity,
+        recipientState: addr.state || prev.recipientState,
+        recipientPin: addr.pin || prev.recipientPin,
+        recipientAddress: addr.address || prev.recipientAddress
+      }));
+      addToast(`Applied destination: ${addr.label} (${addr.city})`, 'info');
+    }
+  };
 
   // Service Skeleton Shimmer Loading - strictly 1.0s as requested
   const [isServiceLoading, setIsServiceLoading] = useState(true);
@@ -137,6 +176,26 @@ export default function CreateOrderPage() {
       };
       const newOrder = await addShipment(submissionData);
       setCreatedOrder(newOrder);
+
+      // Auto-save address to Address Book if requested
+      if (saveToAddressBook && submissionData.recipientName) {
+        try {
+          const currentBook = JSON.parse(localStorage.getItem('aerodispatch_address_book') || '[]');
+          const newEntry = {
+            id: `addr-${Date.now()}`,
+            label: `${submissionData.recipientCity} Client (${submissionData.recipientName})`,
+            name: submissionData.recipientName,
+            phone: submissionData.recipientPhone,
+            city: submissionData.recipientCity,
+            state: formData.recipientState || '',
+            pin: submissionData.recipientPin,
+            address: submissionData.recipientAddress,
+            isDefault: false
+          };
+          localStorage.setItem('aerodispatch_address_book', JSON.stringify([newEntry, ...currentBook]));
+        } catch (e) {}
+      }
+
       addToast(`Shipment ${newOrder.awbNumber} booked successfully!`, 'success');
     } catch (err) {
       addToast(`Booking failed: ${err.message}`, 'error');
@@ -328,6 +387,15 @@ export default function CreateOrderPage() {
 
             <button
               className="btn btn-secondary"
+              onClick={() => setIsInvoiceModalOpen(true)}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            >
+              <FileText size={16} />
+              <span>Download Tax Invoice / Receipt</span>
+            </button>
+
+            <button
+              className="btn btn-secondary"
               onClick={() => window.print()}
             >
               <Printer size={16} />
@@ -359,10 +427,21 @@ export default function CreateOrderPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
             {/* Origin Details */}
             <div className="card">
-              <h2 style={{ fontSize: '1.1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)' }}>
-                <MapPin size={18} />
-                <span>Sender (Pickup Address)</span>
-              </h2>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <h2 style={{ fontSize: '1.1rem', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)' }}>
+                  <MapPin size={18} />
+                  <span>Sender (Pickup Address)</span>
+                </h2>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => openAddressBook('sender')}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '0.75rem', padding: '0.3rem 0.75rem' }}
+                >
+                  <BookOpen size={13} />
+                  <span>Address Book</span>
+                </button>
+              </div>
 
               <div className="form-group">
                 <label className="form-label" htmlFor="sender-name">Sender Name *</label>
@@ -448,10 +527,19 @@ export default function CreateOrderPage() {
             {/* Destination Details */}
             <div className="card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                <h2 style={{ fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-amber)' }}>
+                <h2 style={{ fontSize: '1.1rem', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-amber)' }}>
                   <Truck size={18} />
                   <span>Recipient (Delivery Address)</span>
                 </h2>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => openAddressBook('recipient')}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '0.75rem', padding: '0.3rem 0.75rem' }}
+                >
+                  <BookOpen size={13} />
+                  <span>Address Book</span>
+                </button>
               </div>
 
               {/* Quick Preset Chips */}
@@ -560,6 +648,15 @@ export default function CreateOrderPage() {
                   <span style={{ fontSize: '0.72rem', color: 'var(--accent-rose)' }}>{formErrors.recipientPhone}</span>
                 )}
               </div>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.75rem' }}>
+                <input
+                  type="checkbox"
+                  checked={saveToAddressBook}
+                  onChange={(e) => setSaveToAddressBook(e.target.checked)}
+                />
+                <span>Save this recipient to my Address Book for future consignments</span>
+              </label>
             </div>
           </div>
 
@@ -805,6 +902,21 @@ export default function CreateOrderPage() {
           </div>
         </form>
       )}
+
+      {/* Official Tax Invoice & Waybill Receipt Modal */}
+      <InvoiceModal
+        isOpen={isInvoiceModalOpen}
+        onClose={() => setIsInvoiceModalOpen(false)}
+        order={createdOrder}
+      />
+
+      {/* Merchant Address Book Modal */}
+      <AddressBookModal
+        isOpen={isAddressBookOpen}
+        onClose={() => setIsAddressBookOpen(false)}
+        onSelectAddress={handleSelectFromAddressBook}
+        mode="select"
+      />
     </div>
   );
 }
