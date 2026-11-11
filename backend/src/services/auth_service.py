@@ -643,6 +643,7 @@ class LocalAuthService(AuthServiceInterface):
                         signing_key.key,
                         algorithms=["RS256"],
                         issuer=cognito_iss,
+                        leeway=60,
                         options={"verify_aud": False, "verify_exp": True}
                     )
                     
