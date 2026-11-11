@@ -256,7 +256,7 @@ class OrderService:
             d_name = driver_info.get("name") or driver_name or "Delivery Captain"
             if not d_name.lower().startswith("captain") and d_name != "Delivery Captain":
                 d_name = f"Captain {d_name}"
-            d_phone = driver_info.get("phone") or phone or "+91 90043 58469"
+            d_phone = driver_info.get("phone") or phone or ""
             d_veh = driver_info.get("vehicleNumber") or driver_info.get("vehicle") or vehicle_number or "KA-03-EV-4412"
             d_rate = driver_info.get("rating", 4.9)
         else:
@@ -264,7 +264,7 @@ class OrderService:
             d_name = driver_name or kwargs.get("name", "Delivery Captain")
             if not d_name.lower().startswith("captain") and d_name != "Delivery Captain":
                 d_name = f"Captain {d_name}"
-            d_phone = phone or kwargs.get("phone", "+91 90043 58469")
+            d_phone = phone or kwargs.get("phone", "")
             d_veh = vehicle_number or kwargs.get("vehicleNumber", "KA-03-EV-4412")
             d_rate = kwargs.get("rating", 4.9)
 

@@ -6,7 +6,7 @@
 
 // Common name dictionary for intelligent splitting of single-word email handles
 const KNOWN_NAMES = [
-  'anil', 'prajapati', 'darshan', 'patel', 'rishabh', 'pandey', 'rahul', 'sharma', 
+  'anil', 'prajapati', 'darshan', 'patel', 'rishabh', 'rahul', 'sharma', 
   'amit', 'kumar', 'vikram', 'singh', 'rohit', 'verma', 'priya', 'gupta', 'neha',
   'john', 'smith', 'david', 'miller', 'alex', 'walker', 'michael', 'brown', 'chris'
 ];

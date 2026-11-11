@@ -54,7 +54,8 @@ class DynamoDBOrderRepository(OrderRepositoryInterface):
         else:
             if boto3 is None:
                 raise ImportError("boto3 is required to initialize DynamoDBOrderRepository without a mock table.")
-            dynamodb = boto3.resource("dynamodb")
+            region = os.getenv("AWS_REGION", os.getenv("AWS_DEFAULT_REGION", "ap-northeast-2"))
+            dynamodb = boto3.resource("dynamodb", region_name=region)
             self.table = dynamodb.Table(self.table_name)
 
     def save_order(self, order_item: Dict[str, Any], is_new: bool = True) -> None:

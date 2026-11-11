@@ -479,7 +479,7 @@ class LocalAuthService(AuthServiceInterface):
                         user_role = "driver"
                         driver_id = driver_id or f"DRV-{secrets.randbelow(900) + 100}"
                         vehicle_number = vehicle_number or f"KA-03-EV-{secrets.randbelow(9000) + 1000}"
-                        phone_number = phone_number or "+91 90043 58469"
+                        phone_number = phone_number or ""
 
                     user_name = attrs.get("name", normalized_email.split("@")[0])
                     user_sub = attrs.get("sub", f"usr-{user_role[:3]}-{secrets.token_hex(4)}")

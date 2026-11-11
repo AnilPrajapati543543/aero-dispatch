@@ -24,7 +24,8 @@ import {
   Camera,
   UploadCloud,
   Eye,
-  Star
+  Star,
+  User
 } from 'lucide-react';
 import ParcelDetailModal from '../components/ParcelDetailModal';
 import { getConsignmentPhoto } from '../utils/parcelUtils';
@@ -42,7 +43,9 @@ export default function TrackingPage() {
     updateShipmentStatus,
     updateShipmentRecord,
     refreshBackendOrders,
-    isLoadingOrders
+    isLoadingOrders,
+    currentUser,
+    currentRole
   } = useApp();
 
   const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
@@ -813,47 +816,107 @@ export default function TrackingPage() {
                   </div>
                 </div>
 
-                {/* Assigned Captain Card */}
-                {activeShipment.assignedDriver && (
-                  <div style={{ marginTop: '1.25rem', padding: '1rem', background: 'rgba(16, 185, 129, 0.08)', borderRadius: '16px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10B981' }}>
-                          <Truck size={18} />
-                        </div>
-                        <div>
-                          <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#10B981', fontWeight: 800 }}>
-                            Assigned Delivery Captain
-                          </div>
-                          <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-main)' }}>
-                            Captain {activeShipment.assignedDriver.name?.replace(/^captain\s+/i, '')}
-                          </div>
-                          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                            Phone: <strong>{activeShipment.assignedDriver.phone || '+91 90043 58469'}</strong> • Vehicle: {activeShipment.assignedDriver.vehicleNumber}
-                          </div>
-                        </div>
-                      </div>
+                {/* Context-Aware Contact Card (Captain contacting Customer vs Customer contacting Captain) */}
+                {(() => {
+                  const isCaptainUser = currentUser?.role === 'driver' || currentRole === 'driver';
+                  const customerName = activeShipment.recipient?.name || activeShipment.sender?.name || 'Customer';
+                  const customerPhone = activeShipment.recipient?.phone || activeShipment.sender?.phone || '';
+                  const customerCity = activeShipment.recipient?.city || activeShipment.sender?.city || '';
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <a
-                          href={`tel:${activeShipment.assignedDriver.phone || '+919004358469'}`}
-                          className="btn btn-sm btn-secondary"
-                          style={{ padding: '0.4rem 0.85rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.76rem', borderRadius: '9999px' }}
-                        >
-                          <span>📞 Call Captain</span>
-                        </a>
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-primary"
-                          onClick={openChatbox}
-                          style={{ padding: '0.4rem 0.85rem', fontSize: '0.76rem', display: 'inline-flex', alignItems: 'center', gap: '4px', borderRadius: '9999px' }}
-                        >
-                          <span>💬 Chat with Captain</span>
-                        </button>
+                  // 1. If currently viewed from Captain account: Contact the Customer
+                  if (isCaptainUser) {
+                    return (
+                      <div style={{ marginTop: '1.25rem', padding: '1rem', background: 'rgba(0, 240, 255, 0.08)', borderRadius: '16px', border: '1px solid rgba(0, 240, 255, 0.3)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(0, 240, 255, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#00F0FF' }}>
+                              <User size={18} />
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#00F0FF', fontWeight: 800 }}>
+                                Customer &amp; Consignee Contact
+                              </div>
+                              <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                                {customerName}
+                              </div>
+                              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                                Destination: <strong>{customerCity || 'Delivery Address'}</strong> {customerPhone ? `• Phone: ${customerPhone}` : ''}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            {customerPhone && (
+                              <a
+                                href={`tel:${customerPhone}`}
+                                className="btn btn-sm btn-secondary"
+                                style={{ padding: '0.4rem 0.85rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.76rem', borderRadius: '9999px' }}
+                              >
+                                <span>📞 Call Customer</span>
+                              </a>
+                            )}
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-primary"
+                              onClick={openChatbox}
+                              style={{ padding: '0.4rem 0.85rem', fontSize: '0.76rem', display: 'inline-flex', alignItems: 'center', gap: '4px', borderRadius: '9999px' }}
+                            >
+                              <span>💬 Chat with Customer</span>
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                )}
+                    );
+                  }
+
+                  // 2. If viewed by Customer or Admin: Contact Assigned Delivery Captain
+                  if (activeShipment.assignedDriver) {
+                    return (
+                      <div style={{ marginTop: '1.25rem', padding: '1rem', background: 'rgba(16, 185, 129, 0.08)', borderRadius: '16px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10B981' }}>
+                              <Truck size={18} />
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#10B981', fontWeight: 800 }}>
+                                Assigned Delivery Captain
+                              </div>
+                              <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                                Captain {activeShipment.assignedDriver.name?.replace(/^captain\s+/i, '')}
+                              </div>
+                              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                                {activeShipment.assignedDriver.phone ? `Phone: ${activeShipment.assignedDriver.phone} • ` : ''}Vehicle: {activeShipment.assignedDriver.vehicleNumber || 'Van'}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            {activeShipment.assignedDriver.phone && (
+                              <a
+                                href={`tel:${activeShipment.assignedDriver.phone}`}
+                                className="btn btn-sm btn-secondary"
+                                style={{ padding: '0.4rem 0.85rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.76rem', borderRadius: '9999px' }}
+                              >
+                                <span>📞 Call Captain</span>
+                              </a>
+                            )}
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-primary"
+                              onClick={openChatbox}
+                              style={{ padding: '0.4rem 0.85rem', fontSize: '0.76rem', display: 'inline-flex', alignItems: 'center', gap: '4px', borderRadius: '9999px' }}
+                            >
+                              <span>💬 Chat with Captain</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return null;
+                })()}
               </div>
 
               {/* Package Specs */}

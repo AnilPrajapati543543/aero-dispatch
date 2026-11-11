@@ -109,43 +109,97 @@ export function AppProvider({ children }) {
       }
     } catch (e) {}
 
-    // Auto-purge legacy demo drivers (e.g. Captain Rishabh Pandey / DRV-8469)
+    // Auto-purge legacy demo drivers (e.g. mock Pandey / DRV-8469 / fake numbers) & normalize real accounts
     try {
       const savedDrivers = localStorage.getItem('aerodispatch_fleet_drivers');
       if (savedDrivers) {
         const parsed = JSON.parse(savedDrivers);
-        if (Array.isArray(parsed) && parsed.some(d => 
-          (d.name || '').toLowerCase().includes('rishabh') || 
-          d.id === 'DRV-8469' || 
-          (d.phone || '').includes('90042')
-        )) {
-          const cleaned = parsed.filter(d => 
-            !(d.name || '').toLowerCase().includes('rishabh') && 
-            d.id !== 'DRV-8469' && 
-            !(d.phone || '').includes('90042')
-          );
+        if (Array.isArray(parsed)) {
+          const cleaned = parsed
+            .filter(d => 
+              d.id !== 'DRV-8469' && 
+              d.id !== 'DRV-658' &&
+              !(d.phone || '').includes('90042') && 
+              !(d.phone || '').includes('90043') &&
+              !(d.name || '').toLowerCase().includes('pandey')
+            )
+            .map(d => {
+              if (d.email?.toLowerCase() === 'oldmemories021@gmail.com') {
+                return {
+                  ...d,
+                  name: 'Rishabh',
+                  phone: (d.phone && !d.phone.includes('9004')) ? d.phone : '+91 98451 90214',
+                  id: (d.id && d.id !== 'DRV-8469' && d.id !== 'DRV-658') ? d.id : 'DRV-0214',
+                  driverId: (d.driverId && d.driverId !== 'DRV-8469' && d.driverId !== 'DRV-658') ? d.driverId : 'DRV-0214',
+                  vehicle: (d.vehicle && !d.vehicle.includes('8469')) ? d.vehicle : 'MH-02-EV-0214'
+                };
+              }
+              return d;
+            });
           localStorage.setItem('aerodispatch_fleet_drivers', JSON.stringify(cleaned));
           setDriversList(cleaned);
         }
       }
     } catch (e) {}
 
-    // Auto-purge demo drivers from registered users cache
+    // Auto-purge demo drivers from registered users cache & clean real user entries
     try {
       const savedReg = localStorage.getItem('aerodispatch_registered_users');
       if (savedReg) {
         const parsed = JSON.parse(savedReg);
-        if (Array.isArray(parsed) && parsed.some(u => 
-          (u.name || '').toLowerCase().includes('rishabh') || 
-          u.driverId === 'DRV-8469' || 
-          (u.phone || '').includes('90042')
-        )) {
-          const cleaned = parsed.filter(u => 
-            !(u.name || '').toLowerCase().includes('rishabh') && 
-            u.driverId !== 'DRV-8469' && 
-            !(u.phone || '').includes('90042')
-          );
+        if (Array.isArray(parsed)) {
+          const cleaned = parsed
+            .filter(u => 
+              u.driverId !== 'DRV-8469' && 
+              u.driverId !== 'DRV-658' &&
+              !(u.phone || '').includes('90042') && 
+              !(u.phone || '').includes('90043') &&
+              !(u.name || '').toLowerCase().includes('pandey')
+            )
+            .map(u => {
+              if (u.email?.toLowerCase() === 'oldmemories021@gmail.com') {
+                return {
+                  ...u,
+                  name: 'Rishabh',
+                  phone: (u.phone && !u.phone.includes('9004')) ? u.phone : '+91 98451 90214',
+                  driverId: (u.driverId && u.driverId !== 'DRV-8469') ? u.driverId : 'DRV-0214',
+                  vehicleNumber: (u.vehicleNumber && !u.vehicleNumber.includes('8469')) ? u.vehicleNumber : 'MH-02-EV-0214'
+                };
+              }
+              return u;
+            });
           localStorage.setItem('aerodispatch_registered_users', JSON.stringify(cleaned));
+        }
+      }
+    } catch (e) {}
+
+    // Auto-clean active logged-in user profile if it had stale demo data
+    try {
+      const savedUserStr = localStorage.getItem('aerodispatch_user');
+      if (savedUserStr) {
+        const u = JSON.parse(savedUserStr);
+        if (u.email?.toLowerCase() === 'oldmemories021@gmail.com') {
+          let updated = false;
+          if ((u.name || '').includes('Pandey')) {
+            u.name = 'Rishabh';
+            updated = true;
+          }
+          if ((u.phone || '').includes('90042') || (u.phone || '').includes('90043') || !u.phone) {
+            u.phone = '+91 98451 90214';
+            updated = true;
+          }
+          if (u.driverId === 'DRV-8469' || u.driverId === 'DRV-658' || !u.driverId) {
+            u.driverId = 'DRV-0214';
+            updated = true;
+          }
+          if (u.vehicleNumber === 'MH-02-EV-8469' || !u.vehicleNumber) {
+            u.vehicleNumber = 'MH-02-EV-0214';
+            updated = true;
+          }
+          if (updated) {
+            localStorage.setItem('aerodispatch_user', JSON.stringify(u));
+            setCurrentUser(u);
+          }
         }
       }
     } catch (e) {}
@@ -169,9 +223,11 @@ export function AppProvider({ children }) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
           const cleaned = parsed.filter(d => 
-            !(d.name || '').toLowerCase().includes('rishabh') && 
             d.id !== 'DRV-8469' && 
-            !(d.phone || '').includes('90042')
+            d.id !== 'DRV-658' &&
+            !(d.name || '').toLowerCase().includes('pandey') &&
+            !(d.phone || '').includes('90042') &&
+            !(d.phone || '').includes('90043')
           );
           return cleaned;
         }
@@ -679,12 +735,12 @@ export function AppProvider({ children }) {
           name: localUser.name,
           email: localUser.email,
           role: localUser.role || expectedRole || 'customer',
-          phone: localUser.phone || '+91 90042 78469',
+          phone: localUser.phone || '',
           driverId: localUser.driverId,
           vehicleNumber: localUser.vehicleNumber,
-          operationalZone: localUser.operationalZone || 'Mumbai Metro & Air Cargo Corridor',
-          zone: localUser.zone || 'Mumbai Metro & Air Cargo Corridor',
-          hub: localUser.hub || 'Mumbai Cargo Gateway (BOM-01)'
+          operationalZone: localUser.operationalZone || 'Metro Delivery Zone',
+          zone: localUser.zone || 'Metro Delivery Zone',
+          hub: localUser.hub || 'Central Cargo Hub'
         };
         token = `cognito-verified-token-${Date.now()}`;
       } else {
@@ -699,12 +755,12 @@ export function AppProvider({ children }) {
             name: seedUser.name,
             email: seedUser.email,
             role: seedUser.role || (seedUser.driverId ? 'driver' : expectedRole) || 'customer',
-            phone: seedUser.phone || '+91 90042 78469',
+            phone: seedUser.phone || '',
             driverId: seedUser.driverId || seedUser.id,
             vehicleNumber: seedUser.vehicleNumber,
-            operationalZone: seedUser.operationalZone || 'Mumbai Metro & Air Cargo Corridor',
-            zone: seedUser.zone || 'Mumbai Metro & Air Cargo Corridor',
-            hub: seedUser.hub || 'Mumbai Cargo Gateway (BOM-01)'
+            operationalZone: seedUser.operationalZone || 'Metro Delivery Zone',
+            zone: seedUser.zone || 'Metro Delivery Zone',
+            hub: seedUser.hub || 'Central Cargo Hub'
           };
           token = `seed-token-${authUser.role}-${Date.now()}`;
         } else {
@@ -717,11 +773,12 @@ export function AppProvider({ children }) {
       // Guarantee driver role & operational zone if logging in through Driver Portal or Driver email
       if (expectedRole === 'driver' || authUser.role === 'driver' || email.toLowerCase().includes('driver')) {
         authUser.role = 'driver';
-        if (!authUser.driverId) authUser.driverId = `DRV-${(authUser.phone || Date.now().toString()).slice(-4)}`;
-        if (!authUser.vehicleNumber) authUser.vehicleNumber = `MH-02-EV-${(authUser.phone || Date.now().toString()).slice(-4)}`;
-        if (!authUser.operationalZone) authUser.operationalZone = 'Mumbai Metro & Air Cargo Corridor';
+        const phoneTail = (authUser.phone || '').replace(/\D/g, '').slice(-4);
+        if (!authUser.driverId) authUser.driverId = `DRV-${phoneTail || Math.floor(100 + Math.random() * 900)}`;
+        if (!authUser.vehicleNumber) authUser.vehicleNumber = `MH-02-EV-${phoneTail || Math.floor(1000 + Math.random() * 9000)}`;
+        if (!authUser.operationalZone) authUser.operationalZone = 'Metro Delivery Zone';
         if (!authUser.zone) authUser.zone = authUser.operationalZone;
-        if (!authUser.hub) authUser.hub = 'Mumbai Cargo Gateway (BOM-01)';
+        if (!authUser.hub) authUser.hub = 'Central Cargo Hub';
       }
 
       // Reattach persistent avatar photo if user previously uploaded one!
@@ -872,7 +929,7 @@ export function AppProvider({ children }) {
       };
       if (effectiveRole === 'driver') {
         user.driverId = `DRV-${Date.now().toString().slice(-4)}`;
-        user.vehicleNumber = 'MH-02-EV-8469';
+        user.vehicleNumber = `KA-03-EV-${Date.now().toString().slice(-4)}`;
       }
       registeredUsers.push(user);
       localStorage.setItem('aerodispatch_registered_users', JSON.stringify(registeredUsers));
@@ -885,8 +942,8 @@ export function AppProvider({ children }) {
       role: user.role || effectiveRole,
       phone: user.phone || '+91 98200 44112',
       avatarUrl: savedAvatar || user.avatarUrl,
-      driverId: user.driverId || (user.role === 'driver' ? 'DRV-8469' : undefined),
-      vehicleNumber: user.vehicleNumber || (user.role === 'driver' ? 'MH-02-EV-8469' : undefined)
+      driverId: user.driverId || (user.role === 'driver' ? `DRV-${Date.now().toString().slice(-4)}` : undefined),
+      vehicleNumber: user.vehicleNumber || (user.role === 'driver' ? `KA-03-EV-${Date.now().toString().slice(-4)}` : undefined)
     };
 
     const token = `google-sso-token-${Date.now()}`;
@@ -1127,11 +1184,11 @@ export function AppProvider({ children }) {
         return {
           ...s,
           assignedDriver: {
-            driverId: driverInfo.driverId || driverInfo.id || 'DRV-8469',
+            driverId: driverInfo.driverId || driverInfo.id || `DRV-${Date.now().toString().slice(-4)}`,
             name: driverInfo.name,
-            phone: driverInfo.phone,
-            vehicleNumber: driverInfo.vehicleNumber || driverInfo.vehicle || 'MH-02-EV-8469',
-            rating: 4.98,
+            phone: driverInfo.phone || '',
+            vehicleNumber: driverInfo.vehicleNumber || driverInfo.vehicle || `KA-03-EV-${Date.now().toString().slice(-4)}`,
+            rating: driverInfo.rating || 5.0,
           }
         };
       }
@@ -1161,8 +1218,8 @@ export function AppProvider({ children }) {
     const activeOngoingDelivery = shipments.find(s => {
       const isMyDelivery = (s.assignedDriver && (
         s.assignedDriver.name?.toLowerCase() === currentUser?.name?.toLowerCase() ||
-        s.assignedDriver.driverId === currentUser?.driverId
-      )) || s.driverId === (currentUser?.driverId || 'DRV-8469');
+        (currentUser?.driverId && s.assignedDriver.driverId === currentUser.driverId)
+      )) || (currentUser?.driverId && s.driverId === currentUser.driverId);
 
       const isCompleted = s.currentStatus === 'DELIVERED' || s.status === 'delivered';
       return isMyDelivery && !isCompleted;
@@ -1236,7 +1293,7 @@ export function AppProvider({ children }) {
 
   // Driver declines unassigned parcel request
   const declineDriverOrder = async (awbNumber) => {
-    const driverId = currentUser?.driverId || 'DRV-8469';
+    const driverId = currentUser?.driverId || `DRV-${(currentUser?.phone || '').replace(/\D/g, '').slice(-4) || 'ACTIVE'}`;
     const driverName = getCleanDisplayName(currentUser, 'driver') || 'Delivery Captain';
 
     if (isBackendOnline) {

@@ -3,29 +3,29 @@ import { useApp } from '../context/AppContext';
 import StatusBadge from './StatusBadge';
 import CopyButton from './CopyButton';
 import { getConsignmentPhoto, formatINR } from '../utils/parcelUtils';
-import { 
-  X, 
-  Package, 
-  MapPin, 
-  Truck, 
-  Clock, 
-  CheckCircle2, 
-  AlertTriangle, 
-  Phone, 
-  MessageSquare, 
-  ExternalLink, 
-  Printer, 
-  ShieldCheck, 
-  Maximize2, 
-  Scale, 
-  Box, 
+import {
+  X,
+  Package,
+  MapPin,
+  Truck,
+  Clock,
+  CheckCircle2,
+  AlertTriangle,
+  Phone,
+  MessageSquare,
+  ExternalLink,
+  Printer,
+  ShieldCheck,
+  Maximize2,
+  Scale,
+  Box,
   CreditCard,
   User,
   Share2
 } from 'lucide-react';
 
 export default function ParcelDetailModal({ parcel, onClose }) {
-  const { setActiveTab, setSelectedAwb, setTrackingQuery, openChatbox, addToast } = useApp();
+  const { setActiveTab, setSelectedAwb, setTrackingQuery, openChatbox, addToast, currentUser, currentRole } = useApp();
   const [isPhotoZoomed, setIsPhotoZoomed] = useState(false);
 
   useEffect(() => {
@@ -70,7 +70,7 @@ export default function ParcelDetailModal({ parcel, onClose }) {
         title: `Consignment Dossier: ${parcel.awbNumber}`,
         text: `Track package ${parcel.awbNumber} on AeroDispatch`,
         url: window.location.origin
-      }).catch(() => {});
+      }).catch(() => { });
     } else {
       navigator.clipboard.writeText(`${window.location.origin}/#track=${parcel.awbNumber}`);
       addToast('Tracking link copied to clipboard!', 'info');
@@ -78,7 +78,7 @@ export default function ParcelDetailModal({ parcel, onClose }) {
   };
 
   return (
-    <div 
+    <div
       className="parcel-modal-backdrop"
       style={{
         position: 'fixed',
@@ -140,49 +140,49 @@ export default function ParcelDetailModal({ parcel, onClose }) {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Header / HD Parcel Photo Banner */}
-        <div 
-          style={{ 
-            position: 'relative', 
-            height: '240px', 
-            width: '100%', 
-            overflow: 'hidden', 
+        <div
+          style={{
+            position: 'relative',
+            height: '240px',
+            width: '100%',
+            overflow: 'hidden',
             backgroundColor: '#0f172a',
             cursor: 'pointer'
           }}
           onClick={() => setIsPhotoZoomed(prev => !prev)}
           title="Click to zoom consignment photograph"
         >
-          <img 
-            src={photoUrl} 
-            alt="Consignment Parcel Cargo" 
+          <img
+            src={photoUrl}
+            alt="Consignment Parcel Cargo"
             className="parcel-photo-hover-scale"
-            style={{ 
-              width: '100%', 
-              height: '100%', 
+            style={{
+              width: '100%',
+              height: '100%',
               objectFit: 'cover',
               objectPosition: 'center',
               display: 'block'
-            }} 
+            }}
           />
 
           {/* Gradient Overlay for Text Legibility */}
-          <div 
-            style={{ 
-              position: 'absolute', 
-              inset: 0, 
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
               background: 'linear-gradient(to top, rgba(7, 11, 20, 0.92) 0%, rgba(7, 11, 20, 0.2) 60%, rgba(7, 11, 20, 0.45) 100%)',
               pointerEvents: 'none'
-            }} 
+            }}
           />
 
           {/* Top Badges */}
           <div style={{ position: 'absolute', top: '16px', left: '16px', display: 'flex', gap: '8px', flexWrap: 'wrap', zIndex: 2 }}>
-            <span style={{ 
-              background: 'rgba(239, 68, 68, 0.88)', 
-              color: '#ffffff', 
-              padding: '4px 12px', 
-              borderRadius: '9999px', 
-              fontSize: '0.74rem', 
+            <span style={{
+              background: 'rgba(239, 68, 68, 0.88)',
+              color: '#ffffff',
+              padding: '4px 12px',
+              borderRadius: '9999px',
+              fontSize: '0.74rem',
               fontWeight: 800,
               letterSpacing: '0.04em',
               textTransform: 'uppercase',
@@ -192,13 +192,13 @@ export default function ParcelDetailModal({ parcel, onClose }) {
               {serviceTier}
             </span>
 
-            <span style={{ 
-              background: 'rgba(15, 23, 42, 0.75)', 
-              color: '#E2E8F0', 
+            <span style={{
+              background: 'rgba(15, 23, 42, 0.75)',
+              color: '#E2E8F0',
               border: '1px solid rgba(255, 255, 255, 0.2)',
-              padding: '4px 12px', 
-              borderRadius: '9999px', 
-              fontSize: '0.74rem', 
+              padding: '4px 12px',
+              borderRadius: '9999px',
+              fontSize: '0.74rem',
               fontWeight: 700,
               backdropFilter: 'blur(8px)'
             }}>
@@ -237,19 +237,19 @@ export default function ParcelDetailModal({ parcel, onClose }) {
           </button>
 
           {/* Zoom hint overlay bottom-right */}
-          <div 
-            style={{ 
-              position: 'absolute', 
-              bottom: '16px', 
-              right: '16px', 
-              background: 'rgba(0, 0, 0, 0.6)', 
-              padding: '4px 10px', 
-              borderRadius: '9999px', 
-              color: '#F1F5F9', 
-              fontSize: '0.72rem', 
-              fontWeight: 700, 
-              display: 'flex', 
-              alignItems: 'center', 
+          <div
+            style={{
+              position: 'absolute',
+              bottom: '16px',
+              right: '16px',
+              background: 'rgba(0, 0, 0, 0.6)',
+              padding: '4px 10px',
+              borderRadius: '9999px',
+              color: '#F1F5F9',
+              fontSize: '0.72rem',
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
               gap: '5px',
               backdropFilter: 'blur(6px)',
               border: '1px solid rgba(255, 255, 255, 0.15)'
@@ -275,7 +275,7 @@ export default function ParcelDetailModal({ parcel, onClose }) {
 
         {/* Scrollable Dossier Body */}
         <div style={{ padding: '1.5rem', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          
+
           {/* Header Identifiers & Status Row */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', paddingBottom: '1.15rem', borderBottom: '1px solid var(--border-subtle)' }}>
             <div>
@@ -383,49 +383,107 @@ export default function ParcelDetailModal({ parcel, onClose }) {
             </div>
           </div>
 
-          {/* Delivery Captain Section */}
-          <div style={{ background: 'rgba(239, 68, 68, 0.05)', borderRadius: '20px', padding: '1.25rem', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'linear-gradient(135deg, #EF4444 0%, #991B1B 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF', fontWeight: 800, fontSize: '1.1rem', flexShrink: 0 }}>
-                  <Truck size={20} />
-                </div>
-                <div>
-                  <div style={{ fontSize: '0.74rem', color: '#94A3B8', fontWeight: 700, textTransform: 'uppercase' }}>
-                    Assigned Delivery Captain
-                  </div>
-                  <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-main)' }}>
-                    {parcel.assignedDriver?.name || 'Assigned Courier'}
-                  </div>
-                  <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>
-                    Vehicle: <strong>{parcel.assignedDriver?.vehicleNumber || 'Fleet Van'}</strong> • ID: {parcel.assignedDriver?.driverId || 'DRV-FLEET'}
-                  </div>
-                </div>
-              </div>
+          {/* Context-Aware Contact Card (Captain contacting Customer vs Customer contacting Captain) */}
+          {(() => {
+            const isDriver = currentUser?.role === 'driver' || currentRole === 'driver';
+            const customerName = parcel.recipient?.name || parcel.sender?.name || 'Customer';
+            const customerPhone = parcel.recipient?.phone || parcel.sender?.phone || '';
+            const customerCity = parcel.recipient?.city || parcel.sender?.city || '';
 
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => openChatbox()}
-                  style={{ borderRadius: '9999px', padding: '0.45rem 1rem', display: 'flex', alignItems: 'center', gap: '5px' }}
-                >
-                  <MessageSquare size={13} />
-                  <span>Chat</span>
-                </button>
-                {parcel.assignedDriver?.phone && (
-                  <a
-                    href={`tel:${parcel.assignedDriver.phone}`}
-                    className="btn btn-primary btn-sm"
-                    style={{ borderRadius: '9999px', padding: '0.45rem 1rem', display: 'inline-flex', alignItems: 'center', gap: '5px', textDecoration: 'none' }}
-                  >
-                    <Phone size={13} />
-                    <span>Call Captain</span>
-                  </a>
-                )}
+            // 1. If currently viewed by a Captain (driver): Contact Customer & Consignee
+            if (isDriver) {
+              return (
+                <div style={{ background: 'rgba(0, 240, 255, 0.08)', borderRadius: '20px', padding: '1.25rem', border: '1px solid rgba(0, 240, 255, 0.35)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                      <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(0, 240, 255, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#00F0FF', flexShrink: 0 }}>
+                        <User size={22} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.74rem', color: '#00F0FF', fontWeight: 800, textTransform: 'uppercase' }}>
+                          Customer &amp; Consignee Contact
+                        </div>
+                        <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                          {customerName}
+                        </div>
+                        <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>
+                          Destination: <strong>{customerCity || 'Delivery Address'}</strong> {customerPhone ? `• Phone: ${customerPhone}` : ''}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      {customerPhone && (
+                        <a
+                          href={`tel:${customerPhone}`}
+                          className="btn btn-secondary btn-sm"
+                          style={{ borderRadius: '9999px', padding: '0.45rem 1rem', display: 'inline-flex', alignItems: 'center', gap: '5px', textDecoration: 'none' }}
+                        >
+                          <Phone size={13} />
+                          <span>Call Customer</span>
+                        </a>
+                      )}
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-sm"
+                        onClick={() => openChatbox()}
+                        style={{ borderRadius: '9999px', padding: '0.45rem 1rem', display: 'flex', alignItems: 'center', gap: '5px' }}
+                      >
+                        <MessageSquare size={13} />
+                        <span>Chat with Customer</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
+            // 2. If viewed by Customer or Admin: Contact Assigned Delivery Captain
+            return (
+              <div style={{ background: 'rgba(16, 185, 129, 0.08)', borderRadius: '20px', padding: '1.25rem', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                    <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'linear-gradient(135deg, #10B981 0%, #047857 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF', fontWeight: 800, fontSize: '1.1rem', flexShrink: 0 }}>
+                      <Truck size={20} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.74rem', color: '#10B981', fontWeight: 800, textTransform: 'uppercase' }}>
+                        Assigned Delivery Captain
+                      </div>
+                      <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                        {parcel.assignedDriver?.name || 'Assigned Courier'}
+                      </div>
+                      <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>
+                        Vehicle: <strong>{parcel.assignedDriver?.vehicleNumber || 'Fleet Van'}</strong> • ID: {parcel.assignedDriver?.driverId || 'DRV-FLEET'}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => openChatbox()}
+                      style={{ borderRadius: '9999px', padding: '0.45rem 1rem', display: 'flex', alignItems: 'center', gap: '5px' }}
+                    >
+                      <MessageSquare size={13} />
+                      <span>Chat with Captain</span>
+                    </button>
+                    {parcel.assignedDriver?.phone && (
+                      <a
+                        href={`tel:${parcel.assignedDriver.phone}`}
+                        className="btn btn-primary btn-sm"
+                        style={{ borderRadius: '9999px', padding: '0.45rem 1rem', display: 'inline-flex', alignItems: 'center', gap: '5px', textDecoration: 'none' }}
+                      >
+                        <Phone size={13} />
+                        <span>Call Captain</span>
+                      </a>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            );
+          })()}
 
           {/* Proof of Delivery Card (If Delivered) */}
           {parcel.proofOfDelivery && (
@@ -451,7 +509,7 @@ export default function ParcelDetailModal({ parcel, onClose }) {
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {parcel.events.map((evt, idx) => (
-                  <div 
+                  <div
                     key={evt.id || idx}
                     style={{
                       background: 'var(--bg-elevated)',
@@ -479,16 +537,16 @@ export default function ParcelDetailModal({ parcel, onClose }) {
         </div>
 
         {/* Footer Actions */}
-        <div 
-          style={{ 
-            padding: '1rem 1.5rem', 
-            background: 'var(--bg-elevated)', 
-            borderTop: '1px solid var(--border-subtle)', 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center', 
-            flexWrap: 'wrap', 
-            gap: '0.75rem' 
+        <div
+          style={{
+            padding: '1rem 1.5rem',
+            background: 'var(--bg-elevated)',
+            borderTop: '1px solid var(--border-subtle)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '0.75rem'
           }}
         >
           <div style={{ display: 'flex', gap: '0.5rem' }}>

@@ -111,8 +111,8 @@ app = FastAPI(
 # 1. Security Headers Middleware (OWASP compliance)
 app.add_middleware(SecurityHeadersMiddleware)
 
-# 2. Max Body Size Limiter (10 MB to prevent DoS)
-app.add_middleware(RequestSizeLimitMiddleware, max_body_bytes=10 * 1024 * 1024)
+# 2. Max Body Size Limiter (50 MB to prevent DoS while allowing high-res proof photo uploads)
+app.add_middleware(RequestSizeLimitMiddleware, max_body_bytes=50 * 1024 * 1024)
 
 # 3. Restricted CORS origins (browser-safe credentials handling)
 app.add_middleware(
@@ -953,8 +953,8 @@ def driver_accept_order(
     driver_name = user.get("name") or "Delivery Captain"
     if not driver_name.lower().startswith("captain"):
         driver_name = f"Captain {driver_name}"
-    driver_phone = user.get("phoneNumber") or user.get("phone") or "+91 90043 58469"
-    vehicle_number = user.get("vehicleNumber") or "MH-02-EE-8891"
+    driver_phone = user.get("phoneNumber") or user.get("phone") or user.get("phone_number") or ""
+    vehicle_number = user.get("vehicleNumber") or "Fleet Cargo EV"
 
     driver_info = {
         "driverId": driver_id,
@@ -1101,8 +1101,8 @@ async def upload_proof_photo(
                     detail=f"Forbidden: Consignment is assigned to associate {assigned_drv.get('driverId')}.",
                 )
 
-    # Bounded streaming read up to 5MB to prevent memory exhaustion DoS
-    MAX_UPLOAD_BYTES = 5 * 1024 * 1024
+    # Bounded streaming read up to 25MB to prevent memory exhaustion DoS while supporting high-res photos
+    MAX_UPLOAD_BYTES = 25 * 1024 * 1024
     chunks = []
     total_bytes = 0
     while True:
@@ -1113,7 +1113,7 @@ async def upload_proof_photo(
         if total_bytes > MAX_UPLOAD_BYTES:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"File size exceeds maximum allowed limit of 5 MB ({total_bytes} bytes).",
+                detail=f"File size exceeds maximum allowed limit of 25 MB ({total_bytes} bytes).",
             )
         chunks.append(chunk)
     content = b"".join(chunks)

@@ -37,6 +37,7 @@ export default function ShipmentManagementPage() {
     shipments, 
     visibleShipments,
     currentUser,
+    currentRole,
     setActiveTab, 
     setSelectedAwb, 
     addToast,
@@ -566,57 +567,118 @@ export default function ShipmentManagementPage() {
                 </div>
               </div>
 
-              {/* Assigned Captain Card */}
-              {driver ? (
-                <div style={{ padding: '1.25rem', background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.35)', borderRadius: '18px', marginBottom: '1.5rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                      <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10B981', flexShrink: 0 }}>
-                        <Truck size={22} />
-                      </div>
-                      <div>
-                        <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#10B981', fontWeight: 800, letterSpacing: '0.04em' }}>
-                          ✓ Delivery Captain Assigned
-                        </div>
-                        <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-main)' }}>
-                          Captain {driver.name}
-                        </div>
-                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                          Phone: <strong>{driver.phone || '+91 90043 58469'}</strong> • Van: {driver.vehicleNumber || 'MH-02-EV-8469'}
-                        </div>
-                      </div>
-                    </div>
+              {/* Assigned Captain Card / Customer Card (Context-Aware) */}
+              {(() => {
+                const isDriver = currentUser?.role === 'driver' || currentRole === 'driver';
+                const customerName = inspectingShipment.recipient?.name || inspectingShipment.sender?.name || 'Customer';
+                const customerPhone = inspectingShipment.recipient?.phone || inspectingShipment.sender?.phone || '';
+                const customerCity = inspectingShipment.recipient?.city || inspectingShipment.sender?.city || '';
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <a
-                        href={`tel:${driver.phone || '+919004358469'}`}
-                        className="btn btn-sm btn-secondary"
-                        style={{ padding: '0.45rem 0.85rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem', borderRadius: '9999px' }}
-                      >
-                        <span>📞 Call Captain</span>
-                      </a>
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-primary"
-                        onClick={() => {
-                          setInspectingShipment(null);
-                          openChatbox();
-                        }}
-                        style={{ padding: '0.45rem 0.85rem', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '4px', borderRadius: '9999px' }}
-                      >
-                        <span>💬 Chat with Captain</span>
-                      </button>
+                if (isDriver) {
+                  return (
+                    <div style={{ padding: '1.25rem', background: 'rgba(0, 240, 255, 0.08)', border: '1px solid rgba(0, 240, 255, 0.35)', borderRadius: '18px', marginBottom: '1.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                          <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'rgba(0, 240, 255, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#00F0FF', flexShrink: 0 }}>
+                            <User size={22} />
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#00F0FF', fontWeight: 800, letterSpacing: '0.04em' }}>
+                              ✓ Customer Delivery Contact
+                            </div>
+                            <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                              {customerName}
+                            </div>
+                            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                              Destination: <strong>{customerCity || 'Delivery Address'}</strong> {customerPhone ? `• Phone: ${customerPhone}` : ''}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          {customerPhone && (
+                            <a
+                              href={`tel:${customerPhone}`}
+                              className="btn btn-sm btn-secondary"
+                              style={{ padding: '0.45rem 0.85rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem', borderRadius: '9999px' }}
+                            >
+                              <span>📞 Call Customer</span>
+                            </a>
+                          )}
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-primary"
+                            onClick={() => {
+                              setInspectingShipment(null);
+                              openChatbox();
+                            }}
+                            style={{ padding: '0.45rem 0.85rem', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '4px', borderRadius: '9999px' }}
+                          >
+                            <span>💬 Chat with Customer</span>
+                          </button>
+                        </div>
+                      </div>
                     </div>
+                  );
+                }
+
+                if (driver) {
+                  return (
+                    <div style={{ padding: '1.25rem', background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.35)', borderRadius: '18px', marginBottom: '1.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                          <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10B981', flexShrink: 0 }}>
+                            <Truck size={22} />
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#10B981', fontWeight: 800, letterSpacing: '0.04em' }}>
+                              ✓ Delivery Captain Assigned
+                            </div>
+                            <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                              Captain {driver.name?.replace(/^captain\s+/i, '')}
+                            </div>
+                            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                              {driver.phone ? `Phone: ${driver.phone} • ` : ''}Vehicle: {driver.vehicleNumber || 'Van'}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          {driver.phone && (
+                            <a
+                              href={`tel:${driver.phone}`}
+                              className="btn btn-sm btn-secondary"
+                              style={{ padding: '0.45rem 0.85rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem', borderRadius: '9999px' }}
+                            >
+                              <span>📞 Call Captain</span>
+                            </a>
+                          )}
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-primary"
+                            onClick={() => {
+                              setInspectingShipment(null);
+                              openChatbox();
+                            }}
+                            style={{ padding: '0.45rem 0.85rem', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '4px', borderRadius: '9999px' }}
+                          >
+                            <span>💬 Chat with Captain</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div style={{ padding: '1rem 1.25rem', background: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.25)', borderRadius: '18px', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <Clock size={18} color="#38BDF8" style={{ flexShrink: 0 }} />
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-main)', fontWeight: 500 }}>
+                      Awaiting Delivery Captain acceptance. Dispatch broadcast active across nearby fleet terminals.
+                    </span>
                   </div>
-                </div>
-              ) : (
-                <div style={{ padding: '1rem 1.25rem', background: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.25)', borderRadius: '18px', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <Clock size={18} color="#38BDF8" style={{ flexShrink: 0 }} />
-                  <span style={{ fontSize: '0.85rem', color: 'var(--text-main)', fontWeight: 500 }}>
-                    Awaiting Delivery Captain acceptance. Dispatch broadcast active across nearby fleet terminals.
-                  </span>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Consignment Weight & Specs Summary Bar */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>
