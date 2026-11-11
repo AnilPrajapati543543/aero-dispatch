@@ -135,15 +135,27 @@ export default function DriverDashboard() {
   // Filter shipments assigned strictly to current Captain (or master fleet view for Admin)
   const myAssignedShipments = useMemo(() => {
     const isMasterAdmin = currentUser?.role === 'admin';
-    const dId = currentUser?.driverId;
-    const directMatches = shipments.filter(s => 
-      (dId && s.assignedDriver && (s.assignedDriver.driverId === dId || s.assignedDriver.name?.toLowerCase() === currentUser?.name?.toLowerCase())) ||
-      (dId && s.driverId === dId)
-    );
+    const dId = String(currentUser?.driverId || '');
+    const cName = String(currentUser?.name || '').toLowerCase().trim();
+    const list = Array.isArray(shipments) ? shipments : [];
+
+    const directMatches = list.filter(s => {
+      if (!s) return false;
+      if (dId && s.driverId === dId) return true;
+      if (s.assignedDriver) {
+        const d = typeof s.assignedDriver === 'object' ? s.assignedDriver : { driverId: s.assignedDriver };
+        const sDriverId = String(d.driverId || d.id || '');
+        const sDriverName = String(d.name || '').toLowerCase().trim();
+        if (dId && sDriverId === dId) return true;
+        if (cName && sDriverName && (sDriverName === cName || sDriverName.includes(cName))) return true;
+      }
+      return false;
+    });
+
     if (isMasterAdmin && directMatches.length === 0) {
       // In Admin inspection mode, show active assigned deliveries across the fleet
-      const assigned = shipments.filter(s => s.assignedDriver);
-      return assigned.length > 0 ? assigned : shipments;
+      const assigned = list.filter(s => s && s.assignedDriver);
+      return assigned.length > 0 ? assigned : list;
     }
     return directMatches;
   }, [shipments, currentUser]);
@@ -151,12 +163,17 @@ export default function DriverDashboard() {
   // Unassigned broadcast shipments waiting for captain acceptance
   const availableOrders = useMemo(() => {
     const isMasterAdmin = currentUser?.role === 'admin';
-    const dId = currentUser?.driverId;
-    return shipments.filter(s => 
-      !s.assignedDriver &&
-      (s.currentStatus === 'BOOKED' || s.currentStatus === 'PICKUP_SCHEDULED' || s.status === 'booked') &&
-      (isMasterAdmin || !(s.declinedByDrivers && s.declinedByDrivers.includes(dId)))
-    );
+    const dId = String(currentUser?.driverId || '');
+    const list = Array.isArray(shipments) ? shipments : [];
+    return list.filter(s => {
+      if (!s || s.assignedDriver) return false;
+      const st = String(s.currentStatus || s.status || '').toUpperCase();
+      const isBooked = st === 'BOOKED' || st === 'PICKUP_SCHEDULED';
+      if (!isBooked) return false;
+      if (isMasterAdmin) return true;
+      const declined = Array.isArray(s.declinedByDrivers) ? s.declinedByDrivers : [];
+      return !declined.includes(dId);
+    });
   }, [shipments, currentUser]);
 
   // Real-world single active delivery constraint: Currently ongoing delivery
@@ -538,7 +555,7 @@ export default function DriverDashboard() {
                     </div>
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <MapPin size={15} color="var(--primary)" />
-                      <span>{activeOngoingDelivery.recipient?.address || 'Delivery Address'}, {activeOngoingDelivery.recipient?.city}</span>
+                      <span>{typeof activeOngoingDelivery.recipient?.address === 'string' ? activeOngoingDelivery.recipient.address : (activeOngoingDelivery.recipient?.address?.street || 'Delivery Address')}, {activeOngoingDelivery.recipient?.city || ''}</span>
                     </div>
                     {activeOngoingDelivery.recipient?.phone && (
                       <a
@@ -693,7 +710,7 @@ export default function DriverDashboard() {
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '0.25rem' }}>
                         <MapPin size={14} color="var(--primary)" />
-                        <span>{ship.recipient?.address || 'Delivery Address'}, {ship.recipient?.city || 'City'} - {ship.recipient?.pinCode || ''}</span>
+                        <span>{typeof ship.recipient?.address === 'string' ? ship.recipient.address : (ship.recipient?.address?.street || 'Delivery Address')}, {ship.recipient?.city || 'City'} - {ship.recipient?.pinCode || ''}</span>
                       </div>
 
                       {/* Route distance dynamic */}
@@ -923,16 +940,16 @@ export default function DriverDashboard() {
 
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.65rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
                           <div>
-                            <strong style={{ color: 'var(--text-main)' }}>Pickup:</strong> {order.sender?.city || 'Origin'} ({order.sender?.address?.substring(0, 30)}...)
+                            <strong style={{ color: 'var(--text-main)' }}>Pickup:</strong> {order.sender?.city || 'Origin'} ({typeof order.sender?.address === 'string' ? order.sender.address.substring(0, 30) : (order.sender?.address?.street || 'Pickup Hub')}...)
                           </div>
                           <div>
-                            <strong style={{ color: 'var(--text-main)' }}>Drop-off:</strong> {order.recipient?.city || 'Destination'} ({order.recipient?.name})
+                            <strong style={{ color: 'var(--text-main)' }}>Drop-off:</strong> {order.recipient?.city || 'Destination'} ({order.recipient?.name || 'Consignee'})
                           </div>
                           <div style={{ color: '#00F0FF', fontWeight: 700 }}>
                             <strong>📍 Est. Route:</strong> ~{est.km} km • ~{est.mins} mins
                           </div>
                           <div>
-                            <strong style={{ color: 'var(--text-main)' }}>Parcel:</strong> {order.category || 'General'} • {order.weightKg} kg (₹{order.declaredValue?.toLocaleString() || 1500})
+                            <strong style={{ color: 'var(--text-main)' }}>Parcel:</strong> {order.category || 'General'} • {order.weightKg || 1} kg (₹{Number(order.declaredValue || 1500).toLocaleString()})
                           </div>
                         </div>
                       </div>

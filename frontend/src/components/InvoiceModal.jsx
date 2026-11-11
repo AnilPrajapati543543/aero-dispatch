@@ -430,3 +430,4 @@ export default function InvoiceModal({ isOpen, onClose, order }) {
     </div>
   );
 }
+

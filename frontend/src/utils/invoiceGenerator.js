@@ -535,3 +535,4 @@ export function printInvoiceDocument(order, documentType = "INVOICE") {
   printWindow.document.write(htmlContent);
   printWindow.document.close();
 }
+

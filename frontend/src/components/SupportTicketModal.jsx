@@ -480,3 +480,4 @@ export default function SupportTicketModal({ isOpen, onClose, shipments = [], cu
     </div>
   );
 }
+

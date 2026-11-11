@@ -6,6 +6,7 @@ import MyMap from '../components/MyMap';
 import CopyButton from '../components/CopyButton';
 import { SkeletonBlock, SkeletonMap } from '../components/SkeletonLoading';
 import { apiGetOrderTracking, apiRateOrder, createTrackingWebSocket, resolvePhotoUrl } from '../services/api';
+import { sanitizeShipment } from '../utils/shipmentUtils';
 import { 
   Search, 
   MapPin, 
@@ -57,7 +58,8 @@ export default function TrackingPage() {
   const initialAwb = (urlAwb || trackingQuery || selectedAwb || '').trim();
   const [inputVal, setInputVal] = useState(initialAwb);
   const [activeShipment, setActiveShipment] = useState(() => {
-    return shipments.find(s => s.awbNumber.toLowerCase() === initialAwb.toLowerCase()) || shipments[0];
+    const raw = shipments.find(s => s.awbNumber.toLowerCase() === initialAwb.toLowerCase()) || shipments[0];
+    return sanitizeShipment(raw);
   });
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState('');
@@ -124,7 +126,7 @@ export default function TrackingPage() {
         const res = await apiGetOrderTracking(query);
         if (res && res.data) {
           await minDelay;
-          setActiveShipment(res.data);
+          setActiveShipment(sanitizeShipment(res.data));
           setSelectedAwb(res.data.awbNumber);
           if (shouldToast) {
             addToast(`Found shipment ${res.data.awbNumber}!`, 'success');
@@ -148,7 +150,7 @@ export default function TrackingPage() {
       (s.id && s.id.toLowerCase() === qLower)
     );
     if (found) {
-      setActiveShipment(found);
+      setActiveShipment(sanitizeShipment(found));
       setSelectedAwb(found.awbNumber);
       if (shouldToast) {
         addToast(`Found shipment: ${found.awbNumber}`, 'success');
@@ -186,7 +188,7 @@ export default function TrackingPage() {
         targetAwb,
         (msg) => {
           if (msg.type === 'TRACKING_UPDATE' && msg.data) {
-            setActiveShipment(msg.data);
+            setActiveShipment(sanitizeShipment(msg.data));
             addToast(`Update: Shipment ${msg.awbNumber} is now ${msg.status}!`, 'info');
           }
         },

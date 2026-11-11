@@ -240,40 +240,6 @@ export default function MainDashboard() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-          {/* Persona Role Switcher: Admin View / Customer View Toggle */}
-          <div 
-            className="portal-view-toggle-pill"
-            style={{ 
-              display: 'inline-flex', 
-              alignItems: 'center', 
-              background: 'rgba(255, 255, 255, 0.05)', 
-              borderRadius: '9999px', 
-              padding: '3px',
-              border: '1px solid var(--border-medium)',
-              gap: '3px'
-            }}
-          >
-            <button
-              type="button"
-              className="btn btn-sm btn-primary"
-              style={{ borderRadius: '9999px', padding: '0.35rem 0.85rem', fontSize: '0.78rem', fontWeight: 800 }}
-              title="Currently viewing Administrator Operations Console"
-            >
-              <ShieldCheck size={13} />
-              <span>Admin View</span>
-            </button>
-            <button
-              type="button"
-              className="btn btn-sm btn-secondary"
-              onClick={() => switchRole('customer')}
-              style={{ borderRadius: '9999px', padding: '0.35rem 0.85rem', fontSize: '0.78rem', fontWeight: 700, color: '#00F0FF', borderColor: 'rgba(0, 240, 255, 0.35)' }}
-              title="Switch to Customer Merchant Portal View"
-            >
-              <Users size={13} />
-              <span>Switch to Customer ➔</span>
-            </button>
-          </div>
-
           <button 
             className="btn btn-secondary btn-sm google-pill-btn"
             onClick={openAddressBook}
@@ -986,18 +952,6 @@ export default function MainDashboard() {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-primary"
-                  onClick={() => {
-                    setIsCustomerModalOpen(false);
-                    switchRole('customer');
-                  }}
-                  style={{ borderRadius: '9999px', padding: '0.4rem 0.95rem', fontSize: '0.76rem', fontWeight: 700 }}
-                  title="Switch to Customer Merchant Portal"
-                >
-                  <span>Switch to Customer View ➔</span>
-                </button>
                 <button
                   type="button"
                   className="btn btn-sm btn-secondary"

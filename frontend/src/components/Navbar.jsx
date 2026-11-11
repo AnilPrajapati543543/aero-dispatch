@@ -274,52 +274,6 @@ export default function Navbar() {
               </div>
             ) : (
               <>
-                {/* Admin Role Persona Switcher Pill */}
-                {currentUser.role === 'admin' && (
-                  <div 
-                    className="admin-role-switcher-pill"
-                    style={{ 
-                      display: 'inline-flex', 
-                      alignItems: 'center', 
-                      background: 'rgba(255, 255, 255, 0.06)', 
-                      borderRadius: '9999px', 
-                      padding: '2px',
-                      border: '1px solid var(--border-subtle)',
-                      gap: '3px'
-                    }}
-                  >
-                    <button
-                      type="button"
-                      className={`btn btn-sm ${currentRole === 'admin' ? 'btn-primary' : 'btn-secondary'}`}
-                      style={{ borderRadius: '9999px', padding: '0.3rem 0.75rem', fontSize: '0.74rem', fontWeight: 800 }}
-                      onClick={() => switchRole('admin')}
-                      title="Switch to Admin Operations Console"
-                    >
-                      <ShieldCheck size={13} />
-                      <span>Admin</span>
-                    </button>
-                    <button
-                      type="button"
-                      className={`btn btn-sm ${currentRole === 'customer' ? 'btn-primary' : 'btn-secondary'}`}
-                      style={{ borderRadius: '9999px', padding: '0.3rem 0.75rem', fontSize: '0.74rem', fontWeight: 700 }}
-                      onClick={() => switchRole('customer')}
-                      title="Toggle to Customer Merchant View"
-                    >
-                      <User size={13} />
-                      <span>Customer</span>
-                    </button>
-                    <button
-                      type="button"
-                      className={`btn btn-sm ${currentRole === 'driver' ? 'btn-primary' : 'btn-secondary'}`}
-                      style={{ borderRadius: '9999px', padding: '0.3rem 0.75rem', fontSize: '0.74rem', fontWeight: 700 }}
-                      onClick={() => switchRole('driver')}
-                      title="Toggle to Delivery Captain Cockpit View"
-                    >
-                      <Truck size={13} />
-                      <span>Captain</span>
-                    </button>
-                  </div>
-                )}
                 {currentUser.role === 'driver' && (
                   <button
                     className="btn btn-sm btn-secondary"

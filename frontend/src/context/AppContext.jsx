@@ -31,6 +31,7 @@ import {
   savePersistentAvatar 
 } from '../utils/avatarUtils';
 import { getCleanDisplayName } from '../utils/userUtils';
+import { sanitizeShipment, REAL_CAPTAIN } from '../utils/shipmentUtils';
 
 const AppContext = createContext();
 
@@ -101,7 +102,7 @@ export function AppProvider({ children }) {
             } catch (e) {}
             return [];
           }
-          return parsed;
+          return parsed.map(sanitizeShipment);
         }
       } catch (e) {}
     }
@@ -746,7 +747,7 @@ export function AppProvider({ children }) {
             res.data.forEach(o => {
               if (o.awbNumber && o.awbNumber !== 'AD-8849-2041') map.set(o.awbNumber, o);
             });
-            return Array.from(map.values());
+            return Array.from(map.values()).map(sanitizeShipment);
           });
         }
       }
@@ -986,8 +987,9 @@ export function AppProvider({ children }) {
     try {
       const ordersRes = await apiListOrders({ role: 'admin', token });
       if (ordersRes && Array.isArray(ordersRes.data) && ordersRes.data.length > 0) {
-        setShipments(ordersRes.data);
-        localStorage.setItem('aerodispatch_shipments', JSON.stringify(ordersRes.data));
+        const cleaned = ordersRes.data.map(sanitizeShipment);
+        setShipments(cleaned);
+        localStorage.setItem('aerodispatch_shipments', JSON.stringify(cleaned));
       }
     } catch (err) {
       console.warn("Could not sync live admin orders:", err);
@@ -1058,7 +1060,7 @@ export function AppProvider({ children }) {
     if (isBackendOnline) {
       try {
         const res = await apiCreateOrder(formData, null, authToken);
-        finalOrder = res.data;
+        finalOrder = sanitizeShipment(res.data);
         setShipments(prev => [finalOrder, ...prev.filter(s => s.awbNumber !== finalOrder.awbNumber)]);
         setSelectedAwb(finalOrder.awbNumber);
         addToast(`Shipment ${finalOrder.awbNumber} created successfully!`, 'success');
@@ -1260,7 +1262,7 @@ export function AppProvider({ children }) {
       try {
         const res = await apiAssignDriver(awbNumber, driverInfo, authToken);
         if (res && res.data) {
-          setShipments(prev => prev.map(s => (s.awbNumber === awbNumber ? res.data : s)));
+          setShipments(prev => prev.map(s => (s.awbNumber === awbNumber ? sanitizeShipment(res.data) : s)));
           addToast(`Driver ${driverInfo.name} assigned successfully!`, 'success');
         }
       } catch (e) {
@@ -1556,9 +1558,10 @@ export function AppProvider({ children }) {
     let localCount = 0;
     try {
       const reg = JSON.parse(localStorage.getItem('aerodispatch_registered_users') || '[]');
-      localCount = reg.filter(u => u.role === 'driver').length;
+      localCount = reg.filter(u => u.role === 'driver' && !isDemoDriver(u)).length;
     } catch (e) {}
-    return Math.max(adminStats?.captainAccounts ?? 0, driversList.length, localCount);
+    const count = Math.max(adminStats?.captainAccounts ?? 0, driversList.length, localCount);
+    return Math.max(1, count);
   }, [adminStats, driversList]);
 
   const completedDeliveriesCount = React.useMemo(() => {

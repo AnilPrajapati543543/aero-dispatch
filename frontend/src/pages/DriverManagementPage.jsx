@@ -65,21 +65,25 @@ export default function DriverManagementPage() {
 
   // Purge any legacy demo drivers and ensure verified fleet captain is active
   const cleanDriverList = useMemo(() => {
-    let list = (driversList || drivers || []).filter(d => 
-      !d.id?.toLowerCase().includes('8469') && 
-      !d.id?.toLowerCase().includes('658') && 
-      !d.driverId?.toLowerCase().includes('8469') && 
-      !d.driverId?.toLowerCase().includes('658') && 
-      !d.email?.toLowerCase().includes('aerodispatch.io') &&
-      !(d.phone || '').includes('90042') && 
-      !(d.phone || '').includes('90043') &&
-      !(d.name || '').toLowerCase().includes('pandey') &&
-      !(d.vehicle || '').includes('8469') &&
-      !(d.vehicle || '').includes('3051') &&
-      !(d.vehicleNumber || '').includes('8469') &&
-      !(d.vehicleNumber || '').includes('3051')
-    );
-    if (!list.some(d => d.email?.toLowerCase() === 'oldmemories021@gmail.com' || d.id === 'DRV-0214')) {
+    let list = (driversList || drivers || []).filter(d => {
+      if (!d) return false;
+      const dId = String(d.id || d.driverId || '').toLowerCase();
+      const email = String(d.email || '').toLowerCase();
+      const phone = String(d.phone || '');
+      const name = String(d.name || '').toLowerCase();
+      const veh = String(d.vehicle || d.vehicleNumber || '');
+      return (
+        !dId.includes('8469') && 
+        !dId.includes('658') && 
+        !email.includes('aerodispatch.io') &&
+        !phone.includes('90042') && 
+        !phone.includes('90043') &&
+        !name.includes('pandey') &&
+        !veh.includes('8469') &&
+        !veh.includes('3051')
+      );
+    });
+    if (!list.some(d => String(d.email || '').toLowerCase() === 'oldmemories021@gmail.com' || d.id === 'DRV-0214')) {
       list = [
         {
           id: 'DRV-0214',
@@ -113,13 +117,14 @@ export default function DriverManagementPage() {
 
   // Filter drivers
   const filteredDrivers = cleanDriverList.filter(d => {
+    if (!d) return false;
     if (statusFilter !== 'ALL' && d.status !== statusFilter) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      const matchName = d.name?.toLowerCase().includes(q);
-      const matchId = d.id?.toLowerCase().includes(q);
-      const matchZone = d.zone?.toLowerCase().includes(q);
-      const matchVehicle = d.vehicle?.toLowerCase().includes(q);
+      const matchName = String(d.name || '').toLowerCase().includes(q);
+      const matchId = String(d.id || d.driverId || '').toLowerCase().includes(q);
+      const matchZone = String(d.zone || d.operationalZone || d.hub || '').toLowerCase().includes(q);
+      const matchVehicle = String(d.vehicle || d.vehicleNumber || '').toLowerCase().includes(q);
       if (!matchName && !matchId && !matchZone && !matchVehicle) return false;
     }
     return true;
@@ -213,7 +218,7 @@ export default function DriverManagementPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <div style={{ padding: '0.4rem 0.85rem', background: 'rgba(0, 240, 255, 0.08)', border: '1px solid rgba(0, 240, 255, 0.25)', borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
             <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10B981', animation: 'aeroBeaconPing 1.8s infinite' }} />
-            <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>{currentDrivers.filter(d => d.status === 'AVAILABLE').length} Captains Available for Dispatch</span>
+            <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>{cleanDriverList.filter(d => d.status === 'AVAILABLE').length} Captains Available for Dispatch</span>
           </div>
 
           <button 
@@ -549,16 +554,31 @@ function DriverFleetCard({ driver, shipments, onAssign, updateDriverStatus, onDe
   const driverAvatar = driver.avatarUrl || getPersistentAvatar(driver.email, 'driver');
 
   const acceptedOrders = useMemo(() => {
-    return (shipments || []).filter(s => 
-      (s.assignedDriver && (s.assignedDriver.driverId === driver.id || s.assignedDriver.name?.toLowerCase() === driver.name?.toLowerCase()))
-    );
+    const drvId = String(driver?.id || driver?.driverId || '');
+    const drvName = String(driver?.name || '').toLowerCase().trim();
+    return (shipments || []).filter(s => {
+      if (!s || !s.assignedDriver) return false;
+      const d = typeof s.assignedDriver === 'object' ? s.assignedDriver : { driverId: s.assignedDriver };
+      const sId = String(d.driverId || d.id || '');
+      const sName = String(d.name || '').toLowerCase().trim();
+      return (drvId && sId === drvId) || (drvName && sName && (sName === drvName || sName.includes(drvName)));
+    });
   }, [shipments, driver]);
 
   const declinedOrders = useMemo(() => {
-    return (shipments || []).filter(s => 
-      (s.declinedByDrivers && s.declinedByDrivers.includes(driver.id)) ||
-      (s.declinedDriverDetails && s.declinedDriverDetails.some(d => d.driverId === driver.id || d.driverName?.toLowerCase() === driver.name?.toLowerCase()))
-    );
+    const drvId = String(driver?.id || driver?.driverId || '');
+    const drvName = String(driver?.name || '').toLowerCase().trim();
+    return (shipments || []).filter(s => {
+      if (!s) return false;
+      const byList = Array.isArray(s.declinedByDrivers) ? s.declinedByDrivers : [];
+      if (drvId && byList.includes(drvId)) return true;
+      const details = Array.isArray(s.declinedDriverDetails) ? s.declinedDriverDetails : [];
+      return details.some(d => {
+        const dId = String(d.driverId || '');
+        const dName = String(d.driverName || '').toLowerCase().trim();
+        return (drvId && dId === drvId) || (drvName && dName && dName === drvName);
+      });
+    });
   }, [shipments, driver]);
 
   return (
