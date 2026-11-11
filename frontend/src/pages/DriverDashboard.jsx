@@ -33,7 +33,7 @@ import { getConsignmentPhoto } from '../utils/parcelUtils';
 
 // Dynamic realistic route estimation per consignment (Never static ~15.2 km)
 export const getEstimatedRoute = (awb, weight = 1.5) => {
-  const numPart = (awb || '').replace(/\D/g, '') || '8469';
+  const numPart = (awb || '').replace(/\D/g, '') || '5021';
   const seed = parseInt(numPart.slice(-4), 10) || 1234;
   const km = (3.2 + (seed % 215) / 10).toFixed(1);
   const mins = Math.round(Number(km) * 2.2 + 8 + (seed % 6));

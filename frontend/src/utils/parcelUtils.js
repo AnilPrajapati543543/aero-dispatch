@@ -25,7 +25,7 @@ export function getConsignmentPhoto(shipment) {
     return shipment.parcelPhotoUrl;
   }
 
-  const key = (shipment.awbNumber || shipment.orderId || shipment.id || 'AD-8469').toString();
+  const key = (shipment.awbNumber || shipment.orderId || shipment.id || 'AD-0001').toString();
   let hash = 0;
   for (let i = 0; i < key.length; i++) {
     hash = (hash * 31 + key.charCodeAt(i)) >>> 0;

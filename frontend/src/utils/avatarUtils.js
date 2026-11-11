@@ -111,7 +111,7 @@ export function getPersistentAvatar(email, role) {
     // 5. Driver list if driver
     if (cleanRole === 'driver' || cleanEmail.includes('driver')) {
       const drivers = JSON.parse(localStorage.getItem('aerodispatch_fleet_drivers') || '[]');
-      const foundDrv = drivers.find(d => d.email?.toLowerCase() === cleanEmail || d.id === 'DRV-8469');
+      const foundDrv = drivers.find(d => d.email?.toLowerCase() === cleanEmail || d.id === 'DRV-0214');
       if (foundDrv?.avatarUrl) return foundDrv.avatarUrl;
     }
 

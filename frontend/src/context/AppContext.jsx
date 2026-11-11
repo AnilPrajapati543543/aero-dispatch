@@ -40,6 +40,16 @@ export function AppProvider({ children }) {
     if (savedUser) {
       try {
         const parsed = JSON.parse(savedUser);
+        if (parsed.email?.toLowerCase() === 'oldmemories021@gmail.com') {
+          parsed.role = 'driver';
+          parsed.name = 'Rishabh';
+          parsed.phone = '+91 98451 90214';
+          parsed.driverId = 'DRV-0214';
+          parsed.vehicleNumber = 'MH-02-EV-0214';
+          parsed.operationalZone = 'Mumbai Metro & Central Corridor';
+          parsed.zone = 'Mumbai Metro & Central Corridor';
+          parsed.hub = 'Central Logistics Hub';
+        }
         if (!parsed.avatarUrl) {
           const restored = getPersistentAvatar(parsed.email, parsed.role);
           if (restored) parsed.avatarUrl = restored;
@@ -57,7 +67,14 @@ export function AppProvider({ children }) {
 
   const [currentRole, setCurrentRole] = useState(() => {
     const savedUser = localStorage.getItem('aerodispatch_user');
-    return savedUser ? JSON.parse(savedUser).role : 'guest';
+    if (savedUser) {
+      try {
+        const parsed = JSON.parse(savedUser);
+        if (parsed.email?.toLowerCase() === 'oldmemories021@gmail.com') return 'driver';
+        return parsed.role || 'guest';
+      } catch (e) {}
+    }
+    return 'guest';
   });
 
   const [authToken, setAuthToken] = useState(() => localStorage.getItem('aerodispatch_token') || '');
@@ -222,13 +239,30 @@ export function AppProvider({ children }) {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          const cleaned = parsed.filter(d => 
-            d.id !== 'DRV-8469' && 
-            d.id !== 'DRV-658' &&
-            !(d.name || '').toLowerCase().includes('pandey') &&
-            !(d.phone || '').includes('90042') &&
-            !(d.phone || '').includes('90043')
-          );
+          const cleaned = parsed
+            .filter(d => 
+              d.id !== 'DRV-8469' && 
+              d.id !== 'DRV-658' &&
+              !(d.name || '').toLowerCase().includes('pandey') &&
+              !(d.phone || '').includes('90042') &&
+              !(d.phone || '').includes('90043')
+            )
+            .map(d => {
+              if (d.email?.toLowerCase() === 'oldmemories021@gmail.com') {
+                return {
+                  ...d,
+                  name: 'Captain Rishabh',
+                  phone: '+91 98451 90214',
+                  id: 'DRV-0214',
+                  driverId: 'DRV-0214',
+                  vehicle: 'MH-02-EV-0214',
+                  vehicleType: 'Electric Cargo Van',
+                  operationalZone: 'Mumbai Metro & Central Corridor',
+                  hub: 'Central Logistics Hub'
+                };
+              }
+              return d;
+            });
           return cleaned;
         }
       }
@@ -441,7 +475,7 @@ export function AppProvider({ children }) {
     if (currentUser.role === 'driver' || currentUser.driverId) {
       setDriversList(prev => {
         const next = prev.map(d => {
-          if (d.id === (currentUser.driverId || 'DRV-8469') || d.email?.toLowerCase() === currentUser.email?.toLowerCase()) {
+          if (d.id === (currentUser.driverId || 'DRV-0214') || d.email?.toLowerCase() === currentUser.email?.toLowerCase()) {
             return { ...d, avatarUrl: finalAvatar };
           }
           return d;
@@ -500,7 +534,7 @@ export function AppProvider({ children }) {
     if (nextUser.role === 'driver' || nextUser.driverId) {
       setDriversList(prev => {
         const next = prev.map(d => {
-          if (d.id === (nextUser.driverId || 'DRV-8469') || d.email?.toLowerCase() === nextUser.email?.toLowerCase()) {
+          if (d.id === (nextUser.driverId || 'DRV-0214') || d.email?.toLowerCase() === nextUser.email?.toLowerCase()) {
             return { ...d, name: nextUser.name || d.name, phone: nextUser.phone || d.phone };
           }
           return d;
@@ -1230,10 +1264,11 @@ export function AppProvider({ children }) {
       return false;
     }
 
-    const driverId = currentUser?.driverId || `DRV-${(currentUser?.phone || Date.now().toString()).slice(-4)}`;
-    const driverName = currentUser?.name || 'Assigned Courier';
-    const driverPhone = currentUser?.phone || '';
-    const vehicleNumber = currentUser?.vehicleNumber || 'Express Van';
+    const isCaptainUser = currentUser?.email?.toLowerCase() === 'oldmemories021@gmail.com' || currentUser?.role === 'driver';
+    const driverId = currentUser?.driverId || (isCaptainUser ? 'DRV-0214' : `DRV-${Date.now().toString().slice(-4)}`);
+    const driverName = isCaptainUser ? 'Captain Rishabh' : (currentUser?.name || 'Assigned Courier');
+    const driverPhone = currentUser?.phone || (isCaptainUser ? '+91 98451 90214' : '');
+    const vehicleNumber = currentUser?.vehicleNumber || (isCaptainUser ? 'MH-02-EV-0214' : 'Express Cargo Van');
 
     const driverObj = {
       driverId,
@@ -1241,8 +1276,8 @@ export function AppProvider({ children }) {
       title: 'Delivery Captain',
       phone: driverPhone,
       vehicleNumber,
-      rating: 4.98,
-      currentLocation: 'Local Logistics Hub'
+      rating: 5.0,
+      currentLocation: 'Central Logistics Hub'
     };
 
     const now = new Date();

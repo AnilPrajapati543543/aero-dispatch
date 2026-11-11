@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 
 const QUICK_DESTINATIONS = [
-  { city: 'Mumbai', state: 'Maharashtra', pin: '400001', address: 'Flat 402, Sea View Heights, Worli' },
+  { city: 'Mumbai', state: 'Maharashtra', pin: '400001', address: 'Nariman Point Financial District, Marine Drive' },
   { city: 'Bengaluru', state: 'Karnataka', pin: '560001', address: 'Tech Park Zone, 100 Feet Road, Indiranagar' },
   { city: 'Hyderabad', state: 'Telangana', pin: '500081', address: 'Tower B, HITEC City Logistics Gate' },
   { city: 'Kolkata', state: 'West Bengal', pin: '700001', address: 'BBD Bagh Commercial Arcade, Unit 12' },
@@ -72,8 +72,8 @@ export default function CreateOrderPage() {
   const applyQuickDestination = (dest) => {
     setFormData(prev => ({
       ...prev,
-      recipientName: prev.recipientName || 'Consignee Recipient',
-      recipientPhone: prev.recipientPhone || '+91 98200 44112',
+      recipientName: prev.recipientName || '',
+      recipientPhone: prev.recipientPhone || '',
       recipientCity: dest.city,
       recipientState: dest.state,
       recipientPin: dest.pin,

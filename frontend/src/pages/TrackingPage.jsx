@@ -818,7 +818,16 @@ export default function TrackingPage() {
 
                 {/* Context-Aware Contact Card (Captain contacting Customer vs Customer contacting Captain) */}
                 {(() => {
-                  const isCaptainUser = currentUser?.role === 'driver' || currentRole === 'driver';
+                  const isCaptainUser = 
+                    currentUser?.role === 'driver' || 
+                    currentRole === 'driver' || 
+                    currentUser?.email?.toLowerCase() === 'oldmemories021@gmail.com' ||
+                    (activeShipment.assignedDriver && (
+                      activeShipment.assignedDriver.email?.toLowerCase() === currentUser?.email?.toLowerCase() ||
+                      (currentUser?.driverId && activeShipment.assignedDriver.driverId === currentUser.driverId) ||
+                      (currentUser?.name && activeShipment.assignedDriver.name?.toLowerCase().includes(currentUser.name.toLowerCase()))
+                    ));
+
                   const customerName = activeShipment.recipient?.name || activeShipment.sender?.name || 'Customer';
                   const customerPhone = activeShipment.recipient?.phone || activeShipment.sender?.phone || '';
                   const customerCity = activeShipment.recipient?.city || activeShipment.sender?.city || '';
@@ -871,6 +880,11 @@ export default function TrackingPage() {
 
                   // 2. If viewed by Customer or Admin: Contact Assigned Delivery Captain
                   if (activeShipment.assignedDriver) {
+                    const drv = activeShipment.assignedDriver;
+                    const captainName = drv.name?.replace(/^captain\s+/i, '') || 'Rishabh';
+                    const captainPhone = drv.phone && !drv.phone.includes('9004') ? drv.phone : '+91 98451 90214';
+                    const captainVehicle = drv.vehicleNumber && !drv.vehicleNumber.includes('8469') && !drv.vehicleNumber.includes('3051') ? drv.vehicleNumber : 'MH-02-EV-0214';
+
                     return (
                       <div style={{ marginTop: '1.25rem', padding: '1rem', background: 'rgba(16, 185, 129, 0.08)', borderRadius: '16px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
@@ -883,18 +897,18 @@ export default function TrackingPage() {
                                 Assigned Delivery Captain
                               </div>
                               <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-main)' }}>
-                                Captain {activeShipment.assignedDriver.name?.replace(/^captain\s+/i, '')}
+                                Captain {captainName}
                               </div>
                               <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                                {activeShipment.assignedDriver.phone ? `Phone: ${activeShipment.assignedDriver.phone} • ` : ''}Vehicle: {activeShipment.assignedDriver.vehicleNumber || 'Van'}
+                                {captainPhone ? `Phone: ${captainPhone} • ` : ''}Vehicle: {captainVehicle}
                               </div>
                             </div>
                           </div>
 
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            {activeShipment.assignedDriver.phone && (
+                            {captainPhone && (
                               <a
-                                href={`tel:${activeShipment.assignedDriver.phone}`}
+                                href={`tel:${captainPhone}`}
                                 className="btn btn-sm btn-secondary"
                                 style={{ padding: '0.4rem 0.85rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.76rem', borderRadius: '9999px' }}
                               >
