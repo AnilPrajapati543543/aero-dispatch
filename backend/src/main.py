@@ -879,8 +879,7 @@ def get_driver_orders(user: Dict[str, Any] = Depends(require_roles(["driver", "a
             seen.add(oid)
             combined.append(o)
 
-    if not combined and user.get("role") == "driver":
-        combined = order_service.list_orders(status="OUT_FOR_DELIVERY")
+    # No fallback — drivers only see their own assigned + unassigned bookings
     return {"data": combined, "count": len(combined)}
 
 

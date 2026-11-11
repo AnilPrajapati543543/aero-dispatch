@@ -78,39 +78,39 @@ export default function ProfileOverviewCard({
     if (currentRole === 'driver') {
       const driverShipments = shipments.filter(s => 
         (s.assignedDriver && s.assignedDriver.name?.toLowerCase() === currentUser?.name?.toLowerCase()) ||
-        s.driverId === (currentUser?.driverId || 'DRV-8469')
+        (currentUser?.driverId && s.driverId === currentUser.driverId)
       );
       const done = driverShipments.filter(s => s.status === 'delivered').length;
       return [
-        { label: "Today's Stops", value: `${driverShipments.length || 8} Stops` },
-        { label: "Delivered", value: `${done || 6} Completed` },
-        { label: "Captain Rating", value: "4.98 ★" },
-        { label: "Assigned Van", value: currentUser?.vehicleNumber || "MH-02-EV-8469" },
-        { label: "Base Hub", value: currentUser?.hub || "BOM-01 Air Hub" }
+        { label: "Today's Stops", value: `${driverShipments.length} Stops` },
+        { label: "Delivered", value: `${done} Completed` },
+        { label: "Captain Rating", value: "—" },
+        { label: "Assigned Van", value: currentUser?.vehicleNumber || "Not Assigned" },
+        { label: "Base Hub", value: currentUser?.hub || "Not Assigned" }
       ];
     }
 
     if (currentRole === 'admin') {
-      const totalAwbs = shipments.length || 154;
-      const inTransit = shipments.filter(s => s.status === 'in_transit' || s.currentStatus === 'IN_TRANSIT').length || 18;
+      const totalAwbs = shipments.length;
+      const inTransit = shipments.filter(s => s.status === 'in_transit' || s.currentStatus === 'IN_TRANSIT' || s.currentStatus === 'OUT_FOR_DELIVERY').length;
       return [
         { label: "National AWBs", value: `${totalAwbs} Total` },
-        { label: "Active Linehaul", value: `${inTransit} Flights` },
-        { label: "Fleet Captains", value: "28 On-Duty" },
-        { label: "Network SLA", value: "99.4%" },
+        { label: "Active Linehaul", value: `${inTransit} In-Transit` },
+        { label: "Fleet Captains", value: "—" },
+        { label: "Network SLA", value: "—" },
         { label: "Ops Clearance", value: "Level 1 Admin" }
       ];
     }
 
     // Customer Persona
-    const myOrders = shipments.filter(s => s.customerEmail === currentUser?.email);
-    const orderCount = myOrders.length > 0 ? myOrders.length : 12;
-    const inTransit = myOrders.filter(s => s.status === 'in_transit' || s.status === 'dispatched').length || 3;
+    const myOrders = shipments.filter(s => (s.customerEmail || '').toLowerCase().trim() === (currentUser?.email || '').toLowerCase().trim());
+    const orderCount = myOrders.length;
+    const inTransit = myOrders.filter(s => s.status === 'in_transit' || s.status === 'dispatched' || s.currentStatus === 'IN_TRANSIT').length;
     return [
       { label: "Total Bookings", value: `${orderCount} Orders` },
       { label: "In-Transit", value: `${inTransit} Active` },
-      { label: "On-Time SLA", value: "99.8%" },
-      { label: "Service Tier", value: "Priority Air" },
+      { label: "On-Time SLA", value: "—" },
+      { label: "Service Tier", value: "Standard" },
       { label: "Cognito Auth", value: "Verified 2FA" }
     ];
   };

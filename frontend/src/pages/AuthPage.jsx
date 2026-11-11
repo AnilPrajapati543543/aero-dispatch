@@ -187,8 +187,8 @@ export default function AuthPage() {
           password: pendingUserData.password,
           role: pendingUserData.role,
           phone: pendingUserData.phone,
-          driverId: pendingUserData.role === 'driver' ? `DRV-${pendingUserData.phone.slice(-4) || '8469'}` : undefined,
-          vehicleNumber: pendingUserData.role === 'driver' ? 'MH-02-EE-8891' : undefined
+          driverId: pendingUserData.role === 'driver' ? `DRV-${pendingUserData.phone.slice(-4) || Date.now().toString().slice(-4)}` : undefined,
+          vehicleNumber: pendingUserData.role === 'driver' ? `MH-02-EV-${pendingUserData.phone.slice(-4) || Date.now().toString().slice(-4)}` : undefined
         });
         localStorage.setItem('aerodispatch_registered_users', JSON.stringify(updated));
       }

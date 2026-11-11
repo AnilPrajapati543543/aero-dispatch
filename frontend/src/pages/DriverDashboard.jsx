@@ -92,15 +92,15 @@ export default function DriverDashboard() {
   // Filter shipments assigned strictly to current Captain (or master fleet view for Admin)
   const myAssignedShipments = useMemo(() => {
     const isMasterAdmin = currentUser?.role === 'admin';
-    const dId = currentUser?.driverId || 'DRV-8469';
+    const dId = currentUser?.driverId;
     const directMatches = shipments.filter(s => 
-      (s.assignedDriver && (s.assignedDriver.driverId === dId || s.assignedDriver.name?.toLowerCase() === currentUser?.name?.toLowerCase())) ||
-      s.driverId === dId
+      (dId && s.assignedDriver && (s.assignedDriver.driverId === dId || s.assignedDriver.name?.toLowerCase() === currentUser?.name?.toLowerCase())) ||
+      (dId && s.driverId === dId)
     );
     if (isMasterAdmin && directMatches.length === 0) {
-      // In Admin inspection mode, show active assigned deliveries across the fleet so admin can test the cockpit
+      // In Admin inspection mode, show active assigned deliveries across the fleet
       const assigned = shipments.filter(s => s.assignedDriver);
-      return assigned.length > 0 ? assigned : shipments.slice(0, 3);
+      return assigned.length > 0 ? assigned : shipments;
     }
     return directMatches;
   }, [shipments, currentUser]);
@@ -108,7 +108,7 @@ export default function DriverDashboard() {
   // Unassigned broadcast shipments waiting for captain acceptance
   const availableOrders = useMemo(() => {
     const isMasterAdmin = currentUser?.role === 'admin';
-    const dId = currentUser?.driverId || 'DRV-8469';
+    const dId = currentUser?.driverId;
     return shipments.filter(s => 
       !s.assignedDriver &&
       (s.currentStatus === 'BOOKED' || s.currentStatus === 'PICKUP_SCHEDULED' || s.status === 'booked') &&

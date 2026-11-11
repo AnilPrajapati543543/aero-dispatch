@@ -195,8 +195,9 @@ export function AppProvider({ children }) {
       return shipments; // Admin sees all national consignments
     }
     if (currentUser.role === 'driver') {
-      const dId = currentUser.driverId || 'DRV-8469';
+      const dId = currentUser.driverId;
       const dName = (currentUser.name || '').toLowerCase();
+      if (!dId && !dName) return [];
       // Driver sees shipments assigned to their driverId/name, OR newly created unassigned consignments ready for pickup
       return shipments.filter(s => 
         (dId && s.assignedDriver && s.assignedDriver.driverId === dId) ||
@@ -205,9 +206,11 @@ export function AppProvider({ children }) {
       );
     }
     if (currentUser.role === 'customer') {
-      return shipments;
+      const email = (currentUser.email || '').toLowerCase().trim();
+      if (!email) return [];
+      return shipments.filter(s => (s.customerEmail || '').toLowerCase().trim() === email);
     }
-    return shipments;
+    return [];
   }, [shipments, currentUser]);
 
   // Auth Guard Helper for landing and public actions
@@ -633,8 +636,8 @@ export function AppProvider({ children }) {
       // Guarantee driver role & operational zone if logging in through Driver Portal or Driver email
       if (expectedRole === 'driver' || authUser.role === 'driver' || email.toLowerCase().includes('driver')) {
         authUser.role = 'driver';
-        if (!authUser.driverId) authUser.driverId = 'DRV-8469';
-        if (!authUser.vehicleNumber) authUser.vehicleNumber = 'MH-02-EV-8469';
+        if (!authUser.driverId) authUser.driverId = `DRV-${(authUser.phone || Date.now().toString()).slice(-4)}`;
+        if (!authUser.vehicleNumber) authUser.vehicleNumber = `MH-02-EV-${(authUser.phone || Date.now().toString()).slice(-4)}`;
         if (!authUser.operationalZone) authUser.operationalZone = 'Mumbai Metro & Air Cargo Corridor';
         if (!authUser.zone) authUser.zone = authUser.operationalZone;
         if (!authUser.hub) authUser.hub = 'Mumbai Cargo Gateway (BOM-01)';
