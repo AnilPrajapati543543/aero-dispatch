@@ -3,12 +3,13 @@
  * safely within browser localStorage quotas (<25KB per avatar).
  */
 
-import adminAvatarAsset from '../assets/admin-avatar.webp';
+import { ADMIN_BASE64_AVATAR } from './adminAvatarData';
 
 /**
- * Universal official administrator avatar asset, accessible across any device, browser, or session.
+ * Universal official administrator avatar asset, embedded inline for instant 100% reliable
+ * rendering across any device, browser, or private/incognito window without network dependency.
  */
-export const ADMIN_DEFAULT_AVATAR = adminAvatarAsset || '/admin-avatar.webp';
+export const ADMIN_DEFAULT_AVATAR = ADMIN_BASE64_AVATAR;
 
 export function compressAvatarImage(source, maxWidth = 320, maxHeight = 320, quality = 0.85) {
   return new Promise((resolve) => {
