@@ -168,6 +168,17 @@ class DynamoDBOrderRepository(OrderRepositoryInterface):
         self.save_order(_floats_to_decimals(order), is_new=False)
         return order
 
+    def set_customer_rating(
+        self, order_id: str, rating_data: Dict[str, Any]
+    ) -> Optional[Dict[str, Any]]:
+        """Sets customer rating on an order in DynamoDB."""
+        order = self.get_order(order_id)
+        if not order:
+            return None
+        order["customerRating"] = rating_data
+        self.save_order(_floats_to_decimals(order), is_new=False)
+        return order
+
     def list_orders(
         self,
         status: Optional[str] = None,

@@ -204,6 +204,11 @@ class DriverAssignRequest(StrictBaseModel):
     vehicleNumber: Optional[str] = Field("", max_length=32)
 
 
+class RateOrderRequest(StrictBaseModel):
+    rating: int = Field(..., ge=1, le=5)
+    feedback: Optional[str] = Field("", max_length=1000)
+
+
 # ==============================================================================
 # Cookie Helpers
 # ==============================================================================
@@ -752,6 +757,19 @@ async def create_order(
         order, is_replay = order_service.create_order(
             normalized_data, client_idempotency_key=x_idempotency_key
         )
+
+        # Trigger customer booking confirmation email with live tracking link
+        if not is_replay:
+            cust_email = (
+                order.get("customerEmail")
+                or (order.get("sender", {}).get("email") if isinstance(order.get("sender"), dict) else None)
+            )
+            if cust_email:
+                try:
+                    notification_service.send_order_confirmation_email(cust_email, order)
+                except Exception as notify_err:
+                    logger.warning(f"Note on order confirmation email dispatch: {notify_err}")
+
         status_code = status.HTTP_200_OK if is_replay else status.HTTP_201_CREATED
         headers = {"X-Idempotent-Replay": "true"} if is_replay else {}
         return JSONResponse(
@@ -852,6 +870,40 @@ def get_customer_orders(user: Dict[str, Any] = Depends(require_roles(["customer"
     """Retrieves all consignments strictly associated with the authenticated customer."""
     orders = order_service.list_orders(customer_email=user.get("email"))
     return {"data": orders, "count": len(orders)}
+
+
+@app.post("/api/v1/orders/{order_id}/rate")
+def rate_consignment(
+    order_id: str,
+    req: RateOrderRequest,
+    request: Request,
+    authorization: Optional[str] = Header(None),
+):
+    """Allows customer or recipient to submit star rating and feedback for a delivered consignment."""
+    verify_csrf_token(request)
+    order = order_service.get_order(order_id)
+    if not order:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Consignment '{order_id}' not found.",
+        )
+    user = get_optional_current_user(request=request, authorization=authorization)
+    rated_by = user.get("name") if user else "Verified Customer"
+
+    try:
+        updated = order_service.rate_order(
+            order_id=order_id,
+            rating=req.rating,
+            feedback=req.feedback,
+            rated_by=rated_by,
+        )
+        return {"message": "Rating submitted successfully.", "data": updated}
+    except Exception as e:
+        logger.error(f"Error submitting rating for {order_id}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to record rating.",
+        )
 
 
 # ==============================================================================

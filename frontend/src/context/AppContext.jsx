@@ -63,30 +63,43 @@ export function AppProvider({ children }) {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          // If Edge or another browser has cached the old 6 demo shipments (AD-8849-2041), purge it and use actual shipments
-          const hasOldDemo = parsed.some(s => s.awbNumber === 'AD-8849-2041' || s.awbNumber === 'AD-1904-8842' || s.awbNumber === 'AD-1722-2734');
+          // If browser has cached legacy demo shipments, purge them
+          const hasOldDemo = parsed.some(s => 
+            s.awbNumber === 'AD-8849-2041' || 
+            s.awbNumber === 'AD-1904-8842' || 
+            s.awbNumber === 'AD-1722-2734' ||
+            s.awbNumber === 'AD-9467-5001' ||
+            s.awbNumber === 'AD-3317-2928' ||
+            s.awbNumber === 'AD-1281-1969'
+          );
           if (hasOldDemo) {
             try {
-              localStorage.setItem('aerodispatch_shipments', JSON.stringify(MASTER_ADMIN_SHIPMENTS));
+              localStorage.removeItem('aerodispatch_shipments');
             } catch (e) {}
-            return MASTER_ADMIN_SHIPMENTS;
+            return [];
           }
           return parsed;
         }
       } catch (e) {}
     }
-    return MASTER_ADMIN_SHIPMENTS;
+    return [];
   });
 
-  // Edge and fresh browser auto-purge for legacy 6 demo records
+  // Browser auto-purge for legacy demo records and clean slate testing
   useEffect(() => {
     try {
       const saved = localStorage.getItem('aerodispatch_shipments');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.some(s => s.awbNumber === 'AD-8849-2041' || s.awbNumber === 'AD-1904-8842')) {
-          localStorage.setItem('aerodispatch_shipments', JSON.stringify(MASTER_ADMIN_SHIPMENTS));
-          setShipments(MASTER_ADMIN_SHIPMENTS);
+        if (Array.isArray(parsed) && parsed.some(s => 
+          s.awbNumber === 'AD-8849-2041' || 
+          s.awbNumber === 'AD-1904-8842' || 
+          s.awbNumber === 'AD-9467-5001' || 
+          s.awbNumber === 'AD-3317-2928' || 
+          s.awbNumber === 'AD-1281-1969'
+        )) {
+          localStorage.removeItem('aerodispatch_shipments');
+          setShipments([]);
         }
       }
     } catch (e) {}
@@ -1217,6 +1230,20 @@ export function AppProvider({ children }) {
     addToast('Proof photo saved (local simulation).', 'info');
   };
 
+  const updateShipmentRecord = (updatedOrder) => {
+    if (!updatedOrder) return;
+    const awb = updatedOrder.awbNumber || updatedOrder.orderId;
+    setShipments(prev => prev.map(s => (s.awbNumber === awb || s.id === awb) ? { ...s, ...updatedOrder } : s));
+    try {
+      const saved = localStorage.getItem('aerodispatch_shipments');
+      if (saved) {
+        const arr = JSON.parse(saved);
+        const nextArr = arr.map(s => (s.awbNumber === awb || s.id === awb) ? { ...s, ...updatedOrder } : s);
+        localStorage.setItem('aerodispatch_shipments', JSON.stringify(nextArr));
+      }
+    } catch (e) {}
+  };
+
   const resetToDefaultMock = () => {
     setShipments(MASTER_ADMIN_SHIPMENTS);
     try {
@@ -1326,6 +1353,7 @@ export function AppProvider({ children }) {
         removeToast,
         addShipment,
         updateShipmentStatus,
+        updateShipmentRecord,
         assignDriverToOrder,
         acceptDriverOrder,
         declineDriverOrder,

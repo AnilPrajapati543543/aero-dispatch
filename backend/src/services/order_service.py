@@ -296,6 +296,31 @@ class OrderService:
         self.events.emit_consignment_event("DRIVER_ASSIGNED", order_id, updated)
         return updated
 
+    def rate_order(
+        self,
+        order_id: str,
+        rating: int,
+        feedback: Optional[str] = None,
+        rated_by: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Records customer rating and feedback for a delivered consignment."""
+        order = self.get_order(order_id)
+        if not order:
+            raise KeyError(f"Order '{order_id}' not found.")
+
+        rating_data = {
+            "rating": max(1, min(5, int(rating))),
+            "feedback": (feedback or "").strip(),
+            "ratedBy": rated_by or "Verified Customer",
+            "ratedAt": datetime.now(timezone.utc).isoformat(),
+        }
+        updated = self.repo.set_customer_rating(order_id, rating_data)
+        if not updated:
+            raise RuntimeError(f"Failed to record rating for order {order_id}")
+
+        self.events.emit_consignment_event("ORDER_RATED", order_id, updated)
+        return updated
+
     def list_orders(
         self,
         status: Optional[str] = None,

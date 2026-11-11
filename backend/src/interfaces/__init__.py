@@ -42,6 +42,13 @@ class OrderRepositoryInterface(ABC):
         pass
 
     @abstractmethod
+    def set_customer_rating(
+        self, order_id: str, rating_data: Dict[str, Any]
+    ) -> Optional[Dict[str, Any]]:
+        """Sets customer rating on an order."""
+        pass
+
+    @abstractmethod
     def list_orders(
         self,
         status: Optional[str] = None,

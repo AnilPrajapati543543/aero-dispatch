@@ -349,6 +349,28 @@ export async function apiUploadProofPhoto(awbNumber, file, deliveredTo, otpCode 
   return res.json();
 }
 
+/**
+ * Submits customer star rating and feedback for a delivered consignment.
+ */
+export async function apiRateOrder(orderId, rating, feedback = '') {
+  const token = localStorage.getItem('aerodispatch_access_token');
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const res = await fetch(`${API_BASE_URL}/api/v1/orders/${encodeURIComponent(orderId)}/rate`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ rating: Number(rating), feedback: feedback || '' }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to submit rating');
+  }
+
+  return res.json();
+}
+
 export function createTrackingWebSocket(awbNumber, onMessage, onError = null) {
   try {
     const ws = new WebSocket(`${WS_BASE_URL}/ws/tracking/${encodeURIComponent(awbNumber)}`);

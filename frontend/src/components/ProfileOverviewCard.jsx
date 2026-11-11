@@ -78,13 +78,26 @@ export default function ProfileOverviewCard({
     if (currentRole === 'driver') {
       const driverShipments = shipments.filter(s => 
         (s.assignedDriver && s.assignedDriver.name?.toLowerCase() === currentUser?.name?.toLowerCase()) ||
-        (currentUser?.driverId && s.driverId === currentUser.driverId)
+        (currentUser?.driverId && s.driverId === currentUser.driverId) ||
+        (currentUser?.driverId && s.assignedDriver?.driverId === currentUser.driverId)
       );
-      const done = driverShipments.filter(s => s.status === 'delivered').length;
+      const done = driverShipments.filter(s => s.status === 'delivered' || s.currentStatus === 'DELIVERED').length;
+
+      // Calculate real average rating from delivered shipments that have customerRating
+      const ratedShipments = driverShipments.filter(s => s.customerRating && s.customerRating.rating);
+      let ratingDisplay = "—";
+      if (ratedShipments.length > 0) {
+        const sum = ratedShipments.reduce((acc, curr) => acc + Number(curr.customerRating.rating), 0);
+        const avg = (sum / ratedShipments.length).toFixed(1);
+        ratingDisplay = `${avg} ★ (${ratedShipments.length})`;
+      } else if (currentUser?.rating) {
+        ratingDisplay = `${currentUser.rating} ★`;
+      }
+
       return [
         { label: "Today's Stops", value: `${driverShipments.length} Stops` },
         { label: "Delivered", value: `${done} Completed` },
-        { label: "Captain Rating", value: "—" },
+        { label: "Captain Rating", value: ratingDisplay },
         { label: "Assigned Van", value: currentUser?.vehicleNumber || "Not Assigned" },
         { label: "Base Hub", value: currentUser?.hub || "Not Assigned" }
       ];

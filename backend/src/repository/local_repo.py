@@ -113,6 +113,17 @@ class LocalOrderRepository(OrderRepositoryInterface):
             self._persist_to_disk()
             return dict(order)
 
+    def set_customer_rating(
+        self, order_id: str, rating_data: Dict[str, Any]
+    ) -> Optional[Dict[str, Any]]:
+        with self._lock:
+            order = self._orders.get(order_id)
+            if not order:
+                return None
+            order["customerRating"] = rating_data
+            self._persist_to_disk()
+            return dict(order)
+
     def list_orders(
         self,
         status: Optional[str] = None,
