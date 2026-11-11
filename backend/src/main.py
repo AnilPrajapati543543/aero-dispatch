@@ -1058,6 +1058,20 @@ def update_driver_status(
         if req.status == "OUT_FOR_DELIVERY":
             notification_service.notify_out_for_delivery(updated)
 
+        # Amazon SES: Dispatch customer delivery confirmation receipt with Captain rating link
+        if req.status == "DELIVERED":
+            customer_email = updated.get("customerEmail") or updated.get("sender", {}).get("email")
+            if customer_email:
+                photo_url = req.proofData.get("photoUrl") if req.proofData else None
+                try:
+                    notification_service.send_delivery_receipt_email(
+                        recipient_email=customer_email,
+                        order=updated,
+                        photo_url=photo_url,
+                    )
+                except Exception as notify_err:
+                    logger.warning(f"Note on delivery receipt email dispatch: {notify_err}")
+
         # AWS Step Functions: Stop SLA Watchdog once driver accepts and begins transit
         if req.status in ["IN_TRANSIT", "OUT_FOR_DELIVERY", "DELIVERED"]:
             sla_arn = order.get("slaExecutionArn")
@@ -1331,6 +1345,18 @@ def admin_status_override(
             resource=order_id,
             details={"overriddenStatus": req.status},
         )
+        if req.status == "DELIVERED":
+            customer_email = updated.get("customerEmail") or updated.get("sender", {}).get("email")
+            if customer_email:
+                photo_url = req.proofData.get("photoUrl") if req.proofData else None
+                try:
+                    notification_service.send_delivery_receipt_email(
+                        recipient_email=customer_email,
+                        order=updated,
+                        photo_url=photo_url,
+                    )
+                except Exception as notify_err:
+                    logger.warning(f"Note on delivery receipt email dispatch: {notify_err}")
         return {"message": f"Consignment {order_id} overridden to {req.status}", "data": updated}
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

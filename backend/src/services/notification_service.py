@@ -64,7 +64,15 @@ class NotificationService:
                 logger.info(f"SES Email sent successfully! MessageId: {message_id}")
                 return {"status": "SENT", "channel": "AWS_SES", "messageId": message_id}
             except Exception as e:
-                logger.warning(f"SES Email sending notice: {e}")
+                err_str = str(e)
+                logger.warning(f"SES Email sending notice for '{recipient_email}': {err_str}")
+                # Auto-dispatch verification if rejected due to Sandbox mode
+                if "MessageRejected" in err_str and "not verified" in err_str:
+                    try:
+                        self.ses_client.verify_email_identity(EmailAddress=recipient_email)
+                        logger.info(f"Auto-dispatched SES verification request to '{recipient_email}'")
+                    except Exception as ver_err:
+                        logger.warning(f"Could not auto-verify email '{recipient_email}': {ver_err}")
 
         return {
             "status": "SIMULATED",

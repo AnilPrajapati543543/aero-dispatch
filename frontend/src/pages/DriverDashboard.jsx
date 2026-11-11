@@ -170,6 +170,16 @@ export default function DriverDashboard() {
   const pendingCount = myAssignedShipments.filter(s => s.currentStatus !== 'DELIVERED' && s.currentStatus !== 'FAILED_ATTEMPT').length;
   const exceptionCount = myAssignedShipments.filter(s => s.currentStatus === 'FAILED_ATTEMPT').length;
 
+  const ratedShipments = useMemo(() => {
+    return myAssignedShipments.filter(s => s.customerRating?.rating);
+  }, [myAssignedShipments]);
+
+  const avgRating = useMemo(() => {
+    if (ratedShipments.length === 0) return '5.0';
+    const sum = ratedShipments.reduce((acc, s) => acc + Number(s.customerRating.rating), 0);
+    return (sum / ratedShipments.length).toFixed(1);
+  }, [ratedShipments]);
+
   // Calculate COD cash to collect
   const codToCollect = useMemo(() => {
     return myAssignedShipments
@@ -413,7 +423,7 @@ export default function DriverDashboard() {
       {captainSection === 'assigned' && (
         <div>
           {/* Captain Daily Run KPIs */}
-          <div className="grid-cols-4" style={{ marginBottom: '1.75rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1.75rem' }}>
             <div className="metric-card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                 <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Assigned Stops</span>
@@ -448,6 +458,15 @@ export default function DriverDashboard() {
               </div>
               <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)' }}>₹{codToCollect.toLocaleString()}</div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '0.25rem' }}>Across Pending Stops</div>
+            </div>
+
+            <div className="metric-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Customer Rating</span>
+                <Star size={18} color="#F59E0B" fill="#F59E0B" />
+              </div>
+              <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#F59E0B' }}>★ {avgRating}</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '0.25rem' }}>{ratedShipments.length} Customer Rating{ratedShipments.length === 1 ? '' : 's'}</div>
             </div>
           </div>
 
@@ -1057,6 +1076,35 @@ export default function DriverDashboard() {
                               <span>View POD Photo</span>
                             </button>
                           )}
+                        </div>
+                      )}
+
+                      {/* Customer Rating Points Section */}
+                      {ship.customerRating ? (
+                        <div style={{ marginTop: '0.75rem', padding: '0.65rem 1rem', background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '14px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '2px', color: '#F59E0B' }}>
+                              {[1, 2, 3, 4, 5].map(st => (
+                                <Star key={st} size={14} fill={st <= ship.customerRating.rating ? '#F59E0B' : 'none'} color={st <= ship.customerRating.rating ? '#F59E0B' : '#64748B'} />
+                              ))}
+                            </div>
+                            <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#F59E0B' }}>
+                              {ship.customerRating.rating} / 5 Rating Point
+                            </span>
+                            <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>
+                              by Customer: <strong style={{ color: 'var(--text-main)' }}>{ship.customerRating.ratedBy || ship.recipient?.name || 'Customer'}</strong>
+                            </span>
+                          </div>
+                          {ship.customerRating.feedback && (
+                            <div style={{ fontSize: '0.82rem', color: 'var(--text-main)', marginTop: '4px', fontStyle: 'italic' }}>
+                              "{ship.customerRating.feedback}"
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div style={{ marginTop: '0.75rem', padding: '0.5rem 0.85rem', background: 'rgba(255, 255, 255, 0.02)', border: '1px dashed var(--border-subtle)', borderRadius: '12px', fontSize: '0.76rem', color: 'var(--text-dim)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Star size={13} color="var(--text-dim)" />
+                          <span>Rating invitation dispatched to customer email ({ship.customerEmail || ship.recipient?.email || 'customer'})</span>
                         </div>
                       )}
                       </div>

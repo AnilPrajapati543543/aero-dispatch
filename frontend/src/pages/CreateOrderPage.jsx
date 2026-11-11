@@ -24,6 +24,7 @@ export default function CreateOrderPage() {
   const [formData, setFormData] = useState({
     senderName: currentUser?.company || currentUser?.name || '',
     senderPhone: currentUser?.phone || currentUser?.phoneNumber || '',
+    customerEmail: currentUser?.email || '',
     senderCity: '',
     senderState: '',
     senderPin: '',
@@ -120,7 +121,7 @@ export default function CreateOrderPage() {
         ...formData,
         senderName: formData.senderName.trim() || 'AeroDispatch Peenya Hub',
         senderPhone: formData.senderPhone.trim() || '+91 98200 11223',
-        customerEmail: currentUser?.email || 'customer@aerodispatch.io'
+        customerEmail: (formData.customerEmail || currentUser?.email || '').trim().toLowerCase()
       };
       const newOrder = await addShipment(submissionData);
       setCreatedOrder(newOrder);
@@ -240,6 +241,9 @@ export default function CreateOrderPage() {
               </div>
               <div style={{ display: 'inline-block', marginTop: '8px', padding: '4px 12px', background: 'rgba(16, 185, 129, 0.15)', color: '#059669', borderRadius: '9999px', fontSize: '0.78rem', fontWeight: 800 }}>
                 ● Awaiting Nearby Delivery Captain Acceptance
+              </div>
+              <div style={{ marginTop: '8px', fontSize: '0.82rem', color: '#0284C7', fontWeight: 700 }}>
+                ✉ Booking receipt &amp; live tracking map link dispatched to: {createdOrder.customerEmail || currentUser?.email || 'your registered email'}
               </div>
             </div>
 
@@ -409,6 +413,20 @@ export default function CreateOrderPage() {
                   name="senderPhone"
                   className="form-input"
                   value={formData.senderPhone}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="customer-email">Customer Notification Email * (For Booking Receipt &amp; Live Tracking Map Link)</label>
+                <input
+                  id="customer-email"
+                  type="email"
+                  name="customerEmail"
+                  className="form-input"
+                  placeholder="e.g. yourname@gmail.com"
+                  value={formData.customerEmail}
                   onChange={handleChange}
                   required
                 />

@@ -189,10 +189,14 @@ export async function apiVerifyOtp(phoneNumber, code) {
 }
 
 
-export async function apiCreateOrder(formData, idempotencyKey = null) {
+export async function apiCreateOrder(formData, idempotencyKey = null, token = null) {
+  const authToken = token || (typeof localStorage !== 'undefined' ? (localStorage.getItem('aerodispatch_token') || localStorage.getItem('aerodispatch_access_token')) : null);
   const headers = { 'Content-Type': 'application/json' };
   if (idempotencyKey) {
     headers['X-Idempotency-Key'] = idempotencyKey;
+  }
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
   }
 
   const res = await fetch(`${API_BASE_URL}/api/v1/orders`, {
@@ -348,7 +352,7 @@ export async function apiUploadProofPhoto(awbNumber, file, deliveredTo, otpCode 
  * Submits customer star rating and feedback for a delivered consignment.
  */
 export async function apiRateOrder(orderId, rating, feedback = '') {
-  const token = localStorage.getItem('aerodispatch_access_token');
+  const token = localStorage.getItem('aerodispatch_token') || localStorage.getItem('aerodispatch_access_token');
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 

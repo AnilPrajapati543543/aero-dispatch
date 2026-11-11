@@ -966,7 +966,7 @@ export function AppProvider({ children }) {
 
     if (isBackendOnline) {
       try {
-        const res = await apiCreateOrder(formData);
+        const res = await apiCreateOrder(formData, null, authToken);
         finalOrder = res.data;
         setShipments(prev => [finalOrder, ...prev.filter(s => s.awbNumber !== finalOrder.awbNumber)]);
         setSelectedAwb(finalOrder.awbNumber);
