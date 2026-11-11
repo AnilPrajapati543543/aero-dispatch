@@ -27,6 +27,9 @@ class StepFunctionsService:
             "arn:aws:states:ap-northeast-2:761112473042:stateMachine:AeroDispatch-DeliverySLA-Watchdog",
         )
         self.client = None
+        if os.getenv("MOCK_AWS") == "true" or os.getenv("AWS_EC2_METADATA_DISABLED") == "true":
+            return
+
         try:
             import boto3
             self.client = boto3.client("stepfunctions", region_name=self.region)

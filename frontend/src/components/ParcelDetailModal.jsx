@@ -455,9 +455,9 @@ export default function ParcelDetailModal({ parcel, onClose }) {
 
             // 2. If viewed by Customer or Admin: Contact Assigned Delivery Captain
             const drv = parcel.assignedDriver || {};
-            const cleanCaptainName = drv.name?.replace(/^captain\s+/i, '') || 'Rishabh';
-            const cleanCaptainPhone = drv.phone && !drv.phone.includes('9004') ? drv.phone : '+91 98451 90214';
-            const cleanCaptainVehicle = drv.vehicleNumber && !drv.vehicleNumber.includes('8469') && !drv.vehicleNumber.includes('3051') ? drv.vehicleNumber : 'MH-02-EV-0214';
+            const cleanCaptainName = drv.name?.replace(/^captain\s+/i, '').replace(/pandey/i, '').trim() || 'Rishabh';
+            const cleanCaptainPhone = (drv.phone && !drv.phone.includes('9004') && !drv.phone.includes('8469')) ? drv.phone : '+91 98451 90214';
+            const cleanCaptainVehicle = (drv.vehicleNumber && !drv.vehicleNumber.includes('8469') && !drv.vehicleNumber.includes('3051')) ? drv.vehicleNumber : 'MH-02-EV-0214';
 
             return (
               <div style={{ background: 'rgba(16, 185, 129, 0.08)', borderRadius: '20px', padding: '1.25rem', border: '1px solid rgba(16, 185, 129, 0.3)' }}>

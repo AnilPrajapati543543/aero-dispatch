@@ -30,6 +30,9 @@ class NotificationService:
         self.sns_client = None
         self.ses_client = None
 
+        if os.getenv("MOCK_AWS") == "true" or os.getenv("AWS_EC2_METADATA_DISABLED") == "true":
+            return
+
         try:
             import boto3
             self.sns_client = boto3.client("sns", region_name=self.region)

@@ -951,19 +951,19 @@ def driver_accept_order(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Consignment with ID '{order_id}' was not found.",
         )
-    driver_id = user.get("driverId") or "DRV-504"
-    driver_name = user.get("name") or "Delivery Captain"
+    driver_id = user.get("driverId") or "DRV-0214"
+    driver_name = user.get("name") or "Captain Rishabh"
     if not driver_name.lower().startswith("captain"):
         driver_name = f"Captain {driver_name}"
-    driver_phone = user.get("phoneNumber") or user.get("phone") or user.get("phone_number") or ""
-    vehicle_number = user.get("vehicleNumber") or "Fleet Cargo EV"
+    driver_phone = user.get("phoneNumber") or user.get("phone") or user.get("phone_number") or "+91 98451 90214"
+    vehicle_number = user.get("vehicleNumber") or "MH-02-EV-0214"
 
     driver_info = {
         "driverId": driver_id,
         "name": driver_name,
         "phone": driver_phone,
         "vehicleNumber": vehicle_number,
-        "rating": 4.9,
+        "rating": 5.0,
     }
     updated = order_service.assign_driver(order_id, driver_info)
     try:

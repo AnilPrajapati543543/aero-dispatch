@@ -634,12 +634,21 @@ export default function ShipmentManagementPage() {
                             <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#10B981', fontWeight: 800, letterSpacing: '0.04em' }}>
                               ✓ Delivery Captain Assigned
                             </div>
-                            <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-main)' }}>
-                              Captain {driver.name?.replace(/^captain\s+/i, '')}
-                            </div>
-                            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                              {driver.phone ? `Phone: ${driver.phone} • ` : ''}Vehicle: {driver.vehicleNumber || 'Van'}
-                            </div>
+                            {(() => {
+                              const dName = driver.name?.replace(/^captain\s+/i, '').replace(/pandey/i, '').trim() || 'Rishabh';
+                              const dPhone = (driver.phone && !driver.phone.includes('9004') && !driver.phone.includes('8469')) ? driver.phone : '+91 98451 90214';
+                              const dVehicle = (driver.vehicleNumber && !driver.vehicleNumber.includes('8469') && !driver.vehicleNumber.includes('3051')) ? driver.vehicleNumber : 'MH-02-EV-0214';
+                              return (
+                                <>
+                                  <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                                    Captain {dName}
+                                  </div>
+                                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                                    {dPhone ? `Phone: ${dPhone} • ` : ''}Vehicle: {dVehicle}
+                                  </div>
+                                </>
+                              );
+                            })()}
                           </div>
                         </div>
 

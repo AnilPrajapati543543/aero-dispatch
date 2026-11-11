@@ -52,6 +52,9 @@ class RekognitionService:
     def __init__(self, region: Optional[str] = None):
         self.region = region or os.getenv("AWS_DEFAULT_REGION", "ap-northeast-2")
         self.client = None
+        if os.getenv("MOCK_AWS") == "true" or os.getenv("AWS_EC2_METADATA_DISABLED") == "true":
+            return
+
         try:
             import boto3
             self.client = boto3.client("rekognition", region_name=self.region)

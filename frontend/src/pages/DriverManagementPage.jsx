@@ -66,11 +66,18 @@ export default function DriverManagementPage() {
   // Purge any legacy demo drivers and ensure verified fleet captain is active
   const cleanDriverList = useMemo(() => {
     let list = (driversList || drivers || []).filter(d => 
-      d.id !== 'DRV-8469' && 
-      d.id !== 'DRV-658' && 
+      !d.id?.toLowerCase().includes('8469') && 
+      !d.id?.toLowerCase().includes('658') && 
+      !d.driverId?.toLowerCase().includes('8469') && 
+      !d.driverId?.toLowerCase().includes('658') && 
+      !d.email?.toLowerCase().includes('aerodispatch.io') &&
       !(d.phone || '').includes('90042') && 
       !(d.phone || '').includes('90043') &&
-      !(d.name || '').toLowerCase().includes('pandey')
+      !(d.name || '').toLowerCase().includes('pandey') &&
+      !(d.vehicle || '').includes('8469') &&
+      !(d.vehicle || '').includes('3051') &&
+      !(d.vehicleNumber || '').includes('8469') &&
+      !(d.vehicleNumber || '').includes('3051')
     );
     if (!list.some(d => d.email?.toLowerCase() === 'oldmemories021@gmail.com' || d.id === 'DRV-0214')) {
       list = [

@@ -887,9 +887,9 @@ export default function TrackingPage() {
                   // 2. If viewed by Customer or Admin: Contact Assigned Delivery Captain
                   if (activeShipment.assignedDriver) {
                     const drv = activeShipment.assignedDriver;
-                    const captainName = drv.name?.replace(/^captain\s+/i, '') || 'Rishabh';
-                    const captainPhone = drv.phone && !drv.phone.includes('9004') ? drv.phone : '+91 98451 90214';
-                    const captainVehicle = drv.vehicleNumber && !drv.vehicleNumber.includes('8469') && !drv.vehicleNumber.includes('3051') ? drv.vehicleNumber : 'MH-02-EV-0214';
+                    const captainName = drv.name?.replace(/^captain\s+/i, '').replace(/pandey/i, '').trim() || 'Rishabh';
+                    const captainPhone = (drv.phone && !drv.phone.includes('9004') && !drv.phone.includes('8469')) ? drv.phone : '+91 98451 90214';
+                    const captainVehicle = (drv.vehicleNumber && !drv.vehicleNumber.includes('8469') && !drv.vehicleNumber.includes('3051')) ? drv.vehicleNumber : 'MH-02-EV-0214';
 
                     return (
                       <div style={{ marginTop: '1.25rem', padding: '1rem', background: 'rgba(16, 185, 129, 0.08)', borderRadius: '16px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
