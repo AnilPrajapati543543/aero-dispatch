@@ -240,6 +240,23 @@ export default function DriverManagementPage() {
             </div>
           ))}
         </div>
+      ) : filteredDrivers.length === 0 ? (
+        <div className="card" style={{ textAlign: 'center', padding: '3.5rem 1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <Truck size={40} color="var(--text-dim)" style={{ marginBottom: '1rem', opacity: 0.5 }} />
+          <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.4rem' }}>
+            No Fleet Captains Registered Yet
+          </h3>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', maxWidth: '420px', marginBottom: '1.25rem' }}>
+            When couriers register through the Captain Portal or are provisioned by the Administrator, their live telemetry and delivery profiles will appear here.
+          </p>
+          <button 
+            className="btn btn-primary btn-sm"
+            onClick={() => setIsAddDriverModalOpen(true)}
+          >
+            <UserPlus size={15} />
+            <span>Provision First Captain</span>
+          </button>
+        </div>
       ) : (
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 460px), 1fr))', gap: '1.25rem', maxWidth: filteredDrivers.length === 1 ? '540px' : '100%' }}>
         {filteredDrivers.map(driver => (
@@ -550,12 +567,12 @@ function DriverFleetCard({ driver, shipments, onAssign, updateDriverStatus }) {
               <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                 <span>Captain {driver.name?.replace(/^captain\s+/i, '')}</span>
                 <span className="mono" style={{ fontSize: '0.72rem', color: '#F43F5E', background: 'rgba(244, 63, 94, 0.12)', border: '1px solid rgba(244, 63, 94, 0.35)', padding: '2px 8px', borderRadius: '4px', fontWeight: 800 }}>
-                  ID: {driver.id || driver.driverId || 'DRV-8469'}
+                  ID: {driver.id || driver.driverId || 'DRV-FLEET'}
                 </span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', marginTop: '0.25rem' }}>
                 <span style={{ fontSize: '0.72rem', color: '#00F0FF', background: 'rgba(0, 240, 255, 0.08)', border: '1px solid rgba(0, 240, 255, 0.25)', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
-                  📍 {driver.hub || 'Mumbai Cargo Gateway (BOM-01)'}
+                  📍 {driver.hub || driver.operationalZone || 'Logistics Gateway'}
                 </span>
               </div>
             </div>
@@ -596,19 +613,21 @@ function DriverFleetCard({ driver, shipments, onAssign, updateDriverStatus }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Truck size={14} color="var(--primary)" />
-            <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>{driver.vehicle || driver.vehicleNumber}</span>
-            <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>({driver.vehicleType || 'Courier Fleet'})</span>
+            <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>{driver.vehicle || driver.vehicleNumber || 'Courier Van'}</span>
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>({driver.vehicleType || 'Fleet'})</span>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <MapPin size={14} color="#00F0FF" />
-            <span>Operational Zone: <strong style={{ color: 'var(--text-main)' }}>{driver.operationalZone || driver.zone || driver.hub || 'Central Logistics Hub'}</strong></span>
+            <span>Operational Zone: <strong style={{ color: 'var(--text-main)' }}>{driver.operationalZone || driver.zone || driver.hub || 'Active Region'}</strong></span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Phone size={14} color="var(--text-dim)" />
-            <span>{driver.phone || '+91 90042 78469'}</span>
-          </div>
+          {driver.phone && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Phone size={14} color="var(--text-dim)" />
+              <span>{driver.phone}</span>
+            </div>
+          )}
         </div>
 
         {/* Metrics Pill Grid */}

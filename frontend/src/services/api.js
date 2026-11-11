@@ -83,12 +83,7 @@ export function extractDisplayName(email, idToken = null) {
     }
   } catch (e) {}
 
-  // 4. Role-based smart fallbacks
-  if (emailLower.includes('driver')) {
-    return 'Rishabh Pandey';
-  }
-
-  // 5. Clean formatting from email prefix (e.g. "anil.prajapati" -> "Anil Prajapati", "microsofty543" -> "Microsofty")
+  // 4. Clean formatting from email prefix (e.g. "anil.prajapati" -> "Anil Prajapati", "microsofty543" -> "Microsofty")
   const rawPrefix = emailLower.split('@')[0].replace(/[0-9_]/g, ' ').replace(/\./g, ' ').trim();
   if (rawPrefix) {
     return rawPrefix.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');

@@ -395,10 +395,10 @@ export default function ParcelDetailModal({ parcel, onClose }) {
                     Assigned Delivery Captain
                   </div>
                   <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-main)' }}>
-                    {parcel.assignedDriver?.name || 'Captain Rishabh Pandey'}
+                    {parcel.assignedDriver?.name || 'Assigned Courier'}
                   </div>
                   <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>
-                    Vehicle: <strong>{parcel.assignedDriver?.vehicleNumber || 'MH-02-EV-8469 (Electric Cargo)'}</strong> • ID: {parcel.assignedDriver?.driverId || 'DRV-8469'}
+                    Vehicle: <strong>{parcel.assignedDriver?.vehicleNumber || 'Fleet Van'}</strong> • ID: {parcel.assignedDriver?.driverId || 'DRV-FLEET'}
                   </div>
                 </div>
               </div>
@@ -413,14 +413,16 @@ export default function ParcelDetailModal({ parcel, onClose }) {
                   <MessageSquare size={13} />
                   <span>Chat</span>
                 </button>
-                <a
-                  href={`tel:${parcel.assignedDriver?.phone || '+919004278469'}`}
-                  className="btn btn-primary btn-sm"
-                  style={{ borderRadius: '9999px', padding: '0.45rem 1rem', display: 'inline-flex', alignItems: 'center', gap: '5px', textDecoration: 'none' }}
-                >
-                  <Phone size={13} />
-                  <span>Call Captain</span>
-                </a>
+                {parcel.assignedDriver?.phone && (
+                  <a
+                    href={`tel:${parcel.assignedDriver.phone}`}
+                    className="btn btn-primary btn-sm"
+                    style={{ borderRadius: '9999px', padding: '0.45rem 1rem', display: 'inline-flex', alignItems: 'center', gap: '5px', textDecoration: 'none' }}
+                  >
+                    <Phone size={13} />
+                    <span>Call Captain</span>
+                  </a>
+                )}
               </div>
             </div>
           </div>

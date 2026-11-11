@@ -1269,8 +1269,8 @@ def get_all_orders_admin(
 @app.get("/api/v1/admin/drivers")
 def get_fleet_drivers(user: Dict[str, Any] = Depends(require_roles(["admin"]))):
     """Returns the fleet drivers directory."""
-    from .data_mock import MOCK_DRIVERS
-    return {"data": MOCK_DRIVERS}
+    drivers = [u for u in auth_service._users.values() if u.get("role") == "driver"]
+    return {"data": drivers}
 
 
 @app.post("/api/v1/admin/orders/{order_id}/assign")

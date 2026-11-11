@@ -49,7 +49,7 @@ function splitEmailHandleIntoName(handle) {
 export function getCleanDisplayName(user, role = null) {
   if (!user) {
     if (role === 'admin') return 'System Administrator';
-    if (role === 'driver') return 'Captain Rishabh Pandey';
+    if (role === 'driver') return 'Fleet Captain';
     return 'Valued Merchant';
   }
 
@@ -92,7 +92,7 @@ export function getCleanDisplayName(user, role = null) {
     return 'System Administrator';
   }
   if (effectiveRole === 'driver') {
-    return 'Captain Rishabh Pandey';
+    return 'Fleet Captain';
   }
 
   // 4. Derive from email handle

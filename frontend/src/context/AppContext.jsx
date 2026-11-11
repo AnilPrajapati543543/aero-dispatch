@@ -108,6 +108,47 @@ export function AppProvider({ children }) {
         }
       }
     } catch (e) {}
+
+    // Auto-purge legacy demo drivers (e.g. Captain Rishabh Pandey / DRV-8469)
+    try {
+      const savedDrivers = localStorage.getItem('aerodispatch_fleet_drivers');
+      if (savedDrivers) {
+        const parsed = JSON.parse(savedDrivers);
+        if (Array.isArray(parsed) && parsed.some(d => 
+          (d.name || '').toLowerCase().includes('rishabh') || 
+          d.id === 'DRV-8469' || 
+          (d.phone || '').includes('90042')
+        )) {
+          const cleaned = parsed.filter(d => 
+            !(d.name || '').toLowerCase().includes('rishabh') && 
+            d.id !== 'DRV-8469' && 
+            !(d.phone || '').includes('90042')
+          );
+          localStorage.setItem('aerodispatch_fleet_drivers', JSON.stringify(cleaned));
+          setDriversList(cleaned);
+        }
+      }
+    } catch (e) {}
+
+    // Auto-purge demo drivers from registered users cache
+    try {
+      const savedReg = localStorage.getItem('aerodispatch_registered_users');
+      if (savedReg) {
+        const parsed = JSON.parse(savedReg);
+        if (Array.isArray(parsed) && parsed.some(u => 
+          (u.name || '').toLowerCase().includes('rishabh') || 
+          u.driverId === 'DRV-8469' || 
+          (u.phone || '').includes('90042')
+        )) {
+          const cleaned = parsed.filter(u => 
+            !(u.name || '').toLowerCase().includes('rishabh') && 
+            u.driverId !== 'DRV-8469' && 
+            !(u.phone || '').includes('90042')
+          );
+          localStorage.setItem('aerodispatch_registered_users', JSON.stringify(cleaned));
+        }
+      }
+    } catch (e) {}
   }, []);
 
   const [notifications, setNotifications] = useState(() => {
@@ -126,7 +167,14 @@ export function AppProvider({ children }) {
       const saved = localStorage.getItem('aerodispatch_fleet_drivers');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) {
+          const cleaned = parsed.filter(d => 
+            !(d.name || '').toLowerCase().includes('rishabh') && 
+            d.id !== 'DRV-8469' && 
+            !(d.phone || '').includes('90042')
+          );
+          return cleaned;
+        }
       }
     } catch (e) {}
     return MASTER_ADMIN_DRIVERS;
@@ -955,8 +1003,8 @@ export function AppProvider({ children }) {
         id: `notif-drv-${Date.now() + 1}`,
         targetRole: 'driver',
         category: 'assignment',
-        title: `New Route Assigned: ${targetAwb}`,
-        message: `Pickup order ready in ${formData.senderCity || 'Hub'}. Assigned to Courier Rishabh Pandey (DRV-8469).`,
+        title: `New Consignment Available: ${targetAwb}`,
+        message: `Pickup order ready in ${formData.senderCity || 'Hub'}. Consignment booked and awaiting driver acceptance.`,
         time: 'Just now',
         awbNumber: targetAwb,
         read: false,
@@ -1125,10 +1173,10 @@ export function AppProvider({ children }) {
       return false;
     }
 
-    const driverId = currentUser?.driverId || `DRV-${(currentUser?.phone || '504').slice(-4)}`;
-    const driverName = currentUser?.name || 'Rishabh Pandey';
-    const driverPhone = currentUser?.phone || '+91 90043 58469';
-    const vehicleNumber = currentUser?.vehicleNumber || 'MH-02-EE-8891';
+    const driverId = currentUser?.driverId || `DRV-${(currentUser?.phone || Date.now().toString()).slice(-4)}`;
+    const driverName = currentUser?.name || 'Assigned Courier';
+    const driverPhone = currentUser?.phone || '';
+    const vehicleNumber = currentUser?.vehicleNumber || 'Express Van';
 
     const driverObj = {
       driverId,
